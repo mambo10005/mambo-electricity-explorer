@@ -1,0 +1,65 @@
+# --- Secrets & environment ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials*.json
+
+# --- Data (never committed; see docs/architecture.md) ---
+data/
+raw/
+*.parquet
+*.pq
+*.arrow
+*.feather
+*.csv.gz
+*.zip
+
+# --- Databases ---
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.duckdb
+*.duckdb.wal
+
+# --- Private documents ---
+contracts/
+compliance/
+evidence/
+private/
+
+# --- Logs & generated output ---
+logs/
+*.log
+reports/
+output/
+out/
+
+# --- Local tool state & permissions ---
+.claude/settings.local.json
+.cw/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/

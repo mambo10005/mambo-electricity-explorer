@@ -1,0 +1,27 @@
+[project]
+name = "mambo-electricity-explorer"
+version = "0.0.0"
+description = "Explore electricity market and usage data."
+readme = "README.md"
+requires-python = ">=3.11"
+# License intentionally unset — see docs/decisions/0001-license.md.
+dependencies = []
+classifiers = [
+    "Private :: Do Not Upload",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

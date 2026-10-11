@@ -1,0 +1,36 @@
+# CLAUDE.md — mambo-electricity-explorer
+
+Guidance for Claude Code (and other agents) working in this repo.
+
+## Project
+
+Python (>=3.11) application for exploring electricity data. Requirements live
+in `docs/PRD.md`; structure in `docs/architecture.md`. Read both before
+non-trivial work.
+
+## Hard rules
+
+- Never commit secrets, `.env` files, raw data, Parquet/Arrow files,
+  databases, contracts, compliance evidence, logs, or generated reports.
+  `.gitignore` covers these — don't weaken it without an ADR.
+- Before every commit: `git diff --cached --name-only` and a secret scan of
+  the staged diff (see `docs/github-workflow.md`).
+- Never force-push, change repo visibility, merge PRs, or deploy without
+  explicit owner approval.
+- Adding a dependency or data source requires a license/terms check (see
+  `docs/decisions/0001-license.md`). Private visibility is not a substitute.
+
+## Workflow
+
+- Branch from `main`; open a PR using the template. See `docs/github-workflow.md`.
+- Record significant decisions as ADRs in `docs/decisions/` (copy
+  `0000-template.md`).
+- Update `docs/progress.md` and `docs/feature-matrix.md` when work lands.
+
+## Commands
+
+```bash
+ruff check .
+ruff format --check .
+pytest
+```
