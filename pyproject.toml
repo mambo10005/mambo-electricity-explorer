@@ -1,20 +1,31 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
 [project]
 name = "mambo-electricity-explorer"
-version = "0.0.0"
-description = "Explore electricity market and usage data."
+version = "0.1.0"
+description = "Local-first, novice-oriented U.S. electricity learning and analysis platform."
 readme = "README.md"
 requires-python = ">=3.11"
 # License intentionally unset — see docs/decisions/0001-license.md.
-dependencies = []
+# Versions and license review: docs/decisions/0002-application-stack.md.
+dependencies = [
+    "streamlit>=1.65,<2",
+    "pyyaml>=6.0.3,<7",
+]
 classifiers = [
     "Private :: Do Not Upload",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8",
-    "ruff>=0.6",
+    "pytest>=9.1,<10",
+    "ruff==0.17.0",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mambo_explorer"]
 
 [tool.ruff]
 line-length = 100

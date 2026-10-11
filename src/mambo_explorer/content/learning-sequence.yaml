@@ -1,0 +1,33 @@
+# The order in which a novice moves through the platform. Lesson content is not written yet.
+stages:
+  - key: fundamentals
+    title: Fundamentals
+    description: >-
+      How electricity is produced, moved, stored, and used — fuel, generation,
+      transmission, distribution, storage, demand, weather, reliability, and the
+      organizations responsible for each.
+  - key: regional-markets
+    title: Individual regional markets
+    description: >-
+      How ERCOT, CAISO, PJM, MISO, SPP, NYISO, ISO-NE, and non-ISO regions
+      schedule, dispatch, and price electricity — one region at a time.
+  - key: settlement
+    title: Settlement
+    description: >-
+      How energy, ancillary services, and capacity are measured, priced, and
+      paid for after the fact.
+  - key: financial-contracts-risk
+    title: Financial contracts and risk
+    description: >-
+      Futures, forwards, swaps, options, PPAs, tolling, capacity, and
+      storage-service contracts; hedging, basis and shape risk, credit, and collateral.
+  - key: compliance
+    title: Compliance
+    description: >-
+      Obligations set by FERC, NERC and regional entities, DOE, state
+      commissions, ISO/RTO rules, the CFTC, and other authorities.
+  - key: integrated-analysis
+    title: Integrated analysis
+    description: >-
+      Combining observations, models, contracts, and rules to analyze real
+      situations end to end.

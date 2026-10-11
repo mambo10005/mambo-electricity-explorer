@@ -1,0 +1,22 @@
+# Every value the platform shows will carry exactly one of these labels.
+labels:
+  - key: observed
+    title: Observed
+    description: >-
+      Published by a source as a measurement or official record (for example, an
+      operator's reported hourly load). Shown with its source, retrieval time, and revision.
+  - key: derived
+    title: Derived
+    description: >-
+      Calculated deterministically from observed values (for example, a monthly
+      average or a price spread). The calculation and inputs are recorded.
+  - key: modeled
+    title: Modeled
+    description: >-
+      Produced by a model run (for example, a mambo-power dispatch study). Tied to a
+      reproducible run with its inputs, versions, and assumptions.
+  - key: synthetic
+    title: Synthetic
+    description: >-
+      Invented for teaching or testing and never presented as real. Always
+      visibly marked.
