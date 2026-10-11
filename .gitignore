@@ -64,3 +64,6 @@ dist/
 .coverage
 htmlcov/
 .ipynb_checkpoints/
+
+# --- Verification environments (Stage 2 quality workflow) ---
+.venvs/

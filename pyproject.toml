@@ -18,11 +18,16 @@ classifiers = [
     "Private :: Do Not Upload",
 ]
 
-[project.optional-dependencies]
+# Dev tools are a PEP 735 dependency group: locked in uv.lock, never published
+# as package metadata. See docs/decisions/0003-dependency-locking.md.
+[dependency-groups]
 dev = [
     "pytest>=9.1,<10",
     "ruff==0.17.0",
 ]
+
+[tool.uv]
+required-version = ">=0.12.5,<0.13"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mambo_explorer"]

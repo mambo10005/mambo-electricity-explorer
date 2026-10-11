@@ -11,11 +11,11 @@ IDs or statuses.
 | DOCS-01 | Product documents (PRD, architecture, source register) | platform | done | Stage 1 |
 | SHELL-01 | Application shell and navigation | platform | done | Stage 1; no data on any page |
 | SHELL-02 | Home page with status and data labels | platform | done | Stage 1 |
-| QA-01 | Local quality workflow | platform | planned | Next milestone |
+| QA-01 | Local quality workflow | platform | done | Stage 2: uv lock, `scripts/check.ps1`, Python 3.11 + 3.14 |
 | LEARN-01 | Lesson content following the learning sequence | learn | planned | U-8 |
 | LEARN-02 | Effective-dated lessons and rules | learn | planned | PRD P-4 |
-| DATA-01 | EIA connector | sources | planned | After QA-01 |
-| DATA-02 | Regional operator connectors | sources | planned | U-3 |
+| DATA-01 | EIA connector | sources | planned | Next milestone; EIA terms reviewed |
+| DATA-02 | Regional operator connectors | sources | planned | ERCOT first (R-29) |
 | DATA-03 | Regulatory source connectors | sources | planned | |
 | SRC-01 | Source register with provenance and licensing review | sources | planned | Doc register exists; in-app view not built |
 | STORE-01 | DuckDB/Parquet observation store | system-health | planned | U-5 |

@@ -66,10 +66,25 @@ def test_license_remains_pending():
     assert "Proposed (no license chosen)" in _read("docs/decisions/0001-license.md")
 
 
-def test_source_register_lists_eia_first_and_unreviewed():
+def _register_row(prefix: str) -> list[str]:
     register = _read("docs/source-register.md")
-    eia_row = next(line for line in register.splitlines() if line.startswith("| EIA"))
-    assert "| 1 |" in eia_row and "Pending" in eia_row
+    line = next(line for line in register.splitlines() if line.startswith(f"| {prefix}"))
+    return [c.strip() for c in line.strip().strip("|").split("|")]
+
+
+def test_source_register_order_eia_then_ercot_none_connected():
+    eia, ercot = _register_row("EIA"), _register_row("ERCOT")
+    assert eia[2] == "1" and ercot[2].startswith("2")
+    assert eia[-1] == "No" and ercot[-1] == "No"
+
+
+def test_eia_review_recorded_without_blanket_unrestricted_claim():
+    register = _read("docs/source-register.md")
+    assert "### EIA Open Data API — 2026-10-11" in register
+    for topic in ("Attribution", "No implied endorsement", "Access restrictions", "Protected"):
+        assert topic in register, topic
+    assert "per-dataset source notes pending" in _register_row("EIA")[7]
+    assert "unrestricted" not in register.lower().replace("not everything is unrestricted", "")
 
 
 def test_env_example_has_only_empty_or_placeholder_values():
