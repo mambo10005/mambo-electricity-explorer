@@ -122,3 +122,24 @@ analyzing on their own machine. Explanations assume no prior industry knowledge.
 | U-7 | Which balancing authorities and utilities count as "non-ISO markets" for R-7. | EXPLORE-01, LEARN-01 |
 | U-8 | Who authors and reviews lessons and rules for accuracy, and the citation standard. | LEARN-01, COMP-01 |
 | U-9 | Whether to test Python 3.12/3.13 and non-Windows platforms. Declared floor 3.11; tested on 3.11.16 and 3.14.2 on Windows only (ADR 0003). | — |
+
+## 10. Traceability (implemented so far)
+
+Requirements with at least partial implementation, plus where the evidence is.
+Anything not listed is not implemented yet.
+
+| Requirement | Feature(s) | Status | Evidence |
+|---|---|---|---|
+| R-1 learning and analysis with actual observations | DATA-01, EXPLORE-02, LEARN-03 | partial: one BA, two metrics | `tests/test_collect_storage.py`, `tests/test_learn_ui.py` |
+| R-2 novice-oriented | LEARN-03 | partial: 4 fundamentals lessons (agent-drafted, unreviewed) | `content/lessons/`, `docs/lesson-authoring.md` |
+| R-3 learning sequence | LEARN-01, LEARN-03 | partial: stage 1 (fundamentals) only | `tests/test_lessons.py` |
+| R-4 physical system: demand | LEARN-03 | partial: demand only | lessons 1–2 |
+| R-5 forecasting | LEARN-03 | partial: published day-ahead forecast accuracy (descriptive) | lesson 3, `docs/calculations.md` |
+| R-7 ERCOT | DATA-01 | partial: EIA-930 `ERCO` only | source register |
+| R-13 continuously updated data; effective-dated lessons | DATA-01, LEARN-03 | partial: manual collection; lessons carry `effective_date` and `content_version` | `lessons.py` validation |
+| R-14 provenance, revisions, licensing, reproducibility, limitations | STORE-01/02, CALC-01, LEARN-03 | partial: lineage, revisions, calculation references, per-lesson sources and limitations | ADR 0004, `docs/calculations.md` |
+| R-15 data labels | EXPLORE-02, LEARN-03 | implemented for current pages: observed vs. synthetic | `tests/test_learn_ui.py`, `tests/guards.py` |
+| R-16/R-17 local, free | all | implemented: local files only, no accounts | `progress.py`, `config.py` |
+| R-20–R-24 stack and navigation | SHELL-01, STORE-01/02 | implemented | `tests/test_navigation.py` |
+| R-25/R-27/R-28 EIA first, source review, credentials | DATA-01 | implemented for EIA-930 region-data; publication review pending | source register, `tests/test_eia_client.py` |
+| R-29 ERCOT first operator | — | planned (DATA-02) | — |

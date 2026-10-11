@@ -23,6 +23,13 @@ METRIC_NAMES = {"D": "Demand", "DF": "Day-ahead demand forecast"}
 # that the forecast is published by the balancing authority, not made by this app.
 DISPLAY_NAMES = {"D": "Actual demand", "DF": "Day-ahead forecast"}
 EXPECTED_UNIT = "megawatthours"
+# Display abbreviation only; the stored unit is always the source string.
+UNIT_LABELS = {"megawatthours": "MWh"}
+
+
+def unit_label(unit: str | None) -> str:
+    return UNIT_LABELS.get(unit or "", unit or "")
+
 
 # Field names confirmed by the first live collection (2026-10-11, apiVersion 2.1.14).
 REQUIRED_FIELDS = ("period", "respondent", "type", "value", "value-units")

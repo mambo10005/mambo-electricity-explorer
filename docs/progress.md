@@ -2,6 +2,68 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 4: beginner lessons using EIA observations (#7)
+
+Stacked on Stage 3 (PR #6) ← #4 ← #2. None merged.
+
+- **Lesson engine** (`lessons.py`): validated Markdown + YAML front matter with
+  versions, effective dates, sources, dataset bindings, calculation ids,
+  exercises, limitations, and review fields. Validation rejects "human-reviewed"
+  without a named reviewer, an AI reviewer, or a reviewer who is also the author.
+  All four lessons are **agent-drafted, unreviewed**.
+- **Four lessons:**
+  1. power vs. energy (synthetic examples only)
+  2. reading a demand series
+  3. demand vs. the published forecast (error = actual − forecast; mean error,
+     MAE, RMSE)
+  4. missing observations (absent vs. null vs. zero vs. not collected;
+     coverage per series)
+- **Calculations** (`calculations.py`, CALC-01; docs/calculations.md):
+  - `power_energy`, `series_summary`, `coverage`, `forecast_error`, all
+    pure and versioned
+  - results keep selection, unit, formula version, valid counts,
+    exclusions, and revision references
+  - "unavailable" instead of a number for empty, duplicate, or mixed-unit input
+- **Exercises:**
+  - generated from a snapshot fingerprint (selection + revisions + values)
+  - deterministic per snapshot; regenerated, with a notice, when the window or
+    the data changes
+  - answers computed by the same calculations
+- **Progress:** local JSON in `<MAMBO_DATA_DIR>/learn/progress.json`
+  (gitignored), with three distinct states. "Understanding demonstrated" requires
+  every exercise to be right on the first attempt.
+- **Learn page:**
+  - status table and lesson selector; prerequisite buttons; deep links
+    (`?lesson=`)
+  - beginner/technical toggle and glossary with acronym expansions
+  - sources and freshness
+  - charts with HTML data tables
+  - exercises with worked explanations; bookmarks
+- **Tests:** 192 offline tests. Gate 8/8 on CPython 3.11.16 and 3.14.2.
+- **Browser (Chrome),** using copies of the real local observations in scratch
+  directories, so the user's own progress file was not touched:
+  - all 4 lessons populated in the light theme
+  - all 4 empty: text readable, no charts, instructions, data exercises marked
+    unavailable
+  - keyboard-only: Tab order reaches every control; arrow keys pick an option;
+    Enter submits
+  - 375 px dark: no page overflow
+  - light theme: text contrast 12.5:1
+- **Fixed from browser findings:**
+  - the status table lagged one interaction behind an answer
+  - lesson labels changed with progress, which can reset the selector
+  - an 8-column coverage table needed sideways scrolling on phones; now 3 columns
+  - the orange chart line was 2.53:1 on white; now #d95f02 at ≥ 3.7:1 in both
+    themes, with a regression test
+- Also found: a Stage 3 Streamlit server was still running, because TaskStop
+  leaves the server process behind. It is stopped, and cleanup is now explicit.
+- Not done:
+  - no human review of lesson content
+  - no screen-reader testing
+  - charts have captions and data tables but no in-chart text alternative
+  - other browsers not tested
+- Next: Stage 5, a bounded ERCOT connector (R-29), after its source review.
+
 ## 2026-10-11 — Stage 3: first bounded EIA collection, storage, and chart (#5)
 
 Stacked on Stage 2 (PR #4), which is stacked on Stage 1 (PR #2). None merged.

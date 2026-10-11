@@ -4,9 +4,9 @@ A local-first, novice-oriented platform for learning and analyzing the U.S.
 electricity system from actual observations and reproducible modeling. See
 [docs/PRD.md](docs/PRD.md).
 
-**Status:** Stage 3. The application shell, the quality workflow, and the first data
-feature: ERCOT's hourly actual demand and its published day-ahead forecast (EIA-930),
-collected on demand into a local store and charted on the Explore page. Navigation and documentation
+**Status:** Stage 4. The application shell, the quality workflow, ERCOT's hourly actual
+demand and published day-ahead forecast (EIA-930) in a local store and on the Explore
+page, and four beginner lessons on the Learn page that use those observations. Navigation and documentation
 exist. Modeling and the finance and compliance features are **not implemented**,
 and every section except Explore shows only its planned scope. One bounded live
 collection (7 days + 2-day lookback, 5 requests) was verified on 2026-10-11. The test
@@ -71,7 +71,28 @@ copy .env.example .env      # then put your key after EIA_API_KEY= in .env
   `validate --quarantine-orphans` are the only commands that change anything,
   and quarantine moves files rather than deleting them.
 
-## 4. Launch
+## 4. Learn
+
+The **Learn** page has four beginner lessons:
+1. power versus energy
+2. reading a demand series
+3. demand versus the published forecast
+4. missing observations
+
+Lessons 2–4 use your locally collected ERCOT observations. Without data they still
+show their text, plus collection instructions. Exercises are generated from the data
+window you select.
+
+Progress and bookmarks are saved only on this computer, in
+`<MAMBO_DATA_DIR>/learn/progress.json` (gitignored; no account). A lesson moves
+through three states: *viewed*, *exercise completed*, and *understanding
+demonstrated* (every exercise right on the first try; a self-check, not a
+certification).
+
+Lessons are AI-drafted and **not yet reviewed by a person**. See
+`docs/lesson-authoring.md` and `docs/calculations.md`.
+
+## 5. Launch
 
 ```powershell
 .venvs/py314/Scripts/streamlit run src/mambo_explorer/app.py
@@ -105,6 +126,8 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Architecture](docs/architecture.md) | How it's structured |
 | [Feature matrix](docs/feature-matrix.md) | Feature status at a glance |
 | [Source register](docs/source-register.md) | Data source access and licensing review |
+| [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
+| [Lesson authoring](docs/lesson-authoring.md) | Lesson schema, review rules, and checks |
 | [Dependency licenses](docs/dependency-licenses.md) | Generated license inventory of locked packages |
 | [Progress](docs/progress.md) | Running log of work |
 | [GitHub workflow](docs/github-workflow.md) | Branching, PRs, reviews |

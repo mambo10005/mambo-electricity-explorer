@@ -48,6 +48,10 @@ non-trivial work.
   observed/derived/modeled/synthetic label (PRD R-15). Tests reject data
   elements (charts, maps, metrics) on any section whose features are not
   `done` (`tests/guards.py`). Don't weaken that guard to make a test pass.
+- Lessons follow `docs/lesson-authoring.md`.
+  - Never mark content `human-reviewed` unless a named person reviewed it.
+  - Never hardcode current data in lesson text.
+  - Numbers come from `calculations.py`, never from UI code.
 - Tested Python versions (3.11, 3.14) are recorded separately from the
   declared `requires-python`; never change `requires-python` to hide a failure.
 
