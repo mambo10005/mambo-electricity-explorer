@@ -5,12 +5,12 @@ from collections.abc import Callable
 import streamlit as st
 
 from mambo_explorer.navigation import SECTIONS
-from mambo_explorer.pages import render_home, render_section
+from mambo_explorer.pages import render_home, render_page
 
 
 def _section_renderer(key: str) -> Callable[[], None]:
     def render() -> None:
-        render_section(key)
+        render_page(key)
 
     return render
 

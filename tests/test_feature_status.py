@@ -6,7 +6,16 @@ from mambo_explorer.catalog import FEATURE_STATUSES, features
 from mambo_explorer.navigation import SECTIONS
 
 REPO = Path(__file__).resolve().parents[1]
-DONE_FEATURES = {"DOCS-01", "SHELL-01", "SHELL-02", "QA-01"}
+DONE_FEATURES = {
+    "DOCS-01",
+    "SHELL-01",
+    "SHELL-02",
+    "QA-01",
+    "DATA-01",
+    "STORE-01",
+    "STORE-02",
+    "EXPLORE-02",
+}
 
 
 def _matrix_rows(text: str) -> dict[str, tuple[str, str]]:
@@ -41,6 +50,7 @@ def test_feature_ids_unique_and_fields_valid():
         assert f["status"] in FEATURE_STATUSES, f
         assert f["section"] in valid_sections, f
         assert f["name"].strip(), f
+        assert f.get("ui", False) in (True, False), f
 
 
 def test_every_navigation_section_tracks_at_least_one_feature():

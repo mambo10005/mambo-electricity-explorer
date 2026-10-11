@@ -4,9 +4,13 @@ A local-first, novice-oriented platform for learning and analyzing the U.S.
 electricity system from actual observations and reproducible modeling. See
 [docs/PRD.md](docs/PRD.md).
 
-**Status:** Stage 2, the application shell plus a reproducible local quality workflow. Navigation and documentation
-exist. Data collection, modeling, and the finance and compliance features
-are **not implemented**. The app shows no data. Feature-by-feature status:
+**Status:** Stage 3. The application shell, the quality workflow, and the first data
+feature: ERCOT's hourly actual demand and its published day-ahead forecast (EIA-930),
+collected on demand into a local store and charted on the Explore page. Navigation and documentation
+exist. Modeling and the finance and compliance features are **not implemented**,
+and every section except Explore shows only its planned scope. One bounded live
+collection (7 days + 2-day lookback, 5 requests) was verified on 2026-10-11. The test
+suite itself is offline and uses synthetic data only. Feature-by-feature status:
 [docs/feature-matrix.md](docs/feature-matrix.md).
 
 ## Requirements
@@ -46,14 +50,35 @@ the tracked-file check, and the secret scan.
 - Stops the temporary Streamlit server it starts.
 - Reports secret findings as file:line only, never the matched text.
 
-## 3. Launch
+## 3. Collect EIA data (optional; needs a free EIA key)
+
+```powershell
+copy .env.example .env      # then put your key after EIA_API_KEY= in .env
+.venvs/py314/Scripts/mambo sources --remote        # verify route/ERCO/D/DF with EIA (5 requests max)
+.venvs/py314/Scripts/mambo collect --dry-run       # scope and request budget; no key needed
+.venvs/py314/Scripts/mambo collect                 # last 7 completed UTC days + 2-day lookback
+.venvs/py314/Scripts/mambo collect --start 2026-10-01 --end 2026-10-08   # explicit range (end exclusive)
+.venvs/py314/Scripts/mambo status                  # recent runs
+.venvs/py314/Scripts/mambo validate                # checksums, orphans, interrupted runs (read-only)
+.venvs/py314/Scripts/mambo storage                 # storage diagnostics
+```
+
+- One run covers at most 31 days, lookback included.
+- Collection never runs automatically, including when the app opens or reruns.
+- Re-collecting is safe. Unchanged values are skipped, and changed values are
+  kept as new revisions.
+- Nothing is deleted by default. `validate --mark-interrupted` and
+  `validate --quarantine-orphans` are the only commands that change anything,
+  and quarantine moves files rather than deleting them.
+
+## 4. Launch
 
 ```powershell
 .venvs/py314/Scripts/streamlit run src/mambo_explorer/app.py
 ```
 
-Then open http://localhost:8501. Copying `.env.example` to `.env` is optional
-for now, because nothing reads it yet.
+Then open http://localhost:8501. Explore shows setup instructions until data has
+been collected. The app never needs the key.
 
 ## Changing dependencies
 

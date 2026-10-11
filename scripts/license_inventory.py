@@ -17,7 +17,14 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 OUT = REPO / "docs/dependency-licenses.md"
 PROJECT = "mambo-electricity-explorer"
-DIRECT = {"streamlit": "runtime", "pyyaml": "runtime", "pytest": "dev", "ruff": "dev"}
+DIRECT = {
+    "streamlit": "runtime",
+    "pyyaml": "runtime",
+    "duckdb": "runtime",
+    "pyarrow": "runtime",
+    "pytest": "dev",
+    "ruff": "dev",
+}
 
 # Human review: the license file shipped in the installed wheel was opened and read.
 REVIEWED = {

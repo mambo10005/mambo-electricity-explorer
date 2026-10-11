@@ -8,7 +8,7 @@ metadata in `.venvs/py311` and `.venvs/py314` (Windows). **Do not edit by hand.*
 - Nothing here certifies legal compatibility or chooses this project's license
   (ADR 0001).
 
-Locked packages: 45. Compound, unclear, or missing metadata: 10. Reviewed: 3.
+Locked packages: 46. Compound, unclear, or missing metadata: 10. Reviewed: 3.
 
 | Package | Version | Role | Automated metadata | Reviewed evidence | Official source | Status |
 |---|---|---|---|---|---|---|
@@ -19,6 +19,7 @@ Locked packages: 45. Compound, unclear, or missing metadata: 10. Reviewed: 3.
 | charset-normalizer | 3.5.2 | transitive | License: MIT; license files: 1 | Not reviewed | https://github.com/jawah/charset_normalizer | unreviewed |
 | click | 8.5.0 | transitive | License-Expression: BSD-3-Clause; license files: 1 | Not reviewed | https://github.com/pallets/click/ | unreviewed |
 | colorama | 0.4.6 | transitive | Classifier: BSD License; license files: 1 | Not reviewed | https://github.com/tartley/colorama | needs review (compound or unclear) |
+| duckdb | 1.5.6 | runtime | Classifier: MIT License; license files: 0 | Not reviewed | https://github.com/duckdb/duckdb-python | unreviewed |
 | h11 | 0.16.0 | transitive | Classifier: MIT License; license files: 1 | Not reviewed | https://github.com/python-hyper/h11 | unreviewed |
 | httptools | 0.9.0 | transitive | License-Expression: MIT; license files: 3 | Not reviewed | https://github.com/MagicStack/httptools | unreviewed |
 | idna | 3.20 | transitive | License-Expression: BSD-3-Clause; license files: 1 | Not reviewed | https://github.com/kjd/idna | unreviewed |
@@ -36,7 +37,7 @@ Locked packages: 45. Compound, unclear, or missing metadata: 10. Reviewed: 3.
 | pillow | 12.3.0 | transitive | License-Expression: MIT-CMU; license files: 1 | Not reviewed | https://github.com/python-pillow/Pillow | unreviewed |
 | pluggy | 1.6.0 | transitive | Classifier: MIT License; license files: 1 | Not reviewed | https://pypi.org/project/pluggy/ | unreviewed |
 | protobuf | 7.36.2 | transitive | License: 3-Clause BSD License; license files: 0 | Not reviewed | https://developers.google.com/protocol-buffers/ | unreviewed |
-| pyarrow | 25.0.1 | transitive | License-Expression: Apache-2.0; license files: 2 | Not reviewed | https://github.com/apache/arrow | unreviewed |
+| pyarrow | 25.0.1 | runtime | License-Expression: Apache-2.0; license files: 2 | Not reviewed | https://github.com/apache/arrow | unreviewed |
 | pydeck | 0.9.3 | transitive | License: Apache License 2.0; license files: 1 | Not reviewed | https://github.com/visgl/deck.gl/tree/master/bindings/pydeck | unreviewed |
 | pygments | 2.21.0 | transitive | License-Expression: BSD-2-Clause; license files: 2 | Not reviewed | https://github.com/pygments/pygments | unreviewed |
 | pytest | 9.1.1 | dev | License-Expression: MIT; license files: 1 | Shipped LICENSE read 2026-10-11: MIT License text. | https://github.com/pytest-dev/pytest | reviewed |

@@ -26,6 +26,14 @@ non-trivial work.
   `scripts/license_inventory.py` (ADR 0003).
 - Don't touch the developer's `.venv`. Verification uses `.venvs/py311` and
   `.venvs/py314`.
+- EIA credential: never print, log, or archive it.
+  - Anything that could carry it goes through `eia/redact.py`.
+  - Errors are re-raised `from None`.
+  - Tests must never need it.
+  - Never run `mambo collect` from app code.
+- Data stays in `MAMBO_DATA_DIR` (default `./data`, gitignored). Never commit
+  archives, Parquet, or SQLite files. EIA facts live only in
+  `eia/dataset.py`, backed by the source-register review (ADR 0004).
 
 ## Workflow
 
@@ -50,4 +58,6 @@ pwsh -File scripts/setup-env.ps1 [-Python 3.11]   # one-time; downloads; uses uv
 pwsh -File scripts/check.ps1 [-Python 3.11]       # routine; offline; nonzero on failure
 .venvs/py314/Scripts/streamlit run src/mambo_explorer/app.py
 .venvs/py314/Scripts/python scripts/license_inventory.py   # after any uv lock
+.venvs/py314/Scripts/mambo collect --dry-run               # never needs a key
+.venvs/py314/Scripts/mambo validate                        # read-only store check
 ```

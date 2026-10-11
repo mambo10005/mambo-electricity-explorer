@@ -1,8 +1,10 @@
-"""Page renderers. Stage 1 shell: no data, charts, or model output anywhere."""
+"""Page renderers. Only Explore shows data (see explore.py); every other section is a
+"Not implemented" page with no charts, numbers, or model output."""
 
 import streamlit as st
 
 from mambo_explorer.catalog import data_labels, features, learning_sequence
+from mambo_explorer.explore import render_explore
 from mambo_explorer.navigation import section_by_key
 
 NOT_IMPLEMENTED = "Not implemented"
@@ -23,8 +25,9 @@ def render_home() -> None:
 
     st.header("Implementation status")
     st.info(
-        "Stage 1: application shell only. No data is collected, no models are run, "
-        "and no page shows prices, observations, or model results yet."
+        "Stage 3: one dataset is implemented. Explore charts ERCOT's actual demand and its "
+        "published day-ahead forecast (EIA-930), collected on demand from the command line. "
+        "No models run, and no other page shows prices, observations, or model results."
     )
     # st.table renders plain HTML: readable by screen readers, unlike the canvas-based st.dataframe.
     st.table(
@@ -58,3 +61,12 @@ def render_section(key: str) -> None:
             if f["section"] == key
         )
     )
+
+
+# Sections with a real implementation; every other section renders the generic
+# "Not implemented" page. Tests render through this same dispatcher.
+IMPLEMENTED = {"explore": render_explore}
+
+
+def render_page(key: str) -> None:
+    IMPLEMENTED.get(key, lambda: render_section(key))()
