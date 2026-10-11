@@ -48,6 +48,12 @@ non-trivial work.
   observed/derived/modeled/synthetic label (PRD R-15). Tests reject data
   elements (charts, maps, metrics) on any section whose features are not
   `done` (`tests/guards.py`). Don't weaken that guard to make a test pass.
+- Sources are stored in separate Store namespaces (`eia930`, `ercot-np6-345-cd`).
+  - Never join or compare EIA and ERCOT data until the unresolved differences in the
+    source register are resolved.
+  - Never convert ERCOT OperDay/HourEnding to UTC.
+- Browser checks: record the PIDs of Streamlit processes before starting servers, and
+  kill only the ones you started. Verify zero remain at the end.
 - Lessons follow `docs/lesson-authoring.md`.
   - Never mark content `human-reviewed` unless a named person reviewed it.
   - Never hardcode current data in lesson text.

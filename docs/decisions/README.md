@@ -9,3 +9,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | [0002](0002-application-stack.md) | Application stack and dependency versions | Accepted |
 | [0003](0003-dependency-locking.md) | Dependency locking and local verification environments | Accepted |
 | [0004](0004-eia-collection-and-storage.md) | EIA collection, credential handling, and observation storage | Accepted |
+| [0005](0005-ercot-direct-connector.md) | ERCOT direct connector (NP6-345-CD) and namespaced storage | Accepted |

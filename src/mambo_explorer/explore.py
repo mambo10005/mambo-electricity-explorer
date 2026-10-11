@@ -16,6 +16,10 @@ from mambo_explorer.navigation import section_by_key
 from mambo_explorer.storage import Store
 
 STALE_AFTER = timedelta(hours=36)
+SOURCES = {
+    "eia": "EIA-930 via EIA API (ERCO demand and day-ahead forecast)",
+    "ercot": "ERCOT direct: NP6-345-CD actual load by weather zone",
+}
 
 SETUP_INSTRUCTIONS = """\
 ```powershell
@@ -54,6 +58,23 @@ def render_explore() -> None:
     except ConfigError as exc:
         st.error(f"Unsafe data directory configuration: {exc}")
         return
+    source = st.radio(
+        "Source",
+        list(SOURCES),
+        format_func=SOURCES.get,
+        key="explore_source",
+        help="The two sources are shown separately and are never joined.",
+    )
+    if source == "ercot":
+        from mambo_explorer.ercot_explore import render_ercot
+
+        render_ercot(settings)
+        return
+    _render_eia(settings)
+
+
+def _render_eia(settings) -> None:
+    """EIA-930 view (Stage 3), unchanged apart from being selectable."""
     store = Store(settings.data_dir)
     last = store.last_committed_run()
 

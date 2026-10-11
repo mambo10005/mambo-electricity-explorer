@@ -127,8 +127,24 @@ class FileRecord:
 
 
 class Store:
-    def __init__(self, data_dir: Path) -> None:
-        self.root = Path(data_dir) / STORE_DIR
+    def __init__(
+        self,
+        data_dir: Path,
+        namespace: str = STORE_DIR,
+        schema: pa.Schema = OBSERVATION_SCHEMA,
+        identity: tuple[str, ...] = IDENTITY,
+    ) -> None:
+        """One store per source dataset. Namespaces keep sources physically separate:
+        each has its own directory, catalog, writer lock, schema, and identity."""
+        if not namespace or not all(c.isalnum() or c in "-_" for c in namespace):
+            raise ValueError(f"invalid store namespace {namespace!r}")
+        missing = [c for c in identity if c not in schema.names]
+        if missing:
+            raise ValueError(f"identity columns {missing} not in schema")
+        self.namespace = namespace
+        self.schema = schema
+        self.identity = identity
+        self.root = Path(data_dir) / namespace
         self.catalog = self.root / "catalog.sqlite"
         self.lock_path = self.root / ".writer.lock"
 
@@ -258,8 +274,13 @@ class Store:
 
     # --- files -----------------------------------------------------------------
 
-    def write_raw(self, run_id: str, offset: int, body: bytes, sanitized: bool) -> FileRecord:
-        rel = f"raw/run={run_id}/page-{offset:07d}.json"
+    def write_raw(
+        self, run_id: str, offset: int, body: bytes, sanitized: bool, name: str | None = None
+    ) -> FileRecord:
+        """Archive a source artifact. `name` (a plain file name) overrides the page name."""
+        if name is not None and (not name or "/" in name or "\\" in name or name.startswith(".")):
+            raise ValueError(f"invalid artifact name {name!r}")
+        rel = f"raw/run={run_id}/{name or f'page-{offset:07d}.json'}"
         atomic_write(self.root / rel, body)
         return FileRecord("raw", rel, sha256_bytes(body), len(body), None, sanitized)
 
@@ -270,8 +291,12 @@ class Store:
             groups.setdefault((row["entity"], row["metric"]), []).append(row)
         for (entity, metric), group in sorted(groups.items()):
             rel = f"observations/entity={entity}/metric={metric}/run={run_id}.parquet"
-            group = sorted(group, key=lambda r: r["period"])
-            table = pa.Table.from_pylist(group, schema=OBSERVATION_SCHEMA)
+            # Deterministic order by identity (EIA: ends with period; ERCOT: day/hour/flag).
+            group = sorted(
+                group,
+                key=lambda r: tuple("" if r[c] is None else str(r[c]) for c in self.identity),
+            )
+            table = pa.Table.from_pylist(group, schema=self.schema)
             sink = pa.BufferOutputStream()
             pq.write_table(table, sink)
             data = sink.getvalue().to_pybytes()
@@ -294,15 +319,33 @@ class Store:
             con.read_parquet(files, union_by_name=True).create_view("observations")
         else:
             columns = ", ".join(
-                f"CAST(NULL AS {_duck_type(f.type)}) AS {f.name}" for f in OBSERVATION_SCHEMA
+                f"CAST(NULL AS {_duck_type(f.type)}) AS {f.name}" for f in self.schema
             )
             con.execute(f"CREATE VIEW observations AS SELECT {columns} WHERE false")
-        partition = ", ".join(IDENTITY)
+        partition = ", ".join(self.identity)
         con.execute(
             "CREATE VIEW latest AS SELECT * FROM observations QUALIFY row_number() OVER "
             f"(PARTITION BY {partition} ORDER BY revision DESC) = 1"
         )
         return con
+
+    def latest_index(self, where_in: dict[str, list]) -> dict[tuple, tuple]:
+        """Latest (value_raw, unit, revision) keyed by the full identity tuple.
+
+        where_in restricts columns to value lists (column names must be in the schema).
+        """
+        bad = [c for c in where_in if c not in self.schema.names]
+        if bad:
+            raise ValueError(f"unknown columns {bad}")
+        clauses = " AND ".join(f"list_contains(?, {c})" for c in where_in) or "true"
+        columns = ", ".join(self.identity)
+        with self.query() as con:
+            rows = con.execute(
+                f"SELECT {columns}, value_raw, unit, revision FROM latest WHERE {clauses}",
+                [list(v) for v in where_in.values()],
+            ).fetchall()
+        n = len(self.identity)
+        return {tuple(r[:n]): (r[n], r[n + 1], r[n + 2]) for r in rows}
 
     def latest_by_identity(self, entity: str, metrics: list[str], start: str, end: str) -> dict:
         with self.query() as con:
@@ -365,7 +408,12 @@ class Store:
             if self.root.is_dir()
             else 0
         )
-        info = {"store": str(self.root), "bytes_on_disk": size, "runs": {}}
+        info = {
+            "store": str(self.root),
+            "namespace": self.namespace,
+            "bytes_on_disk": size,
+            "runs": {},
+        }
         for r in self.runs(limit=10_000):
             info["runs"][r["status"]] = info["runs"].get(r["status"], 0) + 1
         info["observation_files"] = len(self.committed_files("observations"))
@@ -381,7 +429,11 @@ class Store:
             info["missing_values_latest"] = con.execute(
                 "SELECT count(*) FROM latest WHERE value IS NULL"
             ).fetchone()[0]
-            span = con.execute("SELECT min(period), max(period) FROM latest").fetchone()
+            span = (
+                con.execute("SELECT min(period), max(period) FROM latest").fetchone()
+                if "period" in self.schema.names
+                else (None, None)
+            )
         info["period_range"] = list(span)
         return info
 

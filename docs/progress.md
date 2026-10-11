@@ -2,6 +2,66 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 5: direct ERCOT actual-load connector (#9)
+
+Stacked on Stage 4 (PR #8) ← #6 ← #4 ← #2. None merged.
+
+- **Report:** ERCOT NP6-345-CD "Actual System Load by Weather Zone" (type 13101).
+  - Access: the ercot.com public listing + download, which needs no login. These are
+    the URLs ERCOT's product page uses, not a documented developer API (ADR 0005).
+  - The ERCOT Public API needs registration (401 without it). No account was created
+    and no terms were accepted.
+- **Review** (source register; `docs/datasets/ercot-np6-345-cd.md`):
+  - Terms §5 permit raw-data reuse in compilations, charts, and analyses; §6 forbids
+    degrading ERCOT systems.
+  - Local use cleared. Publication review still pending.
+  - Unverified: units, label time zone, DST representation, and the TOTAL definition.
+- **Connector:**
+  - one transport; budget of 10 requests and at most 7 documents per run
+  - 30 s timeouts, at most 2 retries, 1 s pause between requests
+  - listing and ZIP size limits; in-memory ZIP reading with path, member, and size
+    checks (`safe_zip.py`)
+  - strict CSV header and row validation
+  - clear access and unavailable errors; no scraping fallback; never uses
+    EIA_API_KEY
+- **Storage:** `Store(namespace, schema, identity)`.
+  - ERCOT lives in `ercot-np6-345-cd/` with its own catalog and lock. EIA is
+    untouched (no migration).
+  - Identity includes OperDay, HourEnding, and DSTFlag, so DST twins stay distinct.
+  - Reposts become revisions with document lineage.
+- **CLI:** `--source ercot` on `sources`/`collect`/`validate`/`status`/`storage`.
+  ERCOT collect takes `--latest N` or `--publish-date`, plus `--dry-run`.
+- **Explore:** a source selector (EIA or ERCOT direct, never joined). The ERCOT view
+  shows:
+  - TOTAL and zones in a tested 9-colour palette
+  - original labels, with HourEnding/DSTFlag on the chart axis
+  - a chart `alt` text
+  - coverage and the zone-sum check
+  - publication time (raw and UTC) and retrieval time
+  - units "not stated", and limitations
+- **Tests:** 252 offline tests. Gate 8/8 on CPython 3.11.16 and 3.14.2. Fixtures are
+  synthetic; no ERCOT file is committed.
+- **Live (2026-10-11, no credential):**
+  - The listing showed 32 public CSV documents (published 2026-09-10..2026-10-11).
+  - `--latest 3` collected OperDays 10/08–10/10/2026: 648 values, all DSTFlag N,
+    0 nulls, max |zone sum − TOTAL| 0.02.
+  - Stored values match the archived files 648/648.
+  - The repeat collection was idempotent (648 unchanged). `validate` ok.
+  - The EIA catalog sha256 was unchanged.
+- **Browser (Chrome),** using scratch copies of the data:
+  - EIA view still renders.
+  - ERCOT view: chart, label axis, units, provenance, coverage, and limitations;
+    zone selection works by keyboard.
+  - 375 px dark: no page overflow.
+  - Empty ERCOT store: instructions, no chart, and no store created.
+  - **Gap:** the 12-column hourly table scrolls inside a container that can't take
+    keyboard focus (a Streamlit limitation).
+- **Processes:** the baseline had 0 Streamlit processes. Servers were started with
+  recorded PIDs, and exactly those 6 PIDs (2 trees) were killed. 0 remain.
+- Next: verify ERCOT's DST representation on OperDay 2026-11-01 (posted about
+  2026-11-02), then reconciliation research only if units and time zones become
+  documented.
+
 ## 2026-10-11 — Stage 4: beginner lessons using EIA observations (#7)
 
 Stacked on Stage 3 (PR #6) ← #4 ← #2. None merged.

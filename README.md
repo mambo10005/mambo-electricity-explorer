@@ -4,9 +4,10 @@ A local-first, novice-oriented platform for learning and analyzing the U.S.
 electricity system from actual observations and reproducible modeling. See
 [docs/PRD.md](docs/PRD.md).
 
-**Status:** Stage 4. The application shell, the quality workflow, ERCOT's hourly actual
+**Status:** Stage 5. The application shell, the quality workflow, ERCOT's hourly actual
 demand and published day-ahead forecast (EIA-930) in a local store and on the Explore
-page, and four beginner lessons on the Learn page that use those observations. Navigation and documentation
+page, four beginner lessons on the Learn page that use those observations, and a direct
+ERCOT connector (actual load by weather zone) shown separately on Explore. Navigation and documentation
 exist. Modeling and the finance and compliance features are **not implemented**,
 and every section except Explore shows only its planned scope. One bounded live
 collection (7 days + 2-day lookback, 5 requests) was verified on 2026-10-11. The test
@@ -71,6 +72,25 @@ copy .env.example .env      # then put your key after EIA_API_KEY= in .env
   `validate --quarantine-orphans` are the only commands that change anything,
   and quarantine moves files rather than deleting them.
 
+### ERCOT direct (no key needed)
+
+```powershell
+.venvs/py314/Scripts/mambo sources --source ercot --remote     # what ERCOT currently publishes (1 request)
+.venvs/py314/Scripts/mambo collect --source ercot --dry-run    # scope and budget; sends nothing
+.venvs/py314/Scripts/mambo collect --source ercot --latest 3   # the 3 most recent daily files
+.venvs/py314/Scripts/mambo collect --source ercot --publish-date 2026-10-11   # a specific posting
+.venvs/py314/Scripts/mambo status --source ercot ; .venvs/py314/Scripts/mambo validate --source ercot
+```
+
+This uses ERCOT's public report download for NP6-345-CD (Actual System Load by
+Weather Zone). That download is what ERCOT's own product page uses; it is not a
+documented developer API. One run fetches at most 7 documents. ERCOT keeps about 31
+days public. The data is stored separately from EIA in
+`<MAMBO_DATA_DIR>/ercot-np6-345-cd/`.
+
+Units and time zone are not stated by ERCOT, so they are shown as published. See
+`docs/datasets/ercot-np6-345-cd.md`.
+
 ## 4. Learn
 
 The **Learn** page has four beginner lessons:
@@ -127,6 +147,7 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Feature matrix](docs/feature-matrix.md) | Feature status at a glance |
 | [Source register](docs/source-register.md) | Data source access and licensing review |
 | [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
+| [ERCOT NP6-345-CD contract](docs/datasets/ercot-np6-345-cd.md) | Direct ERCOT report: schema, units, time and DST fields |
 | [Lesson authoring](docs/lesson-authoring.md) | Lesson schema, review rules, and checks |
 | [Dependency licenses](docs/dependency-licenses.md) | Generated license inventory of locked packages |
 | [Progress](docs/progress.md) | Running log of work |

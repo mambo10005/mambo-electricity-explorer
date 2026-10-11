@@ -45,6 +45,10 @@ features:
     name: "Regional operator connectors"
     section: sources
     status: planned
+  - id: DATA-04
+    name: "ERCOT direct connector: NP6-345-CD actual load by weather zone"
+    section: sources
+    status: done
   - id: DATA-03
     name: "Regulatory source connectors"
     section: sources
@@ -71,6 +75,11 @@ features:
     status: planned
   - id: EXPLORE-02
     name: "ERCOT actual demand vs. published day-ahead forecast"
+    section: explore
+    status: done
+    ui: true
+  - id: EXPLORE-03
+    name: "ERCOT direct actual load by weather zone (separate from EIA)"
     section: explore
     status: done
     ui: true
