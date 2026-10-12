@@ -20,6 +20,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from importlib.metadata import PackageNotFoundError, distribution
 
+from mambo_explorer.modeling import sensitivity
 from mambo_explorer.modeling import teaching_network as tn
 from mambo_explorer.storage import now_utc
 
@@ -28,7 +29,9 @@ PINNED_COMMIT = "26be8c18b7efb865419054bec7b0b171478bc37a"
 PINNED_VERSION = "0.2.0"
 # Version of this module's check and record logic, recorded in exercise snapshots. Bump it
 # when a check, tolerance, or record field changes meaning.
-CHECKS_VERSION = "1.1.0"  # 1.1.0: power flow at a specified dispatch (Stage 8)
+CHECKS_VERSION = "1.2.0"  # 1.1.0: power flow at a specified dispatch (Stage 8)
+# 1.2.0: finite-change terminology and fields (modeling/sensitivity.py, Stage 9). The
+# price gate's decisions are unchanged; only what it records and says changed.
 TOLERANCE_MW = 1e-6  # numerical consistency tolerance for balance, KCL, and flow checks
 
 
@@ -54,6 +57,7 @@ class RunRecord:
     message: str | None = None
     solver: str | None = None
     elapsed_s: float | None = None
+    checks_version: str | None = None  # CHECKS_VERSION that produced this record
     checks: list[dict] = field(default_factory=list)
     buses: list[dict] = field(default_factory=list)
     branches: list[dict] = field(default_factory=list)
@@ -182,6 +186,7 @@ def run_dc_power_flow(inputs: tn.Inputs, solver=None) -> RunRecord:
         input_fingerprint=inputs.fingerprint(),
         package=package_info(),
         status="failed",
+        checks_version=CHECKS_VERSION,
     )
     try:
         net = tn.build_network(inputs)
@@ -263,6 +268,7 @@ def run_dispatch_power_flow(inputs, g2_mw: float, solver=None) -> RunRecord:
         package=package_info(),
         status="failed",
         kind="pf.dispatch",
+        checks_version=CHECKS_VERSION,
     )
     try:
         if isinstance(g2_mw, bool) or not isinstance(g2_mw, (int, float)):
@@ -309,7 +315,7 @@ def linear_cost_rate(inputs, outputs_mw: dict[str, float]) -> float:
 OPF_TOL_MW = 1e-6  # HiGHS default primal feasibility tolerance is 1e-7 (MW model), plus headroom
 OPF_TOL_PRICE = 1e-6  # $/MWh, for the KKT stationarity check (dual feasibility tolerance 1e-7)
 OPF_TOL_COST_REL = 1e-9  # relative, on the cost rate
-PRICE_STEP_MW = 0.1  # one-sided finite-difference step for the per-run price check
+PRICE_STEP_MW = 0.1  # finite demand change h (MW) for the per-run price check
 PRICE_FD_TOL = 1e-4  # $/MWh; a ±0.1 MW re-solve difference amplifies 1e-7-scale solver noise
 
 
@@ -324,6 +330,7 @@ class OpfRunRecord:
     package: dict
     status: str  # "optimal" | "infeasible" | "failed"
     kind: str = "opf.dc"
+    checks_version: str | None = None  # CHECKS_VERSION that produced this record
     solver_status: str | None = None
     message: str | None = None
     solver: str | None = None
@@ -493,7 +500,12 @@ def _opf_checks(net, result) -> list[Check]:
 
 
 def price_sensitivities(inputs, base_cost: float, solver, step_mw: float = PRICE_STEP_MW):
-    """One-sided ∂(cost rate)/∂(demand) at each bus, from re-solves at +step_mw and −step_mw.
+    """Average cost rates over finite demand changes of ±step_mw at each bus.
+
+    increase rate = [C(D+h) − C(D)] / h and decrease rate = [C(D) − C(D−h)] / h, in $/MWh.
+    They are averages over the change, not local derivatives (see modeling/sensitivity.py).
+    Each direction records its own feasibility (rate None = infeasible) and its cost-rate
+    change C(D±h) − C(D) in $/h.
 
     Both sides are computed at every bus. At A and B (0 MW of demand) the downward
     perturbation is a load of −step_mw. It is a mathematical perturbation for the check
@@ -503,13 +515,14 @@ def price_sensitivities(inputs, base_cost: float, solver, step_mw: float = PRICE
 
     out = []
     for bus in ("A", "B", "C"):
-        sides: dict[str, float | None] = {}
+        entry: dict = {"bus": bus, "step_mw": step_mw}
         for sign, label in ((1, "up"), (-1, "down")):
             r = solver(on.build_network(inputs, extra_load_mw={bus: sign * step_mw}))
-            sides[label] = (
-                (r.objective_cost - base_cost) / (sign * step_mw) if r.status == "Optimal" else None
-            )
-        out.append({"bus": bus, "up_per_mwh": sides["up"], "down_per_mwh": sides["down"]})
+            feasible = r.status == "Optimal"
+            change = r.objective_cost - base_cost if feasible else None
+            entry[f"{label}_per_mwh"] = None if change is None else change / (sign * step_mw)
+            entry[f"{label}_cost_change_per_h"] = change
+        out.append(entry)
     return out
 
 
@@ -564,6 +577,7 @@ def run_dc_opf(inputs, solver=None) -> OpfRunRecord:
         package=package_info(),
         status="failed",
         interval_hours=on.INTERVAL_HOURS,
+        checks_version=CHECKS_VERSION,
     )
     try:
         record.package["highspy"] = distribution("highspy").version
@@ -640,9 +654,9 @@ def run_dc_opf(inputs, solver=None) -> OpfRunRecord:
     else:
         record.dispatch_unique = True
 
-    # Prices are shown only if every bus's available one-sided sensitivities agree with each
-    # other and with the reported value. At a breakpoint they differ, and one dual cannot
-    # stand for both.
+    # Prices are shown only if, at every bus, both finite changes are feasible and their
+    # average rates agree with each other and with the reported value. The decisions below are
+    # unchanged since Stage 7; the notes use the shared finite-change terminology.
     sens = price_sensitivities(inputs, result.objective_cost, solver)
     record.sensitivities = sens
     reported = {b.id: b for b in result.buses}
@@ -657,25 +671,13 @@ def run_dc_opf(inputs, solver=None) -> OpfRunRecord:
             mismatch.append(s["bus"])
     if unservable:
         record.price_status = "withheld"
-        record.price_note = (
-            f"At bus(es) {', '.join(unservable)}, slightly more or less demand cannot be met "
-            "within the limits, so the marginal cost is not finite on that side and no price "
-            "is shown."
-        )
+        record.price_note = sensitivity.unservable_note(sens, PRICE_STEP_MW)
     elif ambiguous:
         record.price_status = "withheld"
-        record.price_note = (
-            f"Breakpoint at bus(es) {', '.join(ambiguous)}: adding and removing "
-            "demand change the cost at different rates, so no single price "
-            "describes it. One-sided rates are shown instead."
-        )
+        record.price_note = sensitivity.differing_note(ambiguous, PRICE_STEP_MW)
     elif mismatch:
         record.price_status = "withheld"
-        record.price_note = (
-            f"The reported price at bus(es) {', '.join(mismatch)} did not match "
-            "the re-solve check (or could not be checked), so prices are not "
-            "shown."
-        )
+        record.price_note = sensitivity.mismatch_note(mismatch, PRICE_STEP_MW)
     else:
         record.price_status = "verified"
         record.prices = [

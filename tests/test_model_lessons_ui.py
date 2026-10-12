@@ -10,6 +10,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 from mambo_explorer import routes
+from mambo_explorer.lessons import load_lessons
 from mambo_explorer.modeling import cases as mc
 from mambo_explorer.modeling.runs import RunStore
 from mambo_explorer.progress import Progress
@@ -115,7 +116,8 @@ def test_location_prices_lesson_shows_verified_results_units_and_provenance(data
     assert "commit `26be8c18b7ef`" in text and "Adapter checks v" in text
     assert "not** ISO prices" in text and "not the model any real system operator runs" in text
     # Saved to the local model-run store only, never to observation storage.
-    assert len(RunStore(data_dir).recent(50)) == len(mc.LESSON_RUNS) - 7
+    lesson = next(le for le in load_lessons() if le.id == "location-prices")
+    assert len(RunStore(data_dir).recent(50)) == len(lesson.meta["model_bindings"])
     assert {p.name for p in data_dir.iterdir()} <= {"learn", "model-runs"}
     assert all("Exercise unavailable" not in i.value for i in at.info)
 
@@ -149,12 +151,27 @@ def test_unverified_lesson_shows_withheld_states_with_precise_wording(data_dir):
     assert by_case["Equal offers"]["Prices"] == "verified"
     assert by_case["Not enough capacity"]["Run"] == "infeasible"
     assert by_case["Not enough capacity"]["Dispatch"] == "—"
-    rates = _table(at, "+0.1 MW ($/MWh)")
-    edge_c = rates[(rates["Case"] == "Edge of capacity") & (rates["Bus"] == "C")].iloc[0]
-    assert (edge_c["+0.1 MW ($/MWh)"], edge_c["−0.1 MW ($/MWh)"]) == ("infeasible", "30")
+    tables = [t.value for t in at.table if "Average rate ($/MWh)" in t.value.columns]
+    # One finite-change table per withheld run, in panel order.
+    assert len(tables) == 5
+    edge = tables[3][tables[3]["Bus"] == "C"].set_index("Change (MW)")
+    assert edge.loc["+0.1", "Cost-rate change ($/h)"] == "infeasible"
+    assert (
+        edge.loc["−0.1", "Cost-rate change ($/h)"],
+        edge.loc["−0.1", "Average rate ($/MWh)"],
+    ) == (
+        "−3",
+        "30",
+    )
+    near = tables[1][tables[1]["Bus"] == "C"].set_index("Change (MW)")
+    assert near.loc["+0.1", "Average rate ($/MWh)"] == "25"  # blend: (0.05·20 + 0.05·30)/0.1
+    zero = tables[4][tables[4]["Bus"] == "C"].set_index("Change (MW)")
+    assert zero.loc["−0.1", "Cost-rate change ($/h)"] == "infeasible"
+    assert zero.loc["+0.1", "Average rate ($/MWh)"] == "20"
     text = _text(at)
     assert "A unique two-sided marginal price was not verified for this run." in text
-    assert "concerns these tested perturbations only" in text
+    assert "not local derivatives" in text
+    assert "one-sided rates" not in text.lower()
 
 
 def test_answering_records_progress_with_result_refs(data_dir):
@@ -174,6 +191,7 @@ def test_stale_results_are_hidden_and_never_marked(data_dir, monkeypatch):
     at = _answer(at, 0, _correct_option(at, 0, "binding_constraint"))
     assert any("Correct." in s.value for s in at.success)
     # The scenario changes (as after an update) while the old results sit in the session.
+    original = mc.LAB_CASES["congested"]
     monkeypatch.setitem(mc.LAB_CASES, "congested", ("Changed", {"rating_ac": 70.0}))
     at.run(timeout=60)
     assert any("no longer match" in w.value for w in at.warning)
@@ -183,8 +201,9 @@ def test_stale_results_are_hidden_and_never_marked(data_dir, monkeypatch):
     steps = _table(at, "Cost rate ($/h)")
     assert "Congested" not in list(steps["Step"])
     # Back to the original scenario: the old verdict does not come back by itself. The
-    # learner answers again against the current results.
-    monkeypatch.undo()
+    # learner answers again against the current results. (Restore only this entry:
+    # monkeypatch.undo() would also drop MAMBO_DATA_DIR and write to the real data dir.)
+    monkeypatch.setitem(mc.LAB_CASES, "congested", original)
     at.run(timeout=60)
     assert not any("no longer match" in w.value for w in at.warning)
     assert not any("Correct." in s.value for s in at.success)

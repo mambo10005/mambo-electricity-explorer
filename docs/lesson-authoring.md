@@ -60,7 +60,11 @@ beginner section by default and the technical section behind a toggle.
 8. **Escape nothing by hand.** The Learn page escapes `$` in lesson text, objectives,
    limitations, glossary, questions, and explanations. Exercise options are radio
    labels: keep at most one `$` in each, and no backslash.
-9. New calculations go in `calculations.py` with tests and an entry in
+9. **Finite changes are averages.** Describe the price check's ±0.1 MW re-solves with
+   the shared terms in `modeling/sensitivity.py` (average incremental/decremental
+   cost rate, per-direction feasibility). Never call them one-sided local marginal
+   rates, and never say both directions failed when only one did.
+10. New calculations go in `calculations.py` with tests and an entry in
    `docs/calculations.md`. New exercise generators go in `exercises.py`, and they
    compute answers with those same calculations.
 

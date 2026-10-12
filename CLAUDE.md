@@ -68,6 +68,12 @@ non-trivial work.
     (`modeling/cases.py`, `model_exercises.py`); never quote results in prose.
   - Escape `$` in rendered Markdown (`opf_lab.md_dollars`); keep at most one `$` in
     widget labels and radio options.
+  - Describe the price check's re-solves only with `modeling/sensitivity.py` terms
+    (averages over the change, per-direction feasibility).
+- Tests never touch the real `./data` (`tests/conftest.py` enforces it). Never call
+  `monkeypatch.undo()` in a test: it also drops the `MAMBO_DATA_DIR` override.
+- Theme colors live in `.streamlit/config.toml`; re-measure rendered contrast
+  (`docs/accessibility.md`) when it or Streamlit changes.
 - Tested Python versions (3.11, 3.14) are recorded separately from the
   declared `requires-python`; never change `requires-python` to hide a failure.
 

@@ -39,7 +39,10 @@
   - two-sided ±0.1 MW demand sensitivities at every bus
 
   Prices are shown only when the sensitivities agree with each other and with the reported
-  value. Otherwise they are withheld, with the one-sided rates shown.
+  value. Otherwise they are withheld, with the average rates over each ±0.1 MW change and
+  each direction's feasibility shown. (Stage 9 corrected this wording: the quotients are
+  averages over the change, not one-sided local rates; see `docs/calculations.md`. The
+  decision rule itself is unchanged.)
 
 ## Not verified (not exposed)
 

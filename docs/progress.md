@@ -2,6 +2,36 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 9: explanation correctness, button contrast, review package (#17)
+
+Stacked on Stage 8 (PR #16) ← #14 ← … ← #2. None merged. mambo-power unchanged at 26be8c1.
+
+- **BL-5 fixed (wording and records, not the gate):** one shared module
+  (`modeling/sensitivity.py`) now words the price check everywhere (adapter notes, lab,
+  lesson 7 panel, exercises, lessons 6–7, glossary). Rates are *average* incremental /
+  decremental cost rates over the stated ±0.1 MW change, with formulas, units, the
+  per-direction cost-rate change, feasibility per direction, and the gate status. A
+  breakpoint inside the change is explained as a blend; neither average is called a local
+  marginal rate. The capacity-edge note names only the infeasible direction. Gate decisions
+  unchanged (tested).
+- **New lesson runs:** 0.05 MW below a breakpoint (blend 25 vs. local 20) and zero demand
+  (decrease-only infeasible); new exercise `blended-rate`. Lesson 7 → v1.1.0, lesson 6 →
+  v1.0.1. `CHECKS_VERSION` 1.2.0 and generator 1.1.0 invalidate older results and answers.
+- **Contrast:** `.streamlit/config.toml` sets primary `#2563EB` for both themes (the
+  System/Light/Dark menu remains). White button text: 5.17:1 default/active, 8.54:1
+  hover/focus (was 3.30:1). Automated checks in `tests/test_theme_contrast.py`. Focus-ring
+  contrast and other items logged as BL-6.
+- **Review package:** `docs/review/human-review-checklist.md` (all 7 lessons and the
+  35-term glossary, blank reviewer fields, agent-noticed items). BL-3 stays open.
+- **Found and fixed: test pollution.** A Stage 8 test's `monkeypatch.undo()` dropped its
+  `MAMBO_DATA_DIR` override, and an AppTest rerun wrote a "viewed" mark for lesson 6 into
+  the real `data/learn/progress.json` (created 18:15:35 by that test). Tests now run with a
+  session temp data dir and fail if the real `./data` changes (`tests/conftest.py`). The
+  existing file was left for the owner to decide.
+- **Browser:** near-breakpoint and capacity-edge wording, the infeasible base run, a failed
+  run through a scratch-only corrupted-solver harness, rendered button colors in both
+  themes and states, keyboard answering, 375 px. Owned PIDs only; all stopped.
+
 ## 2026-10-11 — Stage 8: market-mechanics lessons backed by verified model runs (#15)
 
 Stacked on Stage 7 (PR #14) ← #12 ← … ← #2. None merged. mambo-power is still pinned to

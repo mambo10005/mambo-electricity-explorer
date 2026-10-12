@@ -128,15 +128,50 @@ Any failure gives `failed` with no outputs. Steps 1–8 together form a KKT cert
 this convex LP; feasibility alone would not prove optimality.
 
 **Price verification:**
-- Each run re-solves with ±0.1 MW of demand at every bus. A negative perturbation at a
+- Each run re-solves with demand changed by h = ±0.1 MW at every bus. A negative change at a
   0 MW bus is a mathematical check only, and the package accepts it.
-- Prices are shown only if the up and down rates agree within 1e-4 $/MWh with each other
-  and with the reported price. The finite-difference tolerance is looser because a
-  difference quotient over 0.1 MW amplifies 1e-7-scale solver noise.
-- Otherwise prices are withheld, with the reason (breakpoint, unservable perturbation, or
-  mismatch) and the one-sided rates.
+- Prices are shown only if both changes are feasible and their average rates agree within
+  1e-4 $/MWh with each other and with the reported price. The finite-difference tolerance is
+  looser because a quotient over 0.1 MW amplifies 1e-7-scale solver noise.
+- Otherwise prices are withheld, with a direction-specific reason and the finite-change
+  table (see "Finite demand changes" below).
 - Equal offers with feasible room to trade output mark the dispatch as non-unique. The
   objective and prices are still valid.
+
+**Finite demand changes (Stage 9, BL-5; `modeling/sensitivity.py`).** With C(D) the optimal
+cost rate in $/h:
+
+| Quantity | Formula | Unit |
+|---|---|---|
+| Increase: cost-rate change | C(D + h) − C(D) | $/h |
+| Increase rate (average incremental cost rate) | [C(D + h) − C(D)] / h | ($/h)/MW = $/MWh |
+| Decrease: cost-rate change | C(D − h) − C(D) (negative when it saves money) | $/h |
+| Decrease rate (average decremental cost rate) | [C(D) − C(D − h)] / h | $/MWh |
+
+- *Dimensions and the hour:* ($/h) ÷ MW = $/MWh. Over the one-hour teaching interval, a
+  change of h MW is h MWh of energy and changes the interval cost by ΔC × 1 h dollars, so
+  the same number is dollars per MWh of energy. No other conversion is applied.
+- *Averages, not derivatives:* C is piecewise linear and convex in demand. With no breakpoint
+  in [D − h, D + h] both rates equal the local slope. If they differ, a breakpoint lies in
+  that range, possibly at D. The check cannot locate it, so neither rate is called a local
+  (one-sided) marginal rate. A change that crosses a breakpoint gives a **blend**: e.g.
+  D = 149.95 MW below a 150 MW capacity gives (0.05 × 20 + 0.05 × 30) / 0.1 = 25 $/MWh for
+  the increase, while the local slope is still 20.
+- *Direction-specific feasibility:* each direction is reported as feasible or infeasible on
+  its own. At the capacity edge only the increase is infeasible; with zero demand only the
+  decrease is (generators cannot go below 0 MW). The note names exactly the failing
+  direction(s).
+- *Three distinct states:* a failed run (any check fails) shows no outputs at all; an
+  infeasible base run shows no dispatch, cost, or rates; a verified base run with an
+  infeasible *perturbation* keeps its dispatch and cost and withholds only the prices.
+- *The gate is unchanged.* Its decisions (verified / withheld, and the order: infeasible
+  direction, differing averages, mismatch) are the same as Stage 7. Stage 9 changed only
+  what it records (per-direction cost-rate change) and how it explains itself. Clearer
+  wording does not strengthen the numerical verification.
+- *Versions:* `adapter.CHECKS_VERSION` 1.2.0, `sensitivity.TERMINOLOGY_VERSION` 2.0.0,
+  model-exercise generator 1.1.0. Records carry `checks_version`; records from older checks
+  are hidden in the lab and are not current for lessons, and exercise snapshots change, so
+  older answers are not reused.
 
 **Benchmarks** (`tests/test_opf_benchmarks.py`): derivations are in the module docstring.
 
@@ -193,3 +228,8 @@ records:
 
 Tests: `tests/test_model_lessons.py` (benchmarks, answers, snapshots, invalidation,
 failures, progress) and `tests/test_model_lessons_ui.py` (AppTest).
+
+Stage 9 adds two lesson runs: `near-breakpoint` (demand 149.95 MW, the +0.1 MW change
+crosses G1's capacity: increase 25, decrease 20 $/MWh) and `zero-demand` (increase 20,
+decrease infeasible), plus the `blended_rate` exercise, which rebuilds the blend from G1's
+headroom and both offers and must match the re-solve within 1e-4.

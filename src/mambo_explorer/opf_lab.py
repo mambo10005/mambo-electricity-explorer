@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from mambo_explorer.modeling import adapter
+from mambo_explorer.modeling import adapter, sensitivity
 from mambo_explorer.modeling import cases as mc
 from mambo_explorer.modeling import opf_network as on
 
@@ -68,6 +68,36 @@ def _inputs() -> on.OpfInputs:
 def md_dollars(text: str) -> str:
     """Escape every "$" so Streamlit markdown shows it literally instead of starting LaTeX."""
     return text.replace("$", "\\$")
+
+
+def finite_change_table(sensitivities: list[dict], label: str | None = None) -> None:
+    """The price check's re-solves, one row per bus and direction (shared terminology)."""
+    rows = []
+    for s in sensitivities:
+        for d in sensitivity.directions(s, s.get("step_mw", adapter.PRICE_STEP_MW)):
+            feasible = d["feasible"]
+            rows.append(
+                {
+                    **({"Run": label} if label else {}),
+                    "Bus": d["bus"],
+                    "Change (MW)": f"{d['change_mw']:+g}".replace("-", "−"),
+                    "Cost-rate change ($/h)": _signed(d["cost_change_per_h"])
+                    if feasible
+                    else "infeasible",
+                    "Average rate ($/MWh)": _plain(d["rate_per_mwh"]) if feasible else "—",
+                }
+            )
+    st.table(rows, hide_index=True)
+    st.caption(md_dollars(sensitivity.TABLE_CAPTION))
+
+
+def _plain(x: float) -> str:
+    return f"{round(x, 4) + 0.0:g}".replace("-", "−")
+
+
+def _signed(x: float) -> str:
+    x = round(x, 4) + 0.0
+    return ("+" if x > 0 else "") + _plain(x)
 
 
 def _money(x: float) -> str:
@@ -143,8 +173,8 @@ def _show(record: adapter.OpfRunRecord) -> None:
     if record.price_status == "verified":
         st.caption(
             "**Modeled** marginal cost of serving 1 more MWh at each bus in this synthetic "
-            "network. These are not ERCOT or any ISO's prices. This run's prices were checked "
-            "by re-solving with ±0.1 MW of demand at each bus."
+            "network. These are not ERCOT or any ISO's prices. Price gate: **passed** "
+            "(re-solves with ±0.1 MW of demand at each bus agreed with the reported price)."
         )
         st.table(
             [
@@ -159,22 +189,16 @@ def _show(record: adapter.OpfRunRecord) -> None:
             hide_index=True,
         )
     else:
-        st.warning(record.price_note or "Prices are not available for this run.")
-        st.table(
-            [
-                {
-                    "Bus": s["bus"],
-                    "+0.1 MW demand ($/MWh)": "infeasible"
-                    if s["up_per_mwh"] is None
-                    else round(s["up_per_mwh"], 4),
-                    "−0.1 MW demand ($/MWh)": "infeasible"
-                    if s["down_per_mwh"] is None
-                    else round(s["down_per_mwh"], 4),
-                }
-                for s in record.sensitivities
-            ],
-            hide_index=True,
+        st.warning(
+            md_dollars(
+                "Price gate: **not passed**. "
+                + (record.price_note or "Prices are not available for this run.")
+            )
         )
+        finite_change_table(record.sensitivities)
+    if record.price_status == "verified":
+        with st.expander("Price check details: average cost rates over ±0.1 MW"):
+            finite_change_table(record.sensitivities)
 
     st.header("Checks")
     st.table(
@@ -229,6 +253,11 @@ def render_opf_lab(runs) -> None:
         st.info(
             "The inputs changed since the last run, so its results are hidden. Run it "
             "again for the current inputs."
+        )
+    elif getattr(record, "checks_version", None) != adapter.CHECKS_VERSION:
+        st.info(
+            "This result was produced by an older version of the checks, so it is hidden. "
+            "Run it again."
         )
     else:
         _show(record)

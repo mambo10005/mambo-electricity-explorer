@@ -7,7 +7,8 @@
   (`g2_from`), never typed in by a learner.
 
 A stored result is *current* only while its input fingerprint matches what the case would
-produce now, its scenario version matches, and the installed package matches the pin.
+produce now, its scenario version and checks version match, and the installed package
+matches the pin.
 Anything else is stale and must be run again (see `is_current`).
 """
 
@@ -71,6 +72,12 @@ LESSON_RUNS: dict[str, LessonRun] = {
     ),
     "pf-chosen": LessonRun("Power flow: a dispatch chosen by hand", PF, "congested", g2_mw=90.0),
     "breakpoint": LessonRun("Breakpoint", OPF, "breakpoint"),
+    # Demand 0.05 MW below the cheap generator's capacity: the +0.1 MW change crosses it.
+    "near-breakpoint": LessonRun(
+        "0.05 MW below a breakpoint", OPF, "breakpoint", (("load_c", 149.95),)
+    ),
+    # No demand at all: a −0.1 MW change would need negative generation.
+    "zero-demand": LessonRun("No demand", OPF, "uncongested", (("load_c", 0.0),)),
     "ac-at-limit": LessonRun("Line AC exactly at its rating", OPF, "ac-at-limit"),
     "capacity-edge": LessonRun("Edge of capacity", OPF, "capacity-edge"),
     "equal": LessonRun("Equal offers", OPF, "equal"),
@@ -124,6 +131,7 @@ def is_current(key: str, records: dict) -> bool:
         return False
     return (
         record.kind == LESSON_RUNS[key].kind
+        and getattr(record, "checks_version", None) == adapter.CHECKS_VERSION
         and record.scenario_id == on.SCENARIO_ID
         and record.scenario_version == on.SCENARIO_VERSION
         and bool(record.package.get("matches_pin"))
