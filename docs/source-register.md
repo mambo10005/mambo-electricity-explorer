@@ -43,7 +43,22 @@ from these organizations is collected.
 | PJM, [Manual 11, Revision 137](https://www.pjm.com/-/media/DotCom/documents/manuals/m11.pdf) | Lesson 6 | PJM LMP = system energy price + congestion price + loss price (Section 1 overview) | 2026-10-11 |
 | FERC, [market-assessment glossary](https://www.ferc.gov/industries-data/market-assessments/overview/glossary) | Lesson 9, `basis.py` | Basis (price difference between otherwise identical products in different markets), fixed-for-floating swaps, hedging. Natural-gas context; concepts only | 2026-10-11 (browser) |
 | EIA, [Today in Energy: Texas Heat Wave, August 2011](https://www.eia.gov/todayinenergy/detail.php?id=3010) (2011-09-09) | Lesson 10, `shape.py` | A 16-hour weekday on-peak block (ERCOT, 2011) in which afternoon super-peak hours traded far above morning hours, and block prices averaged high and low hours. Context only; no numbers used | 2026-10-11 |
+| GovInfo, [16 U.S.C. 824 (FPA §201)](https://www.govinfo.gov/content/pkg/USCODE-2023-title16/html/USCODE-2023-title16-chap12-subchapII-sec824.htm) and [16 U.S.C. 824o (FPA §215)](https://www.govinfo.gov/content/pkg/USCODE-2023-title16/html/USCODE-2023-title16-chap12-subchapII-sec824o.htm), U.S. Code 2023 ed. | Lesson 11, Compliance explorer | Wholesale sales and interstate transmission (§201(b)(1), (d)); ERO certification, standards approval, penalties review, no construction authority, Alaska/Hawaii exclusion (§215) | 2026-10-11 |
+| GovInfo, [7 U.S.C. 2 (CEA §2)](https://www.govinfo.gov/content/pkg/USCODE-2023-title7/html/USCODE-2023-title7-chap1-sec2.htm), U.S. Code 2023 ed. | Lesson 11, Compliance explorer | CFTC exclusive jurisdiction over swaps and futures (a)(1)(A); FERC/state savings clause and CFTC's retained authority (a)(1)(I) | 2026-10-11 |
+| eCFR, [18 CFR 40.1](https://www.ecfr.gov/current/title-18/chapter-I/subchapter-B/part-40/section-40.1) (text as of 2026-10-01) | Lessons 11–12, Compliance explorer | Reliability rules apply to users, owners, and operators of the bulk-power system (other than Alaska or Hawaii); each standard identifies its subset | 2026-10-11 |
+| Federal Register via GovInfo: [2025-18396](https://www.govinfo.gov/content/pkg/FR-2025-09-23/html/2025-18396.htm) (CIP-003-11 proposal), [2026-05711](https://www.govinfo.gov/content/pkg/FR-2026-03-24/html/2026-05711.htm) (Order No. 918), [2023-18729](https://www.govinfo.gov/content/pkg/FR-2023-08-30/html/2023-18729.htm) (DOE-417 notice) | Lessons 11–12, Compliance explorer | Proposal vs final rule (effective 2026-05-26; the standard's own date follows its implementation plan, not read); DOE-417 purpose and proposed changes (respondents and mandatory status not stated) | 2026-10-11 (also FR API metadata) |
+| CPUC, [About](https://www.cpuc.ca.gov/about-cpuc) and [Resource Adequacy](https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/resource-adequacy-homepage) | Lesson 11, Compliance explorer | California-specific: mission (safe, reliable service at reasonable rates); RA covers CPUC-jurisdictional load-serving entities; CAISO studies inform local and flexible RA | 2026-10-11 |
+| ERCOT, [About](https://www.ercot.com/about) | Lesson 11, Compliance explorer | ERCOT's own description: schedules power, settles the competitive wholesale market, administers retail switching; oversight by the PUCT and the Texas Legislature. No FERC/NERC statement | 2026-10-11 |
+| ISO New England, [Tariff index](https://www.iso-ne.com/participate/rules-procedures/tariff) | Lesson 11, Compliance explorer | Tariff sections; Market Rule 1 governs New England wholesale markets. Index page only | 2026-10-11 |
 | EIA, [Form EIA-930 instructions](https://www.eia.gov/survey/form/eia_930/instructions.pdf) | Lesson 1 | "Hourly integrated values in megawatts by hour ending time" (General Instructions, p. 3) | 2026-10-11 |
+
+**Compliance sources not readable on 2026-10-11** (not bypassed; content narrowed, ADR 0012):
+- ferc.gov returned HTTP 403;
+- nerc.com and texasre.org returned no readable content;
+- cftc.gov showed a human-verification page;
+- DOE OE-417 pages returned a missing page or a DNS failure;
+- puc.texas.gov returned HTTP 402;
+- federalregister.gov document pages redirected to a verification page (GovInfo copies and the FR API were used instead).
 
 ## Review record
 

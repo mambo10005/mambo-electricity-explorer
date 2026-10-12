@@ -55,7 +55,8 @@ def test_real_catalog_authorizes_charts_only_where_a_feature_is_done(chart_page)
     # (DATA-01, STORE-01/02) but whose pages are not built.
     assert section_is_implemented("model-labs")  # MODEL-02 is done
     assert section_is_implemented("finance")  # FIN-03 (settlement calculator) is done
-    others = ("replay", "compliance", "sources", "system-health")
+    assert section_is_implemented("compliance")  # COMP-02 (responsibility explorer) is done
+    others = ("replay", "sources", "system-health")
     assert not any(section_is_implemented(k) for k in others)
 
 

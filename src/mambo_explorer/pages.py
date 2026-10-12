@@ -4,6 +4,7 @@
 import streamlit as st
 
 from mambo_explorer.catalog import data_labels, features, learning_sequence
+from mambo_explorer.compliance import render_compliance
 from mambo_explorer.explore import render_explore
 from mambo_explorer.finance import render_finance
 from mambo_explorer.learn import render_learn
@@ -73,6 +74,7 @@ IMPLEMENTED = {
     "learn": render_learn,
     "model-labs": render_model_lab,
     "finance": render_finance,
+    "compliance": render_compliance,
 }
 
 

@@ -4,8 +4,8 @@ Status key: `planned` · `in-progress` · `done` · `dropped`
 
 The source of truth is `src/mambo_explorer/content/features.yaml`.
 `tests/test_feature_status.py` fails if this table and that file disagree on
-IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, and FIN-05 are pages (`ui: true`
-in the YAML), so Explore, Learn, and Model Labs are the only sections allowed to show charts. Done backend features (DATA-01, STORE-01/02)
+IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, and COMP-02 are pages (`ui: true`
+in the YAML), so Explore, Learn, Model Labs, Finance, and Compliance are the only sections allowed to show data elements. Compliance shows none: its tables are source records, not data. Done backend features (DATA-01, STORE-01/02)
 do not unlock charts on Sources or System Health.
 
 | ID | Feature | Section | Status | Notes |
@@ -43,5 +43,8 @@ do not unlock charts on Sources or System Health.
 | FIN-03 | Introductory energy-settlement calculator and lesson (synthetic, teaching formula) | finance | done | Stage 11: `settlement.py`, Finance page, lesson 8; ISO-NE two-settlement concept only; not an invoice or market engine (ADR 0009). Futures, options, PPAs, hedging, credit, and collateral remain planned |
 | FIN-04 | Basis exposure with a simplified fixed-price hedge: cash-flow calculator and lesson (synthetic) | finance | done | Stage 12: `basis.py`, Finance page, lesson 9; a simplified hedge cash-flow exercise only, not a forward, swap, future, or PPA implementation (ADR 0010) |
 | FIN-05 | Time-shape exposure under a flat-block hedge: multi-interval cash-flow calculator and lesson (synthetic) | finance | done | Stage 13: `shape.py`, Finance page, lesson 10; a teaching cash-flow exercise only, not an exchange block product, forward curve, or valuation (ADR 0011) |
-| COMP-01 | Regulatory authorities and effective-dated rules | compliance | planned | U-8 |
+| COMP-01 | Regulatory authorities and effective-dated rules | compliance | planned | U-8; an operational, maintained rules database is not built |
+| COMP-02 | Regulatory responsibility explorer: source-backed educational records by activity (no applicability determination) | compliance | done | Stage 14: `responsibilities.yaml` + `responsibilities.py`, ADR 0012; agent-authored, unreviewed |
+| COMP-03 | Introductory compliance lessons: who sets the rules; from a requirement to evidence | compliance | done | Stage 14: lessons 11 and 12; agent-authored, unreviewed (BL-3) |
+| COMP-04 | Operational compliance: applicability assessment, filings, certification, deadlines, evidence management | compliance | planned | Out of scope for Stage 14 |
 | PUB-01 | Optional static public publication | platform | planned | Not authorized; U-1, U-4 |

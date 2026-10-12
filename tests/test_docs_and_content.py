@@ -31,6 +31,7 @@ REQUIRED_DOCS = [
     "docs/decisions/0009-teaching-energy-settlement.md",
     "docs/decisions/0010-teaching-basis-exposure.md",
     "docs/decisions/0011-teaching-shape-exposure.md",
+    "docs/decisions/0012-regulatory-responsibility-records.md",
     "docs/testing-isolation.md",
     "docs/accessibility.md",
     "docs/review/human-review-checklist.md",

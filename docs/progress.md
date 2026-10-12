@@ -2,6 +2,38 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 14: regulatory responsibility explorer and compliance lessons (#27)
+
+Stacked on Stage 13 (PR #26) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
+`data/` and progress unchanged (gate check).
+
+- **Source review.**
+  - Used: FPA §201 and §215 and CEA §2 (GovInfo U.S. Code), 18 CFR 40.1 (eCFR), three
+    Federal Register documents (GovInfo and the FR API), the CPUC About and Resource
+    Adequacy pages, ERCOT About, and the ISO-NE tariff index.
+  - Not readable and not bypassed: ferc.gov (403), nerc.com, texasre.org, cftc.gov
+    (verification page), DOE OE-417 pages, puc.texas.gov (402), and federalregister.gov
+    pages (verification).
+- **Records** (`responsibilities.yaml` v1.0.0, ADR 0012).
+  - 17 records across six activities, each validated.
+  - Labels: binding, tariff, guidance, summary, or proposal.
+  - Dates: null when unknown; an effective date needs a quoted basis; proposals never
+    carry one; a retrieval date is never an effective date.
+  - Wording that concludes applicability is rejected.
+  - Also recorded: four open questions (ERCOT and federal roles, CIP-003-11 rule vs
+    standard dates, the DOE-417 version, the CFTC/FERC boundary) and the source gaps.
+- **Compliance page (COMP-02).**
+  - Explorer by activity, with "Relevant source to investigate" entries.
+  - Each entry shows links, sections, versions, dates, limitations, and review status.
+  - Overlaps are shown; a claim-to-source map is included.
+- **Lessons 11 and 12 (COMP-03).**
+  - New lesson fields: `claims` linked to records, and `compliance` exercises keyed on the
+    record-set fingerprint.
+  - Lesson 12 uses a SYNTHETIC company and its own invented policy.
+  - 20 glossary terms.
+  - Operational compliance (COMP-04) and a maintained rules database (COMP-01) stay
+    planned.
+
 ## 2026-10-11 — Stage 13: time-shape exposure under a flat-block hedge (#25)
 
 Stacked on Stage 12 (PR #24) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real

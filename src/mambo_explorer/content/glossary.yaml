@@ -214,3 +214,94 @@ terms:
       In this app's accounting split, the sum over intervals of the hedge
       mismatch (MWh) times the interval price's difference from the
       duration-weighted average price. Not a standard industry risk metric.
+  # Compliance lessons (Stage 14). Same status: agent-drafted, not human-reviewed.
+  - term: Regulator
+    definition: >-
+      A body that oversees an activity under authority given to it by law, for
+      example by approving rules or rates. Not every regulator runs the grid or
+      sets prices.
+  - term: System operator
+    definition: >-
+      An organization that runs the grid day to day, scheduling power and, where
+      there is a market, running it. ERCOT and ISO New England are examples.
+  - term: Electric reliability organization
+    expansion: ERO
+    definition: >-
+      Under Federal Power Act section 215, the organization FERC certifies to
+      propose and enforce reliability standards, subject to FERC review. FERC's
+      documents name NERC.
+  - term: Regional entity
+    definition: >-
+      Under Federal Power Act section 215, a body with enforcement authority for
+      reliability standards delegated to it under that section.
+  - term: Bulk-power system
+    definition: >-
+      The term Federal Power Act section 215 uses for the high-voltage grid and
+      the generation needed to keep it reliable, as distinct from local
+      distribution.
+  - term: Reliability standard
+    definition: >-
+      A requirement for planning or operating the bulk-power system, proposed by
+      the ERO and approved by FERC. Each standard names which users, owners, and
+      operators it applies to (18 CFR 40.1).
+  - term: Wholesale sale
+    definition: >-
+      Under Federal Power Act section 201, a sale of electric energy to any
+      person for resale.
+  - term: Retail sale
+    definition: >-
+      A sale of electricity to a customer who uses it rather than reselling it.
+      States oversee much of retail service; the details differ by state.
+  - term: Tariff
+    definition: >-
+      A filed set of rates, terms, and conditions for a service. ISO New England's
+      tariff includes Market Rule 1 for its wholesale markets.
+  - term: Rule layers
+    definition: >-
+      The way requirements stack: a statute grants authority, regulations use it,
+      and standards or tariffs hold the details. More than one layer, and more
+      than one organization, can be relevant at once.
+  - term: FERC
+    expansion: Federal Energy Regulatory Commission
+    definition: >-
+      The federal regulator for wholesale electricity sales and transmission in
+      interstate commerce, and for approving reliability standards, under the
+      Federal Power Act.
+  - term: Applicability
+    definition: >-
+      Whether, and how, a particular rule applies to a particular organization
+      and situation. It depends on the rule's own text and the facts. A title,
+      label, or location alone never decides it.
+  - term: Requirement
+    definition: >-
+      What a source actually requires, stated in that source's own terms and
+      for a stated scope and period.
+  - term: Control
+    definition: >-
+      What an organization does to meet a requirement, such as a procedure, a
+      check, or a system setting.
+  - term: Evidence
+    definition: >-
+      Records showing that a control actually ran. Evidence supports a
+      requirement only if it matches that requirement and the period covered.
+  - term: Compliance review
+    definition: >-
+      A qualified person's check of evidence against a requirement. An automated
+      test or a model result is not a compliance review.
+  - term: Remediation
+    definition: >-
+      Fixing what a review finds, both the records and the control that failed,
+      and then reviewing again.
+  - term: Proposed rule
+    definition: >-
+      A published proposal to adopt or change a rule. It is not effective. A
+      later final rule, if any, states its own effective date.
+  - term: Effective date
+    definition: >-
+      The date a source says it takes effect. Recorded only when the source
+      states it. A standard's enforceable date can differ from the date of the
+      rule that approved it.
+  - term: Retrieval date
+    definition: >-
+      The date this project read a source. It says nothing about when the source
+      took effect.

@@ -16,3 +16,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | [0009](0009-teaching-energy-settlement.md) | A teaching energy-settlement calculator, not a settlement engine | Accepted |
 | [0010](0010-teaching-basis-exposure.md) | Basis exposure with a simplified fixed-price hedge (teaching cash flows) | Accepted |
 | [0011](0011-teaching-shape-exposure.md) | Time-shape exposure under a flat-block hedge (teaching cash flows) | Accepted |
+| [0012](0012-regulatory-responsibility-records.md) | Regulatory responsibility records and introductory compliance learning | Accepted |

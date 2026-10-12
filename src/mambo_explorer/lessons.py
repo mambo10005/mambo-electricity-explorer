@@ -18,7 +18,7 @@ from mambo_explorer.catalog import learning_sequence
 
 REVIEW_STATUSES = ("unreviewed", "human-reviewed")
 IMPLEMENTATION_STATUSES = ("implemented", "draft")
-EXERCISE_KINDS = ("data", "concept", "model", "settlement", "basis", "shape")
+EXERCISE_KINDS = ("data", "concept", "model", "settlement", "basis", "shape", "compliance")
 CALCULATION_IDS = (
     "power_energy",
     "series_summary",
@@ -29,12 +29,14 @@ CALCULATION_IDS = (
     "energy_settlement",
     "basis_exposure",
     "time_shape",
+    "responsibility_records",  # not arithmetic: answers come from the record set (ADR 0012)
 )
 DATA_PANELS = ("power_energy_example", "demand_series", "forecast_comparison", "coverage")
 MODEL_PANELS = ("pf_vs_opf", "location_prices", "unverified_marginal")
-# Optional fields (default: empty list) for lessons backed by verified model runs.
+# Optional fields (default: empty list) for lessons backed by verified model runs, calculators,
+# or responsibility records (claims: record ids from content/responsibilities.yaml).
 CALCULATORS = ("energy_settlement", "basis_exposure", "time_shape")
-OPTIONAL = {"model_bindings": [], "model_panels": [], "calculators": []}
+OPTIONAL = {"model_bindings": [], "model_panels": [], "calculators": [], "claims": []}
 REQUIRED = (
     "lesson_id",
     "title",
@@ -187,7 +189,9 @@ def validate_meta(meta: dict, source: str) -> None:
         fail(f"unknown data_panels {sorted(unknown_panels)}")
     from mambo_explorer import (  # local imports avoid a cycle
         basis_exercises,
+        compliance_exercises,
         model_exercises,
+        responsibilities,
         settlement_exercises,
         shape_exercises,
     )
@@ -210,6 +214,18 @@ def validate_meta(meta: dict, source: str) -> None:
     if not isinstance(calculators, list) or set(calculators) - set(CALCULATORS):
         fail(f"unknown calculators {calculators}")
 
+    claims = meta.get("claims", [])
+    record_ids = {r["id"] for r in responsibilities.load().records}
+    if not isinstance(claims, list) or set(claims) - record_ids:
+        fail(f"claims must be record ids from responsibilities.yaml: {claims}")
+    if claims:
+        cat = responsibilities.load()
+        urls = {str(s["url"]) for s in meta["sources"]}
+        for claim in claims:
+            url = cat.sources[cat.record(claim)["source_reference"]]["url"]
+            if url not in urls:
+                fail(f"claim {claim}: its source {url} is not in the lesson's sources")
+
     ids = set()
     for ex in meta["exercises"]:
         if not {"exercise_id", "kind", "generator", "calculation_id"} <= set(ex):
@@ -219,6 +235,7 @@ def validate_meta(meta: dict, source: str) -> None:
             "settlement": settlement_exercises.GENERATORS,
             "basis": basis_exercises.GENERATORS,
             "shape": shape_exercises.GENERATORS,
+            "compliance": compliance_exercises.GENERATORS,
         }.get(ex["kind"], GENERATORS)
         if ex["kind"] not in EXERCISE_KINDS or ex["generator"] not in known:
             fail(f"exercise {ex['exercise_id']}: bad kind or unknown generator")
@@ -228,6 +245,10 @@ def validate_meta(meta: dict, source: str) -> None:
             fail(f"exercise {ex['exercise_id']}: basis exercises need the calculator")
         if ex["kind"] == "shape" and "time_shape" not in calculators:
             fail(f"exercise {ex['exercise_id']}: shape exercises need the calculator")
+        if ex["kind"] == "compliance":
+            cited = set(compliance_exercises.SPECS[ex["generator"]].records)
+            if cited - set(claims):
+                fail(f"exercise {ex['exercise_id']}: cites records not in claims {sorted(cited)}")
         if ex["kind"] == "model":
             needed = set(model_exercises.REQUIRES[ex["generator"]]) - set(bindings)
             if needed:
