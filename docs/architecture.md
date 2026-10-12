@@ -62,6 +62,17 @@ mambo collect --EIAClient--> api.eia.gov (key in URL; never logged)
 Explore page --DuckDB (UTC, no extension downloads)--> `latest` view over committed files only
 ```
 
+## Modeling (Stage 6, ADR 0006)
+
+```
+src/mambo_explorer/
+  modeling/teaching_network.py  SYNTHETIC 3-bus network, bounded inputs, topology tables
+  modeling/adapter.py           Only caller of mambo-power (pf.solve_dc); independent checks;
+                                status ok / ok_with_violations / failed; provenance incl. commit
+  modeling/runs.py              Run records in <MAMBO_DATA_DIR>/model-runs/ (atomic, never overwritten)
+  model_lab.py                  Model Labs page; results hidden when inputs change
+```
+
 ## ERCOT direct connector (Stage 5, ADR 0005)
 
 ```
@@ -114,7 +125,7 @@ tests/guards.py              Fake-result guards, keyed to features.yaml status
 |-----------|----------------|---------|-------|
 | Connectors | One module per source | DATA-02..03 | EIA-930 built (DATA-01 in progress, live unverified); ERCOT next (R-29) |
 | Content | Markdown lessons with effective-dated front matter | LEARN-01..02, COMP-01 | PRD P-4 |
-| Model adapter | Validated interface to mambo-power | MODEL-01 | PRD P-5, U-2 |
+| Model adapter | Further mambo-power capabilities (OPF, markets) | MODEL-01 | DC power flow done (ADR 0006); OPF needs independent verification (BL-2) |
 | Replay | Assembles one operating day from stored observations | REPLAY-01 | |
 | Finance | Contract and risk education/analysis | FIN-01..02 | |
 | Health | Job status, freshness, storage, versions | HEALTH-01 | |

@@ -54,6 +54,11 @@ non-trivial work.
   - Never convert ERCOT OperDay/HourEnding to UTC.
 - Browser checks: record the PIDs of Streamlit processes before starting servers, and
   kill only the ones you started. Verify zero remain at the end.
+- mambo-power is used only through `modeling/adapter.py`, pinned to a full commit
+  (ADR 0006).
+  - Expose a capability only after independent benchmarks.
+  - Never call OPF duals LMPs until verified (capability register).
+  - Never modify the package repository.
 - Lessons follow `docs/lesson-authoring.md`.
   - Never mark content `human-reviewed` unless a named person reviewed it.
   - Never hardcode current data in lesson text.

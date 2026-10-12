@@ -22,18 +22,26 @@ DIRECT = {
     "pyyaml": "runtime",
     "duckdb": "runtime",
     "pyarrow": "runtime",
+    "mambo-power": "runtime",
     "pytest": "dev",
     "ruff": "dev",
 }
 
 # Human review: the license file shipped in the installed wheel was opened and read.
 REVIEWED = {
+    "mambo-power": "Repository LICENSE at commit 26be8c1 read 2026-10-11: MIT "
+    "(Copyright 2026 Manho Joung).",
     "pyyaml": "Shipped LICENSE read 2026-10-11: MIT permission text.",
     "pytest": "Shipped LICENSE read 2026-10-11: MIT License text.",
     "ruff": "Shipped LICENSE read 2026-10-11: MIT for Ruff plus bundled third-party "
     "notices (430 lines) not individually reviewed.",
     "streamlit": "UNRESOLVED: wheel ships no license file; metadata only. Upstream "
     "repository LICENSE not yet checked.",
+}
+
+# Where metadata has no project URL and the PyPI fallback would be wrong.
+SOURCE_OVERRIDES = {
+    "mambo-power": "https://github.com/mambo10005/mambo-power (git, commit 26be8c1)",
 }
 
 SOURCE_KEYS = ("source", "source code", "repository", "github", "code", "homepage")
@@ -78,6 +86,9 @@ def _license(dist: Distribution) -> tuple[str, bool]:
 
 
 def _source(dist: Distribution) -> str:
+    name = _norm(dist.metadata["Name"])
+    if name in SOURCE_OVERRIDES:
+        return SOURCE_OVERRIDES[name]
     urls = {}
     for entry in dist.metadata.get_all("Project-URL") or []:
         label, _, url = entry.partition(",")

@@ -90,7 +90,12 @@ features:
   - id: MODEL-01
     name: "Validated mambo-power adapter"
     section: model-labs
-    status: planned
+    status: in-progress
+  - id: MODEL-02
+    name: "DC power flow teaching lab (synthetic 3-bus network)"
+    section: model-labs
+    status: done
+    ui: true
   - id: FIN-01
     name: "Financial and long-term contract library"
     section: finance

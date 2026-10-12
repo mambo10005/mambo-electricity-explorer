@@ -4,10 +4,11 @@ A local-first, novice-oriented platform for learning and analyzing the U.S.
 electricity system from actual observations and reproducible modeling. See
 [docs/PRD.md](docs/PRD.md).
 
-**Status:** Stage 5. The application shell, the quality workflow, ERCOT's hourly actual
+**Status:** Stage 6. The application shell, the quality workflow, ERCOT's hourly actual
 demand and published day-ahead forecast (EIA-930) in a local store and on the Explore
 page, four beginner lessons on the Learn page that use those observations, and a direct
-ERCOT connector (actual load by weather zone) shown separately on Explore. Navigation and documentation
+ERCOT connector (actual load by weather zone) shown separately on Explore, and a Model Labs
+DC power flow lab on a synthetic three-bus network using mambo-power (pinned commit). Navigation and documentation
 exist. Modeling and the finance and compliance features are **not implemented**,
 and every section except Explore shows only its planned scope. One bounded live
 collection (7 days + 2-day lookback, 5 requests) was verified on 2026-10-11. The test
@@ -91,6 +92,21 @@ days public. The data is stored separately from EIA in
 Units and time zone are not stated by ERCOT, so they are shown as published. See
 `docs/datasets/ercot-np6-345-cd.md`.
 
+### Model Labs (no data or key needed)
+
+**Model Labs** runs a DC power flow on a **synthetic** three-bus network with
+[mambo-power](https://github.com/mambo10005/mambo-power), pinned to the v0.2.0 commit
+`26be8c1`. You set:
+- G2's output
+- the demand at bus C
+- line AC's reactance and whether it is in service
+
+Results are labeled *modeled* and are checked independently. They are shown only while
+they match the current inputs. Runs are saved to `<MAMBO_DATA_DIR>/model-runs/`
+(gitignored).
+
+Only DC power flow is verified and exposed. See `docs/capability-register.md`.
+
 ## 4. Learn
 
 The **Learn** page has four beginner lessons:
@@ -148,6 +164,8 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Source register](docs/source-register.md) | Data source access and licensing review |
 | [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
 | [ERCOT NP6-345-CD contract](docs/datasets/ercot-np6-345-cd.md) | Direct ERCOT report: schema, units, time and DST fields |
+| [mambo-power capability register](docs/capability-register.md) | What is documented vs. inspected vs. verified vs. exposed |
+| [Backlog](docs/backlog.md) | Recorded, unscheduled tasks (e.g. ERCOT DST validation) |
 | [Lesson authoring](docs/lesson-authoring.md) | Lesson schema, review rules, and checks |
 | [Dependency licenses](docs/dependency-licenses.md) | Generated license inventory of locked packages |
 | [Progress](docs/progress.md) | Running log of work |
