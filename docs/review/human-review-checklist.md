@@ -1,6 +1,6 @@
-# Human-review checklist: lessons 1–9 and the glossary
+# Human-review checklist: lessons 1–10 and the glossary
 
-**Status: not reviewed by a person.** All nine lessons, the glossary, and the exercise
+**Status: not reviewed by a person.** All ten lessons, the glossary, and the exercise
 wording were drafted by an AI agent (Claude). This checklist was also prepared by the
 agent; it lists what a reviewer should check and the potential issues the agent noticed.
 It is **not** a review. BL-3 stays open until a named person completes it.
@@ -210,11 +210,28 @@ Copy this block for each item you review. Leave fields blank until they are true
   4. "A financial position with no energy" (Q = 0, H > 0): confirm the wording does not
      imply advice or a legal classification.
 
+## Lesson 10 — Why matching total energy does not remove shape exposure · `shape-exposure` · v1.0.0
+
+- Calculator: `time_shape` v1.0.0 (`shape.py`); synthetic interval scenarios, editable
+  intervals, no model prices.
+- Sources: `eia-texas-heat-wave-2011` (EIA Today in Energy, 2011-09-09; agent-checked
+  2026-10-11).
+- Exercises: `interval-status`, `shape-component`, `mw-vs-mwh`, `profile-compare`,
+  `negative-receipt` (shape; answers from the calculator's current inputs).
+- Agent-noticed items:
+  1. Confirm the paraphrase of the EIA article: a 16-hour weekday on-peak block in ERCOT in
+     August 2011, afternoon super-peak hours far above morning hours, and block prices
+     averaging high and low hours. It is context only; none of its numbers are used.
+  2. The "time-shape component" is the app's accounting split with a duration-weighted p̄.
+     Confirm that the lesson says it is not a standard industry metric.
+  3. The FERC glossary (used in lesson 9) showed a human-verification page on 2026-10-11 and
+     was not re-checked for this lesson.
+
 ---
 
 ## Glossary (`src/mambo_explorer/content/glossary.yaml`)
 
-45 terms. Check each definition for accuracy, beginner readability, and consistency with
+48 terms. Check each definition for accuracy, beginner readability, and consistency with
 the lessons that use it.
 
 - [ ] Observation terms: Absent row, BA, Day-ahead demand forecast, Demand, EIA, EIA-930,
@@ -224,6 +241,7 @@ the lessons that use it.
       Price exposure, Two-settlement system, Volume exposure.
 - [ ] Basis terms (lesson 9): Basis, Fixed-for-floating hedge, Quantity mismatch,
       Reference location.
+- [ ] Shape terms (lesson 10): Flat-block hedge, Load shape, Time-shape component.
 - [ ] Model terms: Average change rate, Binding constraint, Breakpoint, Congestion, Cost rate,
       Dispatch, Line rating, Line-limit sensitivity, Marginal cost, Modeled, Modeled nodal
       price, Offer, Optimal power flow, Power flow, Reference bus, Synthetic.

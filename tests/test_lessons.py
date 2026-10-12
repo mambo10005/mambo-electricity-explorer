@@ -14,6 +14,7 @@ EXPECTED = [
     "unverified-marginal",
     "energy-settlement",
     "basis-exposure",
+    "shape-exposure",
 ]
 # Two tracks share the first lesson: observations (2-4) and market mechanics (5-7).
 PREREQUISITES = {
@@ -26,15 +27,18 @@ PREREQUISITES = {
     "unverified-marginal": ["location-prices"],
     "energy-settlement": ["power-vs-energy"],
     "basis-exposure": ["location-prices", "energy-settlement"],
+    "shape-exposure": ["power-vs-energy", "basis-exposure"],
 }
 # Lessons outside the observation track and their exact cited sources.
 OTHER_SOURCES = {
     "energy-settlement": {"iso-ne-da-rt-markets", "iso-ne-da-energy-bill", "iso-ne-rt-energy-bill"},
     "basis-exposure": {"ferc-glossary"},
+    "shape-exposure": {"eia-texas-heat-wave-2011"},
 }
 OTHER_URL_PREFIX = {
     "energy-settlement": "https://www.iso-ne.com/",
     "basis-exposure": "https://www.ferc.gov/",
+    "shape-exposure": "https://www.eia.gov/",
 }
 MODEL_LESSONS = ["pf-vs-dispatch", "location-prices", "unverified-marginal"]
 MODEL_SOURCES = {"location-prices": {"pjm-manual-11"}}
@@ -76,7 +80,7 @@ More text.
 """
 
 
-def test_nine_lessons_load_in_order_with_valid_prerequisites():
+def test_ten_lessons_load_in_order_with_valid_prerequisites():
     lessons = load_lessons()
     assert [le.id for le in lessons] == EXPECTED
     assert {le.id: le.meta["prerequisites"] for le in lessons} == PREREQUISITES

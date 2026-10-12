@@ -4,7 +4,7 @@ Status key: `planned` · `in-progress` · `done` · `dropped`
 
 The source of truth is `src/mambo_explorer/content/features.yaml`.
 `tests/test_feature_status.py` fails if this table and that file disagree on
-IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, and FIN-04 are pages (`ui: true`
+IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, and FIN-05 are pages (`ui: true`
 in the YAML), so Explore, Learn, and Model Labs are the only sections allowed to show charts. Done backend features (DATA-01, STORE-01/02)
 do not unlock charts on Sources or System Health.
 
@@ -42,5 +42,6 @@ do not unlock charts on Sources or System Health.
 | FIN-02 | Hedging, basis/shape risk, settlement, credit, collateral | finance | planned | |
 | FIN-03 | Introductory energy-settlement calculator and lesson (synthetic, teaching formula) | finance | done | Stage 11: `settlement.py`, Finance page, lesson 8; ISO-NE two-settlement concept only; not an invoice or market engine (ADR 0009). Futures, options, PPAs, hedging, credit, and collateral remain planned |
 | FIN-04 | Basis exposure with a simplified fixed-price hedge: cash-flow calculator and lesson (synthetic) | finance | done | Stage 12: `basis.py`, Finance page, lesson 9; a simplified hedge cash-flow exercise only, not a forward, swap, future, or PPA implementation (ADR 0010) |
+| FIN-05 | Time-shape exposure under a flat-block hedge: multi-interval cash-flow calculator and lesson (synthetic) | finance | done | Stage 13: `shape.py`, Finance page, lesson 10; a teaching cash-flow exercise only, not an exchange block product, forward curve, or valuation (ADR 0011) |
 | COMP-01 | Regulatory authorities and effective-dated rules | compliance | planned | U-8 |
 | PUB-01 | Optional static public publication | platform | planned | Not authorized; U-1, U-4 |

@@ -24,6 +24,7 @@ DONE_FEATURES = {
     "LEARN-04",
     "FIN-03",
     "FIN-04",
+    "FIN-05",
     "CALC-01",
     "STORE-01",
     "STORE-02",

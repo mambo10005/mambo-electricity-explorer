@@ -66,7 +66,7 @@ def _answer(at: AppTest, form_index: int, option: str) -> AppTest:
     return at.run(timeout=30)
 
 
-def test_lesson_list_shows_nine_lessons_in_order(data_dir):
+def test_lesson_list_shows_ten_lessons_in_order(data_dir):
     at = AppTest.from_string(LEARN).run(timeout=30)
     assert not at.exception
     assert at.radio(key="lesson_choice").options == [
@@ -79,9 +79,10 @@ def test_lesson_list_shows_nine_lessons_in_order(data_dir):
         "7. When one marginal number is not verified",
         "8. From scheduled energy to settlement",
         "9. Why a hedge at another location leaves basis exposure",
+        "10. Why matching total energy does not remove shape exposure",
     ]
     status = _table(at, "Status")
-    assert list(status["Status"]) == ["viewed"] + ["not started"] * 8
+    assert list(status["Status"]) == ["viewed"] + ["not started"] * 9
     assert "Not yet reviewed by a person" in _text(at)
 
 

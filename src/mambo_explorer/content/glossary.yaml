@@ -199,3 +199,18 @@ terms:
     definition: >-
       The difference between the energy actually bought and the hedge quantity.
       Any mismatch stays exposed to the reference price.
+  # Shape lesson (Stage 13). Same status: agent-drafted, not human-reviewed.
+  - term: Flat-block hedge
+    definition: >-
+      In this app's teaching scenario, a financial hedge with the same power
+      (MW) in every interval. Its energy in an interval is that power times the
+      interval's duration. It moves money, not electricity.
+  - term: Load shape
+    definition: >-
+      How a buyer's energy use is spread across the intervals of a period, for
+      example more in the afternoon than in the morning.
+  - term: Time-shape component
+    definition: >-
+      In this app's accounting split, the sum over intervals of the hedge
+      mismatch (MWh) times the interval price's difference from the
+      duration-weighted average price. Not a standard industry risk metric.

@@ -117,7 +117,10 @@ src/mambo_explorer/
   basis.py          Stage 12: basis-exposure teaching cash flows, decomposition,
                     same-run modeled price pairs (ADR 0010)
   basis_ui.py, basis_exercises.py  calculator (Finance, lesson 9) and exercises
-  finance.py        Finance page (FIN-03, FIN-04 only)
+  shape.py          Stage 13: flat-block hedge time-shape cash flows, two decompositions,
+                    predefined synthetic scenarios (ADR 0011)
+  shape_ui.py, shape_exercises.py  accessible interval editor/viewer and exercises
+  finance.py        Finance page (FIN-03, FIN-04, FIN-05 only)
   model_exercises.py  Stage 8: exercise answers from verified model records; snapshot
                     = inputs, pin, check versions, statuses; result refs = run ids
   model_lessons.py  Stage 8: lesson model section (explicit run button, panels,

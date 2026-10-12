@@ -2,6 +2,39 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 13: time-shape exposure under a flat-block hedge (#25)
+
+Stacked on Stage 12 (PR #24) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
+`data/` and progress unchanged (gate check).
+
+- **Context sourced** from EIA's 2011 Texas heat-wave article (a 16-hour on-peak block whose
+  afternoon hours traded far above its morning hours; block prices average both). FERC's
+  glossary showed a human-verification page and was not used.
+- **Calculation `time_shape` v1.0.0** (ADR 0011): per-interval physical q·p, hedge receipt
+  B·d·(p − K), net; totals Σh·K + Σr·p = B·D·K + R·p̄ + Σ r(p − p̄) with duration-weighted
+  p̄. Both decompositions computed independently and checked; verified on a 432-point grid.
+  Ten hand-derived benchmarks, including the required case (net 11,000 = 8,000 + 0 +
+  3,000), the reversed shape (−3,000), equal totals with a non-zero residual, and unequal
+  durations (p̄ = 50, not 40).
+- **Lesson 10** and a Finance section (FIN-05). Accessible interval editor (choose an
+  interval, edit its numbers; add or remove intervals), narrow one-interval viewer, and the
+  wide table in an expander. No model prices; no calendars or DST. Block products, forward
+  curves, and valuation remain unimplemented.
+- **Browser:**
+  - the default scenario rendered the required benchmark;
+  - choosing t2 by typing and entering 100 MWh by keyboard gave 7,000 = 8,000 − 2,500 + 1,500,
+    labeled "edited from synthetic scenario peaky v1.0.0";
+  - a 0 h duration showed the error and no shape tables;
+  - "Add an interval" by keyboard added t3;
+  - focus ring on every Finance control ≥ 3.28 (light) / ≥ 4.03 (dark);
+  - at 375 px only the all-columns table (in its "scrolls sideways" expander) scrolls inside
+    its box, with no page overflow;
+  - 200% zoom fine;
+  - a lesson 10 exercise answered by keyboard.
+
+  Owned PIDs only; all stopped; real data and progress unchanged.
+- **Tests:** 603 passed, 1 skipped on CPython 3.11.16 and 3.14.2; gate 9/9.
+
 ## 2026-10-11 — Stage 12: locational basis exposure and a simplified hedge (#23)
 
 Stacked on Stage 11 (PR #22) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
