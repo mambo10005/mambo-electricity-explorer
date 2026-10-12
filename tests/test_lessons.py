@@ -4,7 +4,26 @@ import pytest
 
 from mambo_explorer.lessons import LessonError, load_glossary, load_lessons, parse_lesson
 
-EXPECTED = ["power-vs-energy", "reading-demand", "demand-vs-forecast", "missing-observations"]
+EXPECTED = [
+    "power-vs-energy",
+    "reading-demand",
+    "demand-vs-forecast",
+    "missing-observations",
+    "pf-vs-dispatch",
+    "location-prices",
+    "unverified-marginal",
+]
+# Two tracks share the first lesson: observations (2-4) and market mechanics (5-7).
+PREREQUISITES = {
+    "power-vs-energy": [],
+    "reading-demand": ["power-vs-energy"],
+    "demand-vs-forecast": ["reading-demand"],
+    "missing-observations": ["demand-vs-forecast"],
+    "pf-vs-dispatch": ["power-vs-energy"],
+    "location-prices": ["pf-vs-dispatch"],
+    "unverified-marginal": ["location-prices"],
+}
+MODEL_LESSONS = ["pf-vs-dispatch", "location-prices", "unverified-marginal"]
 VALID = """---
 lesson_id: sample
 title: Sample
@@ -43,12 +62,10 @@ More text.
 """
 
 
-def test_four_lessons_load_in_order_with_valid_prerequisites():
+def test_seven_lessons_load_in_order_with_valid_prerequisites():
     lessons = load_lessons()
     assert [le.id for le in lessons] == EXPECTED
-    assert lessons[0].meta["prerequisites"] == []
-    for earlier, later in zip(lessons, lessons[1:], strict=False):
-        assert earlier.id in later.meta["prerequisites"]
+    assert {le.id: le.meta["prerequisites"] for le in lessons} == PREREQUISITES
 
 
 def test_shipped_lessons_are_not_labeled_human_reviewed():
@@ -64,6 +81,8 @@ def test_lessons_declare_required_fields_and_sources():
         meta = lesson.meta
         assert re.fullmatch(r"\d+\.\d+\.\d+", str(meta["content_version"]))
         assert all(s["url"].startswith("https://www.eia.gov/") for s in meta["sources"])
+        # Model lessons cite no external source: their numbers come only from model runs.
+        assert bool(meta["sources"]) != (lesson.id in MODEL_LESSONS), lesson.id
         assert meta["exercises"] and meta["limitations"] and meta["objectives"]
         if any(e["kind"] == "data" for e in meta["exercises"]):
             assert meta["dataset_bindings"][0]["entity"] == "ERCO"

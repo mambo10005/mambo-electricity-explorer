@@ -10,25 +10,10 @@ from __future__ import annotations
 import streamlit as st
 
 from mambo_explorer.modeling import adapter
+from mambo_explorer.modeling import cases as mc
 from mambo_explorer.modeling import opf_network as on
 
-CASES = {
-    "congested": ("Congested line (default)", {}),
-    "uncongested": ("Uncongested: cheapest generator serves everything", {"rating_ac": 300.0}),
-    "capacity": ("Cheap generator hits its capacity", {"cap_g1": 100.0, "rating_ac": 300.0}),
-    "breakpoint": (
-        "Breakpoint: demand exactly equals the cheap generator's capacity",
-        {"cap_g1": 150.0, "rating_ac": 300.0},
-    ),
-    "equal": (
-        "Equal offers: more than one cheapest dispatch",
-        {"cost_g2": 20.0, "rating_ac": 300.0},
-    ),
-    "infeasible": (
-        "Infeasible: not enough capacity",
-        {"cap_g1": 100.0, "cap_g2": 50.0, "load_c": 200.0, "rating_ac": 300.0},
-    ),
-}
+CASES = mc.LAB_CASES  # shared with the lessons (modeling/cases.py)
 LABELS = {
     # Widget labels keep a plain "$": a single "$" cannot open a LaTeX span, and Streamlit
     # copies the raw label into aria-label, so an escape would be read aloud as "\$".
@@ -47,11 +32,14 @@ STATUS = {
 }
 
 
-def _apply_case() -> None:
-    """Preset callback: runs before the rerun, so the sliders can still be set."""
-    overrides = CASES[st.session_state["opf_case"]][1]
-    for name, (_, _, default, _) in on.BOUNDS.items():
-        st.session_state[f"opf_{name}"] = float(overrides.get(name, default))
+def apply_case(key: str | None = None) -> None:
+    """Set the sliders to a preset. As the selector's callback it runs before the rerun;
+    a Learn link calls it before any widget is drawn. Either way the sliders can be set."""
+    key = key or st.session_state["opf_case"]
+    st.session_state["opf_case"] = key
+    values = mc.case_inputs(key)
+    for name in on.BOUNDS:
+        st.session_state[f"opf_{name}"] = float(getattr(values, name))
 
 
 def _inputs() -> on.OpfInputs:
@@ -60,7 +48,7 @@ def _inputs() -> on.OpfInputs:
         list(CASES),
         format_func=lambda k: CASES[k][0],
         key="opf_case",
-        on_change=_apply_case,
+        on_change=apply_case,
     )
     values = {}
     for name, (low, high, default, step) in on.BOUNDS.items():

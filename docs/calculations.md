@@ -149,3 +149,47 @@ this convex LP; feasibility alone would not prove optimality.
 | E breakpoint (cap 150 = demand) | 150/0 | 3000 | withheld: up 30, down 20 at every bus |
 | E2 AC exactly at limit (demand 120) | 120/0 | 2400 | withheld: B up 30/down 20; C up 40/down 20 |
 | E3 equal offers | one optimal vertex | 3000 | 20/20/20 (dispatch not unique) |
+
+## Lesson model runs and model-backed exercises — Stage 8
+
+Lessons 5–7 use **fixed, predefined runs** (`modeling/cases.LESSON_RUNS`), never sweeps
+or learner-typed values. Each run starts from an economic-dispatch lab preset
+(`LAB_CASES`) and may override fixed inputs. All of them go through the verified
+adapter: `run_dc_opf` (Stage 7 checks) or `run_dispatch_power_flow` (Stage 6 power-flow
+checks at a specified dispatch on the same network).
+
+| Run | Kind | Inputs beyond the defaults | Hand-derived result |
+|---|---|---|---|
+| uncongested | OPF | AC rating 300 | 150/0 MW, 3,000 $/h, prices 20 |
+| uncongested-plus10 | OPF | + demand 160 | 160/0 MW (G1 serves the increment) |
+| congested | OPF | — | 90/60 MW, 3,600 $/h, prices 20/30/40, AC sensitivity −40 |
+| congested-plus10 | OPF | demand 160 | AC = 80 − g2/4 ≤ 60 → 80/80 MW, 4,000 $/h (ΔG1 −10, ΔG2 +20) |
+| relaxed | OPF | AC rating 70 | 70 = 75 − g2/4 → 130/20 MW, 3,200 $/h = 3,600 − 40 × 10 |
+| pf-no-limit-cheapest | PF | congested; G2 from the verified uncongested run | AC flow 75 MW > 60 (reported violation) |
+| pf-chosen | PF | congested; G2 = 90 | within limits; 20 × 60 + 30 × 90 = 3,900 $/h |
+| breakpoint, ac-at-limit, capacity-edge, equal, infeasible | OPF | lab presets | see the Stage 7 table; capacity-edge (100 + 50 = 150 MW): +0.1 MW infeasible, −0.1 MW at 30 |
+
+The cost rate of a power-flow dispatch (`adapter.linear_cost_rate`) is Σ offer × MW,
+the same formula as the verified OPF objective.
+
+**When a stored result counts as current** (`cases.is_current`): same kind, scenario id
+and version, the installed package matches the pin, and the input fingerprint equals
+what the case gives now. A PF run that takes G2 from an OPF run is current only while
+that source is current and gives the same G2. Anything else is hidden and must be run
+again. Runs happen only on the lesson's button.
+
+**Exercise answers** (`model_exercises.py`, generator v1.0.0) are built only from current
+records:
+- The **snapshot** hashes the generator version, `adapter.CHECKS_VERSION`, the price-check
+  step and tolerance, and for each run: kind, scenario, input fingerprint, status, price
+  status, dispatch uniqueness, and package version, commit, and highspy version.
+- The **result references** are the run ids. They are saved with the answer in local
+  progress, and the runs are in the local model-run store, never in observation storage.
+- A required run that is missing, stale, or failed makes the exercise **unavailable**,
+  and any earlier verdict for it is cleared.
+- Generators re-check what they rely on: the binding set is unchanged across a
+  relaxation or a +10 MW step; the re-dispatch reproduces the verified price at C within
+  1e-4; the cost change equals sensitivity × rating change within 1e-4.
+
+Tests: `tests/test_model_lessons.py` (benchmarks, answers, snapshots, invalidation,
+failures, progress) and `tests/test_model_lessons_ui.py` (AppTest).

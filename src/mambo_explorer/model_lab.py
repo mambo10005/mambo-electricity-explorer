@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import streamlit as st
 
+from mambo_explorer import routes
 from mambo_explorer.config import ConfigError, load_settings
 from mambo_explorer.modeling import adapter
+from mambo_explorer.modeling import cases as mc
 from mambo_explorer.modeling import teaching_network as tn
 from mambo_explorer.modeling.runs import RunStore
 from mambo_explorer.navigation import section_by_key
@@ -149,6 +151,25 @@ LABS = {
     "pf": "DC power flow (you set the dispatch)",
     "opf": "Economic dispatch: DC optimal power flow (the model chooses the dispatch)",
 }
+# Lessons that use each lab (lesson ids, validated against the lesson list when drawn).
+RELATED_LESSONS = {
+    "pf": ["pf-vs-dispatch"],
+    "opf": ["pf-vs-dispatch", "location-prices", "unverified-marginal"],
+}
+
+
+def _related_lessons(lab: str) -> None:
+    from mambo_explorer.lessons import load_lessons
+
+    by_id = {lesson.id: lesson for lesson in load_lessons()}
+    lessons = [by_id[i] for i in RELATED_LESSONS[lab] if i in by_id]
+    if not lessons:
+        return
+    st.header("Related lessons")
+    for lesson in lessons:
+        if st.button(f"Open lesson: {lesson.title}", key=f"lessonlink::{lab}::{lesson.id}"):
+            st.session_state[routes.HANDOFF_LESSON] = lesson.id
+            routes.go("learn", "Learn")
 
 
 def render_model_lab() -> None:
@@ -160,13 +181,21 @@ def render_model_lab() -> None:
     except ConfigError as exc:
         st.error(f"Unsafe data directory configuration: {exc}. Runs cannot be saved.")
         runs = None
+    case = st.session_state.pop(routes.HANDOFF_LAB_CASE, None)
+    if case in mc.LAB_CASES:  # from a lesson link; validated against the preset list
+        from mambo_explorer.opf_lab import apply_case
+
+        st.session_state["lab_choice"] = "opf"
+        apply_case(case)
+        st.session_state.pop("opf_last_run", None)
     lab = st.radio("Lab", list(LABS), format_func=LABS.get, key="lab_choice")
     if lab == "opf":
         from mambo_explorer.opf_lab import render_opf_lab
 
         render_opf_lab(runs)
-        return
-    _render_pf_lab(runs)
+    else:
+        _render_pf_lab(runs)
+    _related_lessons(lab)
 
 
 def _render_pf_lab(runs) -> None:

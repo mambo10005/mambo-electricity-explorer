@@ -82,3 +82,65 @@ terms:
     definition: >-
       A later published value for the same series and period. This app keeps
       every revision and uses the latest one.
+  # Market-mechanics lessons (Stage 8). Same status: agent-drafted, not human-reviewed.
+  - term: Synthetic
+    definition: >-
+      Made up for teaching. A synthetic network or offer is not taken from any
+      real grid, generator, or market.
+  - term: Modeled
+    definition: >-
+      Computed by a model from stated inputs, not measured. Modeled values are
+      never presented as observations.
+  - term: Dispatch
+    definition: >-
+      How much each generator produces (in MW) during an interval.
+  - term: Power flow
+    definition: >-
+      A calculation of how power travels over the lines for a dispatch that is
+      given to it. It chooses nothing and enforces no limit; it reports flows,
+      including any above a line's rating.
+  - term: Optimal power flow
+    definition: >-
+      A calculation that chooses the dispatch: the lowest-cost one that meets
+      demand within every generator capacity and line rating in the model.
+  - term: Offer
+    definition: >-
+      In these lessons, a generator's synthetic cost per MWh of output (an
+      input you can change), not a real market bid.
+  - term: Line rating
+    definition: >-
+      The most power a line may carry in the model, in MW (the DC model uses
+      the MVA rating as a MW limit).
+  - term: Reference bus
+    definition: >-
+      The bus whose voltage angle is fixed at zero. In these lessons its
+      generator covers whatever the rest of the dispatch leaves.
+  - term: Cost rate
+    definition: >-
+      Σ offer × output, in synthetic $ per hour. Over a one-hour interval the
+      cost in $ has the same number, only because the interval is one hour.
+  - term: Binding constraint
+    definition: >-
+      A limit that the chosen dispatch sits exactly at, so relaxing it would
+      change the least-cost dispatch.
+  - term: Congestion
+    definition: >-
+      A situation where a line limit binds, so cheaper power cannot reach where
+      it is needed and dearer generation is used instead.
+  - term: Marginal cost
+    definition: >-
+      The change in total cost for one more unit, here one more MW of demand at
+      a bus over the interval.
+  - term: Modeled nodal price
+    definition: >-
+      In these lessons, the verified marginal cost of serving one more MW at a
+      bus under this lossless teaching model, in synthetic $ per MWh. Not an
+      actual ISO price.
+  - term: Line-limit sensitivity
+    definition: >-
+      The change in cost rate per extra MW of a line's rating, in synthetic $
+      per hour per MW. Zero unless the limit binds.
+  - term: Breakpoint
+    definition: >-
+      An operating point where a capacity or line limit is just reached, so
+      adding and removing demand change the cost at different rates.

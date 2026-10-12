@@ -1,4 +1,6 @@
-# The order in which a novice moves through the platform. Lesson content is not written yet.
+# The order in which a novice moves through the platform. Only the fundamentals stage has
+# lessons so far (content/lessons/): an observation track (2-4) and a market-mechanics
+# track on a synthetic model (5-7), both after lesson 1.
 stages:
   - key: fundamentals
     title: Fundamentals

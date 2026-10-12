@@ -21,9 +21,11 @@ reaching the app.
 | `reviewed_by`, `reviewed_at` | both `null` when unreviewed. When `human-reviewed`, a named person who is not the author and not an AI agent, plus a date. |
 | `sources` | `id`, `title`, `https` `url`, `accessed` date, for every source-derived statement |
 | `dataset_bindings` | `dataset`, `route`, `entity`, `metrics` for lessons that show observations |
-| `calculation_ids` | from `power_energy`, `series_summary`, `coverage`, `forecast_error` |
+| `calculation_ids` | from `power_energy`, `series_summary`, `coverage`, `forecast_error`, `dc_power_flow`, `dc_opf` |
 | `data_panels` | from `power_energy_example`, `demand_series`, `forecast_comparison`, `coverage` |
-| `exercises` | `exercise_id`, `kind` (`data` or `concept`), `generator` (from `exercises.GENERATORS`), and `calculation_id` (one the lesson declares). Data exercises require a dataset binding. |
+| `exercises` | `exercise_id`, `kind` (`data`, `concept`, or `model`), `generator` (from `exercises.GENERATORS`, or `model_exercises.GENERATORS` for `model`), and `calculation_id` (one the lesson declares). Data exercises require a dataset binding. A model exercise's required runs (`model_exercises.REQUIRES`) must all be in `model_bindings`. |
+| `model_bindings` | *optional* (default `[]`): keys of `modeling/cases.LESSON_RUNS`. A power-flow run that takes G2 from another run needs that run bound too. |
+| `model_panels` | *optional* (default `[]`): from `pf_vs_opf`, `location_prices`, `unverified_marginal`; requires `model_bindings` |
 | `glossary_terms` | terms defined in `content/glossary.yaml` |
 | `limitations` | non-empty list, shown at the end of the lesson |
 | `implementation_status` | `implemented` or `draft` |
@@ -51,7 +53,14 @@ beginner section by default and the technical section behind a toggle.
    `eia/dataset.INTERVAL_CONVENTION` is `None`.
 6. **No causal claims** (weather, customer sectors) unless the lesson binds data
    that supports them.
-7. New calculations go in `calculations.py` with tests and an entry in
+7. **Model lessons quote no results.** Dispatch, costs, prices, and sensitivities
+   appear only in panels and exercises computed from current, verified runs. A test
+   rejects the benchmark numbers in lesson prose. Model lessons cite no external
+   source (`sources: []`) and must not describe how any real operator or ISO works.
+8. **Escape nothing by hand.** The Learn page escapes `$` in lesson text, objectives,
+   limitations, glossary, questions, and explanations. Exercise options are radio
+   labels: keep at most one `$` in each, and no backslash.
+9. New calculations go in `calculations.py` with tests and an entry in
    `docs/calculations.md`. New exercise generators go in `exercises.py`, and they
    compute answers with those same calculations.
 

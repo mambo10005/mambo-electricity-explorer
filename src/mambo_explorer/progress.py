@@ -56,8 +56,18 @@ class Progress:
         self._lesson(data, lesson_id)["bookmarked"] = bool(on)
         self._save(data)
 
-    def record_answer(self, lesson_id: str, exercise_id: str, snapshot: str, correct: bool) -> dict:
-        """Record an attempt. A new snapshot starts a fresh question instance."""
+    def record_answer(
+        self,
+        lesson_id: str,
+        exercise_id: str,
+        snapshot: str,
+        correct: bool,
+        result_refs: tuple[str, ...] = (),
+    ) -> dict:
+        """Record an attempt. A new snapshot starts a fresh question instance.
+
+        `result_refs` are the model run ids a model-backed answer was computed from (kept with
+        the question instance so the answer can be traced to saved runs)."""
         data = self.load()
         exercises = self._lesson(data, lesson_id)["exercises"]
         record = exercises.get(exercise_id)
@@ -69,6 +79,8 @@ class Progress:
                 "answered_correctly": False,
                 "completed_at": None,
             }
+            if result_refs:
+                record["result_refs"] = list(result_refs)
             exercises[exercise_id] = record
         record["attempts"] += 1
         if record["first_attempt_correct"] is None:
