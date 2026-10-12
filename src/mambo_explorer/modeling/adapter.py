@@ -46,6 +46,7 @@ class RunRecord:
     input_fingerprint: str
     package: dict
     status: str
+    kind: str = "pf.dc"
     message: str | None = None
     solver: str | None = None
     elapsed_s: float | None = None
@@ -219,4 +220,396 @@ def run_dc_power_flow(inputs: tn.Inputs, solver=None) -> RunRecord:
     record.generators = [
         {"generator": g.id, "bus": g.bus, "output_mw": g.p_mw} for g in result.generators
     ]
+    return record
+
+
+# --- DC optimal power flow (Stage 7) -------------------------------------------------------
+#
+# Verified conventions (docs/calculations.md, "DC OPF"; tests/test_opf_benchmarks.py):
+# - objective_cost = Σ c1·p with c1 in $/MWh and p in MW, which is a cost RATE in $/h
+# - bus lmp = ∂(cost rate)/∂(demand at that bus), in $/MWh, checked by perturbation per run
+# - flow_limit_dual = ∂(cost rate)/∂(branch upper rating); ≤ 0 when the upper limit binds
+# - bound_dual = reduced cost of the generator bound; ≤ 0 at the upper bound, ≥ 0 at the lower
+
+OPF_TOL_MW = 1e-6  # HiGHS default primal feasibility tolerance is 1e-7 (MW model), plus headroom
+OPF_TOL_PRICE = 1e-6  # $/MWh, for the KKT stationarity check (dual feasibility tolerance 1e-7)
+OPF_TOL_COST_REL = 1e-9  # relative, on the cost rate
+PRICE_STEP_MW = 0.1  # one-sided finite-difference step for the per-run price check
+PRICE_FD_TOL = 1e-4  # $/MWh; a ±0.1 MW re-solve difference amplifies 1e-7-scale solver noise
+
+
+@dataclass
+class OpfRunRecord:
+    run_id: str
+    created_at_utc: str
+    scenario_id: str
+    scenario_version: str
+    inputs: dict
+    input_fingerprint: str
+    package: dict
+    status: str  # "optimal" | "infeasible" | "failed"
+    kind: str = "opf.dc"
+    solver_status: str | None = None
+    message: str | None = None
+    solver: str | None = None
+    interval_hours: float = 1.0
+    cost_rate_per_h: float | None = None
+    interval_cost: float | None = None
+    price_status: str = "not available"  # "verified" | "withheld" | "not available"
+    price_note: str | None = None
+    dispatch_unique: bool | None = None
+    dispatch_note: str | None = None
+    checks: list[dict] = field(default_factory=list)
+    dispatch: list[dict] = field(default_factory=list)
+    branches: list[dict] = field(default_factory=list)
+    prices: list[dict] = field(default_factory=list)
+    sensitivities: list[dict] = field(default_factory=list)
+
+    @property
+    def solved(self) -> bool:
+        return self.status == "optimal"
+
+    def to_json(self) -> str:
+        return json.dumps(asdict(self), indent=2, sort_keys=True)
+
+
+def _close(a: float, b: float, abs_tol: float, rel_tol: float = 0.0) -> bool:
+    return abs(a - b) <= abs_tol + rel_tol * max(abs(a), abs(b))
+
+
+def _linear_cost(generator) -> float:
+    coefficients = generator.cost.coefficients  # [c1, c0], highest order first
+    if len(coefficients) != 2 or coefficients[1] != 0.0:
+        raise ValueError("the teaching lab supports linear costs c1·p only")
+    return float(coefficients[0])
+
+
+def _opf_checks(net, result) -> list[Check]:
+    """Primal feasibility, recomputed flows and cost, and KKT conditions (linear costs)."""
+    gens = {g.id: g for g in result.generators}
+    spec = {g.id: g for g in net.generators}
+    lmp = {b.id: b.lmp for b in result.buses}
+    rows = {b.id: b for b in result.branches}
+    rating = {b.id: b.rating_mva for b in net.branches}
+    load = sum(ld.p_mw for ld in net.loads)
+    checks: list[Check] = [
+        Check("solver status", result.status == "Optimal", f"HiGHS model status {result.status!r}")
+    ]
+    values = [g.p_mw for g in gens.values()] + [b.p_from_mw for b in rows.values()]
+    values += list(lmp.values())
+    checks.append(
+        Check(
+            "finite results",
+            all(math.isfinite(v) for v in values),
+            "dispatch, flows, and prices finite",
+        )
+    )
+    gap = abs(sum(g.p_mw for g in gens.values()) - load)
+    checks.append(
+        Check(
+            "system balance",
+            gap <= OPF_TOL_MW,
+            f"generation − demand = {gap:.2e} MW (tolerance {OPF_TOL_MW} MW)",
+        )
+    )
+
+    # Flows recomputed with the separately verified DC power flow at the optimal dispatch.
+    from mambo_power.pf import solve_dc
+
+    dispatched = net.model_copy(
+        update={
+            "generators": [g.model_copy(update={"p_mw": gens[g.id].p_mw}) for g in net.generators]
+        }
+    )
+    pf = solve_dc(dispatched)
+    worst = max(abs(f.p_from_mw - rows[f.id].p_from_mw) for f in pf.branches)
+    pf_g1 = next(g.p_mw for g in pf.generators if g.id == "G1")
+    slack_gap = abs(pf_g1 - gens["G1"].p_mw)
+    checks.append(
+        Check(
+            "flows match DC power flow",
+            worst <= OPF_TOL_MW and slack_gap <= OPF_TOL_MW,
+            f"largest flow difference {worst:.2e} MW; reference-bus generator "
+            f"difference {slack_gap:.2e} MW",
+        )
+    )
+
+    bound_ok = all(
+        spec[g].p_min_mw - OPF_TOL_MW <= gens[g].p_mw <= spec[g].p_max_mw + OPF_TOL_MW for g in gens
+    )
+    checks.append(Check("generator bounds", bound_ok, "every dispatch within [min, max]"))
+    flow_ok = all(abs(rows[k].p_from_mw) <= rating[k] + OPF_TOL_MW for k in rows)
+    checks.append(Check("branch ratings", flow_ok, "every |flow| ≤ rating"))
+
+    cost = sum(_linear_cost(spec[g]) * gens[g].p_mw for g in gens)
+    checks.append(
+        Check(
+            "objective recomputed",
+            _close(cost, result.objective_cost, OPF_TOL_MW, OPF_TOL_COST_REL),
+            f"Σ c1·p = {cost:.6f} vs reported {result.objective_cost:.6f} $/h",
+        )
+    )
+
+    # KKT for the linear-cost LP: stationarity c1_g − price(bus_g) − bound_dual_g = 0, dual sign
+    # feasibility, and complementary slackness. Together with primal feasibility above, this
+    # certifies optimality of this convex LP within tolerance. Feasibility alone would not.
+    stat = max(abs(_linear_cost(spec[g]) - lmp[gens[g].bus] - gens[g].bound_dual) for g in gens)
+    checks.append(
+        Check(
+            "KKT stationarity",
+            stat <= OPF_TOL_PRICE,
+            f"max |c1 − price at bus − bound dual| = {stat:.2e} $/MWh",
+            kind="optimality",
+        )
+    )
+    complementary = True
+    for g in gens.values():
+        at_max = g.p_mw >= spec[g.id].p_max_mw - OPF_TOL_MW
+        at_min = g.p_mw <= spec[g.id].p_min_mw + OPF_TOL_MW
+        if (g.bound_dual > OPF_TOL_PRICE and not at_min) or (
+            g.bound_dual < -OPF_TOL_PRICE and not at_max
+        ):
+            complementary = False
+    for k, row in rows.items():
+        mu = row.flow_limit_dual
+        at_upper = row.p_from_mw >= rating[k] - OPF_TOL_MW
+        at_lower = row.p_from_mw <= -rating[k] + OPF_TOL_MW
+        if (mu < -OPF_TOL_PRICE and not at_upper) or (mu > OPF_TOL_PRICE and not at_lower):
+            complementary = False
+    checks.append(
+        Check(
+            "KKT sign and complementary slackness",
+            complementary,
+            "nonzero duals only on active bounds or limits, with the correct sign",
+            kind="optimality",
+        )
+    )
+
+    # Price decomposition at every bus (including buses without generators, which
+    # stationarity alone does not constrain): price_j = λ + Σ_k μ_k·PTDF[k, j], with the PTDF
+    # columns measured independently by the verified DC power flow (+1 MW of demand at bus j,
+    # absorbed by the reference bus, changes each flow by −PTDF[k, j]).
+    base_flows = {f.id: f.p_from_mw for f in pf.branches}
+    worst_price = 0.0
+    for bus in lmp:
+        bumped = dispatched.model_copy(
+            update={
+                "loads": [
+                    ld.model_copy(update={"p_mw": ld.p_mw + (1.0 if ld.bus == bus else 0.0)})
+                    for ld in dispatched.loads
+                ]
+            }
+        )
+        flows = {f.id: f.p_from_mw for f in solve_dc(bumped).branches}
+        expected = result.balance_dual + sum(
+            rows[k].flow_limit_dual * -(flows[k] - base_flows[k]) for k in rows
+        )
+        worst_price = max(worst_price, abs(lmp[bus] - expected))
+    checks.append(
+        Check(
+            "price decomposition at every bus",
+            worst_price <= OPF_TOL_PRICE,
+            f"max |price − (balance dual + Σ line dual × PTDF)| = {worst_price:.2e} $/MWh "
+            "(PTDF measured with the DC power flow)",
+            kind="optimality",
+        )
+    )
+    return checks
+
+
+def price_sensitivities(inputs, base_cost: float, solver, step_mw: float = PRICE_STEP_MW):
+    """One-sided ∂(cost rate)/∂(demand) at each bus, from re-solves at +step_mw and −step_mw.
+
+    Both sides are computed at every bus. At A and B (0 MW of demand) the downward
+    perturbation is a load of −step_mw. It is a mathematical perturbation for the check
+    only, never a learner input, and the package accepts it (validate_network: no issues).
+    """
+    from mambo_explorer.modeling import opf_network as on
+
+    out = []
+    for bus in ("A", "B", "C"):
+        sides: dict[str, float | None] = {}
+        for sign, label in ((1, "up"), (-1, "down")):
+            r = solver(on.build_network(inputs, extra_load_mw={bus: sign * step_mw}))
+            sides[label] = (
+                (r.objective_cost - base_cost) / (sign * step_mw) if r.status == "Optimal" else None
+            )
+        out.append({"bus": bus, "up_per_mwh": sides["up"], "down_per_mwh": sides["down"]})
+    return out
+
+
+def alternative_optimum(net, dispatch_mw: dict[str, float], step_mw: float = PRICE_STEP_MW) -> bool:
+    """True if shifting step_mw between two equal-offer generators stays feasible.
+
+    Moving output between generators with the same offer keeps the cost unchanged. If the
+    shifted dispatch also respects every bound and rating (checked with the verified DC power
+    flow), another dispatch is equally optimal, so this one is not unique.
+    """
+    from mambo_power.pf import solve_dc
+
+    spec = {g.id: g for g in net.generators}
+    rating = {b.id: b.rating_mva for b in net.branches}
+    ids = list(spec)
+    for i, a in enumerate(ids):
+        for b in ids[i + 1 :]:
+            if not _close(_linear_cost(spec[a]), _linear_cost(spec[b]), 1e-12):
+                continue
+            for sign in (1, -1):
+                shifted = {
+                    **dispatch_mw,
+                    a: dispatch_mw[a] + sign * step_mw,
+                    b: dispatch_mw[b] - sign * step_mw,
+                }
+                if any(not spec[g].p_min_mw <= shifted[g] <= spec[g].p_max_mw for g in shifted):
+                    continue
+                trial = net.model_copy(
+                    update={
+                        "generators": [
+                            g.model_copy(update={"p_mw": shifted[g.id]}) for g in net.generators
+                        ]
+                    }
+                )
+                pf = solve_dc(trial)
+                if all(abs(f.p_from_mw) <= rating[f.id] + OPF_TOL_MW for f in pf.branches):
+                    return True
+    return False
+
+
+def run_dc_opf(inputs, solver=None) -> OpfRunRecord:
+    """Run the economic-dispatch teaching scenario. `solver` replaces solve_dc_opf in tests."""
+    from mambo_explorer.modeling import opf_network as on
+
+    record = OpfRunRecord(
+        run_id=now_utc().strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8],
+        created_at_utc=now_utc().isoformat(),
+        scenario_id=on.SCENARIO_ID,
+        scenario_version=on.SCENARIO_VERSION,
+        inputs=inputs.snapshot(),
+        input_fingerprint=inputs.fingerprint(),
+        package=package_info(),
+        status="failed",
+        interval_hours=on.INTERVAL_HOURS,
+    )
+    try:
+        record.package["highspy"] = distribution("highspy").version
+    except PackageNotFoundError:
+        record.package["highspy"] = None
+    try:
+        net = on.build_network(inputs)
+        if solver is None:
+            from mambo_power.opf import solve_dc_opf as solver
+        result = solver(net)
+    except on.InputError as exc:
+        record.message = f"invalid input: {exc}"
+        return record
+    except Exception as exc:
+        record.message = f"solver error ({type(exc).__name__}): {exc}"
+        return record
+
+    record.solver_status = result.status
+    record.solver = result.provenance.solver
+    if result.status == "Infeasible":
+        record.status = "infeasible"
+        record.message = (
+            "No dispatch can meet the demand within the generator capacities and "
+            "line ratings. This model never sheds load automatically."
+        )
+        return record
+    if result.status != "Optimal":
+        record.message = f"solver status {result.status!r}: {result.message}"
+        return record
+
+    checks = _opf_checks(net, result)
+    record.checks = [asdict(c) for c in checks]
+    failed = [c.name for c in checks if not c.passed]
+    if failed:
+        record.message = "result failed checks: " + ", ".join(failed)
+        return record  # no outputs: an unverified result is never shown
+    record.status = "optimal"
+    record.cost_rate_per_h = result.objective_cost
+    record.interval_cost = result.objective_cost * on.INTERVAL_HOURS
+    spec = {g.id: g for g in net.generators}
+    rating = {b.id: b.rating_mva for b in net.branches}
+    record.dispatch = [
+        {
+            "generator": g.id,
+            "bus": g.bus,
+            "dispatch_mw": g.p_mw,
+            "energy_mwh": g.p_mw * on.INTERVAL_HOURS,
+            "offer_per_mwh": _linear_cost(spec[g.id]),
+            "at_capacity": g.p_mw >= spec[g.id].p_max_mw - OPF_TOL_MW,
+        }
+        for g in result.generators
+    ]
+    record.branches = [
+        {
+            "branch": b.id,
+            "from_bus": b.from_bus,
+            "to_bus": b.to_bus,
+            "flow_mw": b.p_from_mw,
+            "rating_mw": rating[b.id],
+            "binding": abs(abs(b.p_from_mw) - rating[b.id]) <= OPF_TOL_MW,
+            "limit_sensitivity_per_mw": b.flow_limit_dual,
+        }
+        for b in result.branches
+    ]
+
+    if alternative_optimum(net, {g.id: g.p_mw for g in result.generators}):
+        record.dispatch_unique = False
+        record.dispatch_note = (
+            "Generators with the same offer can trade output without changing "
+            "the cost or breaking a limit, so this is one optimal dispatch, "
+            "not the only one. The total cost and the prices do not depend "
+            "on which one the solver picks."
+        )
+    else:
+        record.dispatch_unique = True
+
+    # Prices are shown only if every bus's available one-sided sensitivities agree with each
+    # other and with the reported value. At a breakpoint they differ, and one dual cannot
+    # stand for both.
+    sens = price_sensitivities(inputs, result.objective_cost, solver)
+    record.sensitivities = sens
+    reported = {b.id: b for b in result.buses}
+    ambiguous, mismatch, unservable = [], [], []
+    for s in sens:
+        up, down = s["up_per_mwh"], s["down_per_mwh"]
+        if up is None or down is None:
+            unservable.append(s["bus"])  # a perturbed re-solve was infeasible
+        elif not _close(up, down, PRICE_FD_TOL):
+            ambiguous.append(s["bus"])
+        elif not _close(up, reported[s["bus"]].lmp, PRICE_FD_TOL):
+            mismatch.append(s["bus"])
+    if unservable:
+        record.price_status = "withheld"
+        record.price_note = (
+            f"At bus(es) {', '.join(unservable)}, slightly more or less demand cannot be met "
+            "within the limits, so the marginal cost is not finite on that side and no price "
+            "is shown."
+        )
+    elif ambiguous:
+        record.price_status = "withheld"
+        record.price_note = (
+            f"Breakpoint at bus(es) {', '.join(ambiguous)}: adding and removing "
+            "demand change the cost at different rates, so no single price "
+            "describes it. One-sided rates are shown instead."
+        )
+    elif mismatch:
+        record.price_status = "withheld"
+        record.price_note = (
+            f"The reported price at bus(es) {', '.join(mismatch)} did not match "
+            "the re-solve check (or could not be checked), so prices are not "
+            "shown."
+        )
+    else:
+        record.price_status = "verified"
+        record.prices = [
+            {
+                "bus": b.id,
+                "price_per_mwh": b.lmp,
+                "energy_per_mwh": b.energy,
+                "congestion_per_mwh": b.congestion,
+            }
+            for b in result.buses
+        ]
     return record

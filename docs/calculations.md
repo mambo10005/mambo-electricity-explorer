@@ -92,3 +92,60 @@ backtest.
 - snapshot stability and change
 - revision references through a real (synthetic-data) store, where the latest
   revision is used
+
+## DC OPF (economic dispatch), via mambo-power — Stage 7
+
+Formulation audit and decision: ADR 0007. Implementation: `modeling/adapter.run_dc_opf`.
+
+**Units and the duration convention**
+
+| Quantity | Unit | Where |
+|---|---|---|
+| Dispatch | MW | `dispatch_mw` |
+| Energy over the teaching interval | MWh = MW × 1 h | `energy_mwh` |
+| Offer (marginal cost) | synthetic $/MWh | `offer_per_mwh` (c1) |
+| Package objective Σ c1·p | synthetic **$/h** (a cost rate) | `cost_rate_per_h` |
+| Cost over the interval | synthetic $ = rate × 1 h | `interval_cost` |
+| Modeled nodal price | synthetic $/MWh = ∂(cost rate)/∂(demand MW) | `price_per_mwh` |
+| Line-limit sensitivity | synthetic $/h per MW of rating | `limit_sensitivity_per_mw` |
+
+The interval is exactly one hour by construction. The cost-rate and interval-cost
+numbers are equal for that reason only.
+
+**Per-run checks** (absolute tolerances 1e-6 MW and 1e-6 $/MWh, chosen above HiGHS's 1e-7
+feasibility tolerance; cost also uses a 1e-9 relative tolerance):
+1. Solver status is `Optimal`, and every value is finite.
+2. Σ dispatch = Σ demand.
+3. Flows equal a DC power flow at the dispatch (the verified Stage 6 path).
+4. Generator bounds and line ratings hold.
+5. Σ c1·p equals the reported objective.
+6. KKT stationarity: c1 − price(bus) − bound dual = 0 for every generator.
+7. Dual signs and complementary slackness.
+8. Price decomposition at every bus: price = λ + Σ μ·PTDF, with PTDF measured by the
+   DC power flow.
+
+Any failure gives `failed` with no outputs. Steps 1–8 together form a KKT certificate for
+this convex LP; feasibility alone would not prove optimality.
+
+**Price verification:**
+- Each run re-solves with ±0.1 MW of demand at every bus. A negative perturbation at a
+  0 MW bus is a mathematical check only, and the package accepts it.
+- Prices are shown only if the up and down rates agree within 1e-4 $/MWh with each other
+  and with the reported price. The finite-difference tolerance is looser because a
+  difference quotient over 0.1 MW amplifies 1e-7-scale solver noise.
+- Otherwise prices are withheld, with the reason (breakpoint, unservable perturbation, or
+  mismatch) and the one-sided rates.
+- Equal offers with feasible room to trade output mark the dispatch as non-unique. The
+  objective and prices are still valid.
+
+**Benchmarks** (`tests/test_opf_benchmarks.py`): derivations are in the module docstring.
+
+| Case | Dispatch (MW) | Cost rate ($/h) | Prices A/B/C ($/MWh) |
+|---|---|---|---|
+| A uncongested | G1 150, G2 0 | 3000 | 20/20/20 |
+| B G1 capacity 100 | 100/50 | 3500 | 30/30/30 |
+| C AC rating 60 | 90/60 | 3600 | 20/30/40 (AC dual −40 $/h per MW) |
+| D 150 MW capacity vs 200 MW demand | infeasible | — | — |
+| E breakpoint (cap 150 = demand) | 150/0 | 3000 | withheld: up 30, down 20 at every bus |
+| E2 AC exactly at limit (demand 120) | 120/0 | 2400 | withheld: B up 30/down 20; C up 40/down 20 |
+| E3 equal offers | one optimal vertex | 3000 | 20/20/20 (dispatch not unique) |

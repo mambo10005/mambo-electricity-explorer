@@ -142,5 +142,5 @@ Anything not listed is not implemented yet.
 | R-16/R-17 local, free | all | implemented: local files only, no accounts | `progress.py`, `config.py` |
 | R-20–R-24 stack and navigation | SHELL-01, STORE-01/02 | implemented | `tests/test_navigation.py` |
 | R-25/R-27/R-28 EIA first, source review, credentials | DATA-01 | implemented for EIA-930 region-data; publication review pending | source register, `tests/test_eia_client.py` |
-| R-9 modeling via a separately validated adapter | MODEL-01, MODEL-02 | partial: DC power flow on a synthetic network, independently benchmarked | ADR 0006, `docs/capability-register.md`, `tests/test_modeling.py` |
+| R-9 modeling via a separately validated adapter | MODEL-01, MODEL-02, MODEL-03 | partial: DC power flow and linear-cost DC OPF on synthetic networks, independently benchmarked | ADR 0006, `docs/capability-register.md`, `tests/test_modeling.py` |
 | R-29 ERCOT first operator | DATA-04, EXPLORE-03 | partial: NP6-345-CD actual load by weather zone, public download | ADR 0005, `tests/test_ercot.py`, source register |
