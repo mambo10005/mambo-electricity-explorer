@@ -1,0 +1,64 @@
+/* Keyboard focus indicator (Stage 10; docs/accessibility.md, ADR 0008).
+ *
+ * Streamlit 1.65 has no theme option for focus. Its built-in ring is the primary color at
+ * 50% alpha (about 1.8-2.1:1 against the page). This file adds one solid outline for
+ * keyboard focus only (:focus-visible). It does not remove any native outline or ring.
+ *
+ * Rules:
+ * - Selectors use only stable hooks: element names, ARIA roles, input types, data-testid
+ *   and data-baseweb attributes. No generated (emotion) class names.
+ * - Scoped to the app root [data-testid="stApp"]. No layout, size, or color changes.
+ * - One color for both themes: #3B82F6 is >= 3:1 against every background it can sit on
+ *   (light page #FFFFFF, light sidebar #F0F2F6, dark page #0E1117, dark sidebar #262730).
+ *   The 2px offset keeps it on that background rather than on the control itself.
+ * Fallback: if a Streamlit upgrade changes these hooks, the affected control falls back to
+ * Streamlit's own focus styling; tests/test_focus_css.py and the browser check catch it.
+ */
+
+[data-testid="stApp"] :is(
+    button,
+    a[href],
+    summary,
+    [role="slider"],
+    [role="spinbutton"],
+    [role="tab"],
+    input[type="date"]
+  ):focus-visible {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
+/* Radio buttons, checkboxes, and toggles: the real input is visually hidden, so ring the
+   visible label that contains it. */
+[data-testid="stApp"] label:has(input:is([type="radio"], [type="checkbox"]):focus-visible) {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
+/* Sliders (React Aria in Streamlit 1.65): the focused element is an input[type="range"]
+   hidden in a 1px wrapper inside the visible thumb, so ring the thumb. */
+[data-testid="stApp"] [data-rac]:has(> div > input[type="range"]:focus-visible) {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
+/* Remove buttons on multiselect chips sit on the chip, which is filled with the primary
+   color (#2563EB). A blue ring there would be about 1.4:1, so these get a white ring drawn
+   inside the button, where the adjacent color is the chip (white on #2563EB: 5.17:1). */
+[data-testid="stApp"] [data-testid="stMultiSelectTagsContainer"] button:focus-visible {
+  outline: 2px solid #ffffff !important;
+  outline-offset: -2px !important;
+}
+
+/* Select boxes and multiselects: the focused element is a text input (role="combobox")
+   inside the visible box, so ring the box. Streamlit 1.65 select boxes wrap the input in a
+   role="group" element; BaseWeb selects use data-baseweb="select". */
+[data-testid="stApp"] [role="group"]:has(> input[role="combobox"]:focus-visible),
+[data-testid="stApp"]
+  [role="group"]:has(
+    > [data-testid="stMultiSelectTagsContainer"] > input[role="combobox"]:focus-visible
+  ),
+[data-testid="stApp"] [data-baseweb="select"]:has(input:focus-visible) {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}

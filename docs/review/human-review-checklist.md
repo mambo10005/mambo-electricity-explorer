@@ -19,6 +19,22 @@ need **Run this lesson's model cases**. Turn on **Show technical detail**.
 
 ---
 
+## Corrections log (agent-made; **not reviewed by a person**)
+
+| Date | Item | Version | Change | Reason |
+|---|---|---|---|---|
+| 2026-10-11 | `unverified-marginal` | 1.0.0 → 1.1.0 | Price-check explanation rewritten (average rates over ±0.1 MW, per-direction feasibility, blends); two runs and `blended-rate` exercise added | BL-5 (Stage 9) |
+| 2026-10-11 | `location-prices` | 1.0.0 → 1.0.1 | Technical wording of the price check | BL-5 (Stage 9) |
+| 2026-10-11 | `location-prices` | 1.0.1 → 1.1.0 | Removed the uncited list of what "real ISO prices also reflect"; added one sourced statement (PJM Manual 11: LMP = system energy + congestion + loss price) and separated model statements from the market statement | Stage 10 review readiness |
+| 2026-10-11 | `pf-vs-dispatch` | 1.0.0 → 1.0.1 | Removed uncited claims about what real operators run ("much larger and more detailed models"); now only says the lesson does not describe any operator | Stage 10 review readiness |
+| 2026-10-11 | `unverified-marginal` | 1.1.0 → 1.1.1 | "Subgradient" now labeled as the lesson's interpretation; only "between the two averages" is checked numerically | Stage 10 review readiness |
+| 2026-10-11 | Lessons 5–7 (shared model section) | — (UI text) | "not the model any real system operator runs" → "does not describe how any real system operator dispatches or prices electricity" | Stage 10 review readiness |
+
+No exercise question or answer changed in Stage 10, so no exercise was invalidated. (Stage 9's
+changes did invalidate older lesson 7 answers through the version-bumped snapshot.)
+
+---
+
 ## Review record (one block per lesson or for the glossary)
 
 Copy this block for each item you review. Leave fields blank until they are true.
@@ -72,7 +88,9 @@ Copy this block for each item you review. Leave fields blank until they are true
   labeled SYNTHETIC.
 - Agent-noticed items for the reviewer:
   1. The technical section quotes the EIA-930 instructions ("hourly integrated values in
-     megawatts by hour ending time"). Confirm the quote against the current PDF.
+     megawatts by hour ending time"). Confirm the quote against the current PDF. *Agent check
+     (2026-10-11): the sentence appears verbatim under "General Instructions" (page 3) of the
+     PDF at the cited URL. Still for the reviewer to confirm.*
 
 ## Lesson 2 — Reading an actual demand series · `reading-demand` · v1.0.0
 
@@ -104,41 +122,47 @@ Copy this block for each item you review. Leave fields blank until they are true
   1. Confirm that absent rows are never explained with a cause (the lesson says it does not
      guess why).
 
-## Lesson 5 — Power flow versus economic dispatch · `pf-vs-dispatch` · v1.0.0
+## Lesson 5 — Power flow versus economic dispatch · `pf-vs-dispatch` · v1.0.1
 
 - Model runs: uncongested, congested, two power flows at a specified dispatch
   (`modeling/cases.py`). No external sources.
 - Exercises: `pf-reports-violation`, `feasible-not-cheapest` (model).
 - Agent-noticed items:
-  1. "It is not the model any real system operator runs": confirm the wording is fair and
-     not itself a claim about operators that needs a source.
+  1. *Corrected in v1.0.1:* the uncited claims about operators' models were removed; the
+     lesson now only says it does not describe how any operator dispatches. Confirm that this
+     is enough context for a beginner.
   2. The "cheapest if lines had no limits" dispatch is taken from a verified run. Confirm a
      beginner can follow why it is used.
 
-## Lesson 6 — Why modeled prices differ by location · `location-prices` · v1.0.1
+## Lesson 6 — Why modeled prices differ by location · `location-prices` · v1.1.0
 
 - Model runs: uncongested (+10 MW), congested (+10 MW), AC rating 70 MW.
+- Sources: `pjm-manual-11` (PJM Manual 11, Revision 137, Section 1 overview), for the single
+  actual-market statement.
 - Exercises: `binding-constraint`, `next-increment`, `positive-sensitivity`,
   `relaxation-cost`, `cost-units` (model).
 - Agent-noticed items:
-  1. The limitations say real ISO prices "also reflect losses, many more constraints,
-     ancillary services, market rules, and scarcity pricing". The lesson cites no source for
-     this. Decide whether it needs a citation or softer wording.
+  1. *Corrected in v1.1.0:* the uncited list was removed. The lesson now makes one market
+     statement, cited to PJM Manual 11 (each PJM LMP is the sum of a system energy price, a
+     congestion price, and a loss price; agent-checked against Revision 137, Section 1
+     overview). Confirm the paraphrase and that the "other ISOs define their prices in their
+     own rules" sentence is fair without a citation.
   2. `cost-units` uses two options with the same number (cost rate vs. interval cost).
      Confirm that this tests units fairly rather than tricking the learner.
   3. v1.0.1 changed only the technical wording of the price check (average rates over
-     ±0.1 MW).
+     ±0.1 MW). v1.1.0 separated model statements ("What is verified here") from the sourced
+     market statement and the limitations.
 
-## Lesson 7 — When one marginal number is not verified · `unverified-marginal` · v1.1.0
+## Lesson 7 — When one marginal number is not verified · `unverified-marginal` · v1.1.1
 
 - Model runs: breakpoint, 0.05 MW below a breakpoint, line AC at its rating, edge of
   capacity, no demand, equal offers, not enough capacity.
 - Exercises: `withheld-reason`, `blended-rate`, `infeasible-direction`,
   `nonunique-vs-infeasible`, `uniqueness-vs-price` (model).
 - Agent-noticed items:
-  1. The technical section says the solver's dual at a breakpoint is "a subgradient that lies
-     between the two averages in these cases". A test checks the "between" part for the two
-     breakpoint cases; the word *subgradient* is the agent's interpretation.
+  1. *Clarified in v1.1.1:* "subgradient" is now labeled as the lesson's interpretation; a
+     test checks only that the dual lies between the two averages in the two breakpoint
+     cases.
   2. The "no demand" case uses a −0.1 MW change at buses with no demand (a negative load).
      Confirm that the lesson's "mathematical perturbation for the check only" framing is
      clear enough for a beginner.

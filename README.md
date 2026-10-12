@@ -143,6 +143,10 @@ through three states: *viewed*, *exercise completed*, and *understanding
 demonstrated* (every exercise right on the first try; a self-check, not a
 certification).
 
+To back up and reset your local progress (optional; dry run unless `--execute`; asks you
+to type RESET; never shows contents): `mambo learn-reset`. See
+`docs/testing-isolation.md` for restore steps.
+
 Lessons are AI-drafted and **not yet reviewed by a person**. See
 `docs/lesson-authoring.md` and `docs/calculations.md`.
 

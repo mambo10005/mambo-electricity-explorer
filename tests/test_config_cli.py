@@ -24,7 +24,10 @@ def test_repo_ancestor_and_publication_dirs_are_rejected(tmp_path):
         validate_data_dir(tmp_path / "site" / "obs", REPO)
 
 
-def test_safe_data_dirs_are_accepted(tmp_path):
+def test_safe_data_dirs_are_accepted(tmp_path, monkeypatch):
+    # Validation only (nothing is read or written). The suite protects REPO/data, so lift
+    # that protection for this one production-behavior check.
+    monkeypatch.delenv("MAMBO_FORBIDDEN_DATA_DIRS", raising=False)
     assert validate_data_dir(REPO / "data", REPO) == (REPO / "data").resolve()
     assert validate_data_dir(tmp_path / "obs", REPO) == (tmp_path / "obs").resolve()
 
@@ -34,9 +37,9 @@ def test_data_dir_is_gitignored():
     assert result.returncode == 0
 
 
-def test_settings_never_expose_key(monkeypatch):
+def test_settings_never_expose_key(monkeypatch, tmp_path):
     monkeypatch.setenv("EIA_API_KEY", FAKE_KEY)
-    monkeypatch.delenv("MAMBO_DATA_DIR", raising=False)
+    monkeypatch.setenv("MAMBO_DATA_DIR", str(tmp_path / "d"))  # never the real REPO/data
     settings = load_settings(REPO)
     assert settings.has_api_key and FAKE_KEY not in repr(settings)
 

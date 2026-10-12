@@ -365,8 +365,8 @@ def render_model_section(lesson, runs) -> dict:
     _md(
         "Everything in this section is **modeled** on a **synthetic** three-bus network with "
         "**synthetic** offers, over a one-hour teaching interval. The model is lossless (DC "
-        "approximation). It is a teaching model, not the model any real system operator runs, "
-        "and its modeled prices are **not** ISO prices."
+        "approximation). It is a teaching model: it does not describe how any real system "
+        "operator dispatches or prices electricity, and its modeled prices are **not** ISO prices."
     )
     # In a lesson the ratings are fixed per run (see the run table), not learner controls.
     st.table(

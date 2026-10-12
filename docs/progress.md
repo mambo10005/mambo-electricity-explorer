@@ -2,6 +2,39 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 10: isolation hardening, focus visibility, review readiness (#19)
+
+Stacked on Stage 9 (PR #18) ← … ← #2. None merged. mambo-power unchanged at 26be8c1.
+
+- **Real progress file preserved:** `data/learn/progress.json` was not modified (its
+  timestamp is still 18:15:35). The contamination is documented without claiming the file
+  holds no real activity. New optional `mambo learn-reset` (dry run by default, typed
+  confirmation, verified timestamped backup outside any tracking repository, no
+  overwrite, restore steps). Not executed. Owner decision recorded as BL-7.
+- **Isolation hardening:** `MAMBO_FORBIDDEN_DATA_DIRS` in the app's own configuration check
+  (casing, relative paths, junctions/symlinks, 8.3 aliases); the test session uses a
+  scratch data dir, the protection variable, and a scratch working directory; the gate
+  gives subprocesses scratch dirs and adds a 9th check, **real data directory unchanged**.
+  Sentinel tests use a fake protected folder; mutation checks confirm the guard layers.
+- **Found while hardening:**
+  - the user's home folder contains a `.git` folder, which made temp folders look
+    "inside a repository" (the scratch working directory is now its own root);
+  - that `.git` is not a valid repository, so the backup tool asks Git itself.
+- **Focus:** no supported theme option can reach 3:1 in dark mode, so per the stage's
+  authorization a focus-only stylesheet adds a 3 px #3B82F6 ring (ADR 0008). Measured in
+  both themes on every named control: ≥ 3.28:1 (light), ≥ 4.03:1 (dark); chip buttons
+  5.17:1. Also measured: light secondary hover, links (7.51 / 6.58, underlined), 200% zoom,
+  320 CSS px.
+- **Content:** lesson 6 → v1.1.0 (uncited "real ISO prices also reflect…" list replaced by
+  one cited statement from PJM Manual 11, Revision 137; model statements, the market
+  statement, and limitations separated); lesson 5 → v1.0.1 (uncited operator claims
+  removed); lesson 7 → v1.1.1 ("subgradient" labeled as interpretation); shared lesson
+  text narrowed. Lesson 1's EIA quote verified against the current PDF. No exercise
+  changed. Corrections log in the checklist; BL-3 stays open.
+- **Browser:** keyboard focus across all named controls in both themes, real Tab and
+  Shift+Tab, 200% zoom, 320 px, light secondary hover, links. No screen reader available.
+  Owned PIDs only; all stopped.
+
 ## 2026-10-11 — Stage 9: explanation correctness, button contrast, review package (#17)
 
 Stacked on Stage 8 (PR #16) ← #14 ← … ← #2. None merged. mambo-power unchanged at 26be8c1.

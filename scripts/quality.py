@@ -4,6 +4,11 @@ Runs every check even after a failure, prints a summary, and exits nonzero if an
 check failed. It never edits files, never updates uv.lock, never downloads, and
 stops the temporary Streamlit server it starts. Secret findings report the file,
 line, and pattern name only, never the matched text.
+
+Data isolation: the pytest and smoke-server subprocesses get an explicit scratch
+MAMBO_DATA_DIR and MAMBO_FORBIDDEN_DATA_DIRS=<repo>/data, so they can never read or write
+the developer's real data. The last check compares the real data/ tree before and after
+the whole gate (paths and modification times, kept in memory only).
 """
 
 from __future__ import annotations
@@ -13,6 +18,7 @@ import re
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 import tomllib
 import urllib.request
@@ -23,6 +29,31 @@ import yaml
 
 REPO = Path(__file__).resolve().parents[1]
 PY = sys.executable
+REAL_DATA = REPO / "data"
+_SCRATCH = tempfile.TemporaryDirectory(prefix="mambo-gate-")
+
+
+def scratch_env(name: str) -> dict[str, str]:
+    """Environment for a gate subprocess: a fresh scratch data dir, the real one forbidden."""
+    data = Path(_SCRATCH.name) / name / "data"
+    return {
+        **os.environ,
+        "MAMBO_DATA_DIR": str(data),
+        "MAMBO_FORBIDDEN_DATA_DIRS": str(REAL_DATA),
+    }
+
+
+def data_fingerprint(root: Path = REAL_DATA) -> dict[str, int]:
+    if not root.is_dir():
+        return {}
+    return {
+        str(p.relative_to(root)): p.stat().st_mtime_ns
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+_BEFORE = data_fingerprint()
 
 FORBIDDEN_PATHS = {
     "env file": r"(^|/)\.env(\.(?!example$)[^/]*)?$",
@@ -97,7 +128,7 @@ def check_ruff_format() -> bool:
 
 
 def check_pytest() -> bool:
-    return _run([PY, "-m", "pytest", "-q", "-p", "no:cacheprovider"])
+    return _run([PY, "-m", "pytest", "-q", "-p", "no:cacheprovider"], env=scratch_env("pytest"))
 
 
 def _free_port() -> int:
@@ -119,7 +150,12 @@ def check_smoke() -> bool:
     ]  # fmt: skip
     print("  $", " ".join(args), flush=True)
     server = subprocess.Popen(
-        args, cwd=REPO, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True
+        args,
+        cwd=REPO,
+        env=scratch_env("smoke"),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
     )
     try:
         base = f"http://127.0.0.1:{port}"
@@ -204,7 +240,20 @@ CHECKS: list[tuple[str, Callable[[], bool]]] = [
     ("package and app smoke", check_smoke),
     ("tracked/staged/untracked path check", check_tracked_files),
     ("secret scan", check_secrets),
+    ("real data directory unchanged", lambda: check_real_data_unchanged()),
 ]
+
+
+def check_real_data_unchanged() -> bool:
+    after = data_fingerprint()
+    if after == _BEFORE:
+        print(f"  {len(after)} files under data/ unchanged by the gate (manifest in memory only)")
+        return True
+    changed = sorted(set(after) ^ set(_BEFORE) or {k for k in after if after[k] != _BEFORE[k]})
+    print(f"  data/ changed during the gate: {len(changed)} path(s)")  # names only, no contents
+    for name in changed[:20]:
+        print(f"    {name}")
+    return False
 
 
 def main() -> int:

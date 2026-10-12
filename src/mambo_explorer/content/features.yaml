@@ -28,6 +28,14 @@ features:
     name: "Human-review package for lessons and glossary (review itself pending)"
     section: platform
     status: done
+  - id: QA-04
+    name: "Data-isolation safeguards (tests, gate, harnesses) and optional progress backup/reset"
+    section: platform
+    status: done
+  - id: QA-05
+    name: "Keyboard focus indicator (focus-only CSS, measured in both themes)"
+    section: platform
+    status: done
   - id: LEARN-01
     name: "Lesson content following the learning sequence"
     section: learn

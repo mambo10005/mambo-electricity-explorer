@@ -5,6 +5,7 @@ from collections.abc import Callable
 import streamlit as st
 
 from mambo_explorer import routes
+from mambo_explorer.focus_style import inject_focus_style
 from mambo_explorer.navigation import SECTIONS
 from mambo_explorer.pages import render_home, render_page
 
@@ -17,6 +18,7 @@ def _section_renderer(key: str) -> Callable[[], None]:
 
 
 st.set_page_config(page_title="mambo electricity explorer", layout="wide")
+inject_focus_style()  # keyboard-focus outline (focus.css); the only CSS the app adds
 sections = {
     s.key: st.Page(_section_renderer(s.key), title=s.title, icon=s.icon, url_path=s.key)
     for s in SECTIONS

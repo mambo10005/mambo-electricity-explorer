@@ -6,6 +6,11 @@
   for tests or app startup.
 - An optional .env in the working directory is loaded by the CLI. It never
   overrides variables already set, and it is refused if git does not ignore it.
+- MAMBO_FORBIDDEN_DATA_DIRS (os.pathsep-separated) lists protected directories that the
+  data directory must never be, or be inside. Tests, the quality gate, and browser
+  harnesses set it to the developer's real ./data, so a mistaken configuration fails loudly
+  instead of writing there. Comparison survives casing differences, relative paths,
+  symlinks/junctions (resolved), and other aliases of existing directories (samefile).
 """
 
 from __future__ import annotations
@@ -18,6 +23,7 @@ from pathlib import Path
 # Directory names that are (or may become) published or tracked content.
 PUBLICATION_DIR_NAMES = {"public", "publish", "site", "www", "static", "dist", "docs"}
 DOTENV_KEYS = {"EIA_API_KEY", "MAMBO_DATA_DIR"}
+FORBIDDEN_ENV = "MAMBO_FORBIDDEN_DATA_DIRS"
 
 
 class ConfigError(ValueError):
@@ -41,9 +47,45 @@ def find_repo_root(start: Path) -> Path | None:
     return None
 
 
+def _norm(path: Path) -> str:
+    return os.path.normcase(os.path.normpath(str(path)))
+
+
+def same_or_inside(path: Path, protected: Path) -> bool:
+    """True if `path` is `protected` or inside it, after resolving links and ignoring case.
+
+    Both are resolved first (symlinks and Windows junctions are followed). For directories
+    that exist, os.path.samefile also catches aliases such as 8.3 short names.
+    """
+    a, b = Path(path).expanduser().resolve(), Path(protected).expanduser().resolve()
+    na, nb = _norm(a), _norm(b)
+    if na == nb or na.startswith(nb.rstrip("\\/") + os.sep):
+        return True
+    if not b.exists():
+        return False
+    for candidate in (a, *a.parents):
+        try:
+            if candidate.exists() and os.path.samefile(candidate, b):
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def forbidden_dirs() -> list[Path]:
+    raw = os.environ.get(FORBIDDEN_ENV, "")
+    return [Path(p) for p in raw.split(os.pathsep) if p.strip()]
+
+
 def validate_data_dir(data_dir: Path, repo_root: Path | None) -> Path:
     """Return the resolved data dir, or raise ConfigError if it is unsafe."""
     path = data_dir.expanduser().resolve()
+    for protected in forbidden_dirs():
+        if same_or_inside(path, protected):
+            raise ConfigError(
+                f"data directory {path} is a protected location ({FORBIDDEN_ENV}); "
+                "tests and harnesses must use a scratch directory"
+            )
     if any(part.lower() in PUBLICATION_DIR_NAMES for part in path.parts):
         raise ConfigError(f"data directory {path} is inside a publication-style directory")
     if repo_root is not None:

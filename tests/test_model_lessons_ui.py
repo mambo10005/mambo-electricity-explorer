@@ -114,7 +114,8 @@ def test_location_prices_lesson_shows_verified_results_units_and_provenance(data
     assert list(extra["G2 change (MW)"]) == ["0", "20"]
     text = _text(at)
     assert "commit `26be8c18b7ef`" in text and "Adapter checks v" in text
-    assert "not** ISO prices" in text and "not the model any real system operator runs" in text
+    assert "not** ISO prices" in text
+    assert "does not describe how any real system operator dispatches" in text
     # Saved to the local model-run store only, never to observation storage.
     lesson = next(le for le in load_lessons() if le.id == "location-prices")
     assert len(RunStore(data_dir).recent(50)) == len(lesson.meta["model_bindings"])
