@@ -13,6 +13,7 @@ EXPECTED = [
     "location-prices",
     "unverified-marginal",
     "energy-settlement",
+    "basis-exposure",
 ]
 # Two tracks share the first lesson: observations (2-4) and market mechanics (5-7).
 PREREQUISITES = {
@@ -24,10 +25,16 @@ PREREQUISITES = {
     "location-prices": ["pf-vs-dispatch"],
     "unverified-marginal": ["location-prices"],
     "energy-settlement": ["power-vs-energy"],
+    "basis-exposure": ["location-prices", "energy-settlement"],
 }
 # Lessons outside the observation track and their exact cited sources.
 OTHER_SOURCES = {
     "energy-settlement": {"iso-ne-da-rt-markets", "iso-ne-da-energy-bill", "iso-ne-rt-energy-bill"},
+    "basis-exposure": {"ferc-glossary"},
+}
+OTHER_URL_PREFIX = {
+    "energy-settlement": "https://www.iso-ne.com/",
+    "basis-exposure": "https://www.ferc.gov/",
 }
 MODEL_LESSONS = ["pf-vs-dispatch", "location-prices", "unverified-marginal"]
 MODEL_SOURCES = {"location-prices": {"pjm-manual-11"}}
@@ -69,7 +76,7 @@ More text.
 """
 
 
-def test_eight_lessons_load_in_order_with_valid_prerequisites():
+def test_nine_lessons_load_in_order_with_valid_prerequisites():
     lessons = load_lessons()
     assert [le.id for le in lessons] == EXPECTED
     assert {le.id: le.meta["prerequisites"] for le in lessons} == PREREQUISITES
@@ -93,7 +100,8 @@ def test_lessons_declare_required_fields_and_sources():
         allowed = MODEL_SOURCES.get(lesson.id, set()) if lesson.id in MODEL_LESSONS else None
         if lesson.id in OTHER_SOURCES:
             assert {s["id"] for s in meta["sources"]} == OTHER_SOURCES[lesson.id]
-            assert all(s["url"].startswith("https://www.iso-ne.com/") for s in meta["sources"])
+            prefix = OTHER_URL_PREFIX[lesson.id]
+            assert all(s["url"].startswith(prefix) for s in meta["sources"])
         elif allowed is None:
             assert meta["sources"], lesson.id
             assert all(s["url"].startswith("https://www.eia.gov/") for s in meta["sources"])

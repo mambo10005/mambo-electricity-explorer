@@ -272,3 +272,50 @@ stated):
 | negative prices (−10, −20) | 100 | 120 | −1,000 | −400 | −1,400 |
 | equal prices (40, 40) | 100 | 130 | 4,000 | +1,200 | 5,200 = 130 × 40 |
 
+## `basis_exposure` v1.0.0 — Stage 12 (teaching cash flows; ADR 0010)
+
+`basis.evaluate(Inputs)`: physical purchase of Q MWh at delivery location L, and a separate
+financial hedge on H MWh referencing location H in which the buyer pays fixed K and receives
+floating P_H.
+
+| Quantity | Formula | Unit |
+|---|---|---|
+| Basis | P_L − P_H | synthetic $/MWh (this app's sign) |
+| Physical purchase cost | Q × P_L | synthetic $ |
+| Hedge receipt | H × (P_H − K) | synthetic $ (negative = buyer pays) |
+| Net buyer cost | Q × P_L − H × (P_H − K) | synthetic $ (negative = credit) |
+| Fixed-price component | Q × K | synthetic $ |
+| Location-basis component | Q × (P_L − P_H) | synthetic $ |
+| Quantity-mismatch component | (Q − H) × (P_H − K) | synthetic $ |
+
+- **Decomposition.** Net = fixed + basis + mismatch, computed independently and checked
+  (relative 1e-12, absolute 1e-6). Verified on a 2,000-point grid of bounded inputs,
+  including negative prices and extreme values.
+- **Identities (this contract only).** H = Q gives Q·(K + basis); H = Q with P_L = P_H gives
+  Q·K.
+- **Inputs.** Q and H are 0 to 100,000 MWh. P_L, P_H, and K are −1,000 to 10,000 per MWh.
+  All must be finite; no booleans or strings.
+- **Positions.**
+  - Q = 0 and H > 0: a financial position without physical consumption.
+  - H = 0: no hedge.
+  - H < Q: underhedged.
+  - H > Q: overhedged.
+
+**Benchmarks** (hand-derived in `tests/test_basis.py`; K = 40):
+
+| Case | Q | H | P_L | P_H | Physical | Receipt | Net |
+|---|---|---|---|---|---|---|---|
+| equal quantities and prices | 100 | 100 | 50 | 50 | 5,000 | 1,000 | 4,000 = Q·K |
+| positive basis | 100 | 100 | 60 | 50 | 6,000 | 1,000 | 5,000 = 100·(40+10) |
+| negative basis | 100 | 100 | 45 | 50 | 4,500 | 1,000 | 3,500 = 100·(40−5) |
+| no hedge | 100 | 0 | 60 | 50 | 6,000 | 0 | 6,000 |
+| underhedge | 100 | 60 | 60 | 50 | 6,000 | 600 | 5,400 (4,000+1,000+400) |
+| overhedge | 100 | 150 | 60 | 50 | 6,000 | 1,500 | 4,500 (4,000+1,000−500) |
+| negative prices | 100 | 100 | −20 | −10 | −2,000 | −5,000 (buyer pays) | 3,000 |
+| no energy, hedge only | 0 | 100 | 60 | 50 | 0 | 1,000 | −1,000 (credit) |
+| hedge raises cost | 100 | 100 | 30 | 30 | 3,000 | −1,000 | 4,000 > 3,000 unhedged |
+
+**Modeled prices.** `basis.modeled_pair(record, delivery_bus, reference_bus)` imports two
+prices from one run, at two different buses, with the Stage 11 checks applied to each. Two
+modeled prices from different runs are refused. K is always synthetic.
+

@@ -131,8 +131,8 @@ Anything not listed is not implemented yet.
 | Requirement | Feature(s) | Status | Evidence |
 |---|---|---|---|
 | R-1 learning and analysis with actual observations | DATA-01, EXPLORE-02, LEARN-03 | partial: one BA, two metrics | `tests/test_collect_storage.py`, `tests/test_learn_ui.py` |
-| R-2 novice-oriented | LEARN-03, LEARN-04, FIN-03 | partial: 8 lessons (agent-drafted, unreviewed) | `content/lessons/`, `docs/lesson-authoring.md` |
-| R-3 learning sequence | LEARN-01, LEARN-03, LEARN-04, FIN-03 | partial: fundamentals (lessons 1–7) and one settlement lesson (8) | `tests/test_lessons.py` |
+| R-2 novice-oriented | LEARN-03, LEARN-04, FIN-03, FIN-04 | partial: 9 lessons (agent-drafted, unreviewed) | `content/lessons/`, `docs/lesson-authoring.md` |
+| R-3 learning sequence | LEARN-01, LEARN-03, LEARN-04, FIN-03, FIN-04 | partial: fundamentals (1–7), settlement (8), financial contracts and risk (9) | `tests/test_lessons.py` |
 | R-4 physical system: demand | LEARN-03 | partial: demand only | lessons 1–2 |
 | R-5 forecasting | LEARN-03 | partial: published day-ahead forecast accuracy (descriptive) | lesson 3, `docs/calculations.md` |
 | R-7 ERCOT | DATA-01 | partial: EIA-930 `ERCO` only | source register |
@@ -144,4 +144,5 @@ Anything not listed is not implemented yet.
 | R-25/R-27/R-28 EIA first, source review, credentials | DATA-01 | implemented for EIA-930 region-data; publication review pending | source register, `tests/test_eia_client.py` |
 | R-9 modeling via a separately validated adapter | MODEL-01, MODEL-02, MODEL-03 | partial: DC power flow and linear-cost DC OPF on synthetic networks, independently benchmarked | ADR 0006, `docs/capability-register.md`, `tests/test_modeling.py` |
 | R-11 settlement (introductory) | FIN-03 | partial: one teaching formula (DA schedule + RT deviation), synthetic inputs; no market-specific settlement, hedging, credit, or collateral | ADR 0009, `tests/test_settlement.py` |
+| R-10/R-11 contracts and risk (introductory) | FIN-04 | partial: one simplified fixed-price hedge cash-flow exercise with locational basis and quantity mismatch; no forwards, swaps, futures, options, PPAs, credit, or collateral | ADR 0010, `tests/test_basis.py` |
 | R-29 ERCOT first operator | DATA-04, EXPLORE-03 | partial: NP6-345-CD actual load by weather zone, public download | ADR 0005, `tests/test_ercot.py`, source register |

@@ -1,5 +1,6 @@
-"""Finance page. Only the introductory energy-settlement calculator (FIN-03) is
-implemented; contracts, hedging, derivatives, credit, and collateral are not."""
+"""Finance page. Implemented: the introductory energy-settlement calculator (FIN-03) and
+a simplified fixed-price hedge / basis-exposure cash-flow calculator (FIN-04). Contracts,
+forwards, swaps, futures, options, PPAs, credit, and collateral are not implemented."""
 
 from __future__ import annotations
 
@@ -17,10 +18,11 @@ def render_finance() -> None:
     section = section_by_key("finance")
     st.title(section.title)
     st.markdown(
-        "One teaching tool is implemented here: an **introductory energy-settlement "
-        "calculator** with **synthetic** inputs. It is not a market settlement engine, not an "
-        "invoice, and not a model of any ISO's rules. Futures, forwards, options, swaps, PPAs, "
-        "hedging, credit, and collateral are **not implemented**."
+        "Two teaching tools are implemented here, both with **synthetic** inputs: an "
+        "**introductory energy-settlement calculator** and a **basis-exposure calculator** for a "
+        "simplified fixed-price financial hedge. Neither is a market settlement engine, an "
+        "invoice, a contract valuation, or a model of any ISO's rules. Futures, forwards, "
+        "options, full swaps, PPAs, credit, and collateral are **not implemented**."
     )
     try:
         runs = RunStore(load_settings().data_dir)
@@ -31,6 +33,16 @@ def render_finance() -> None:
     render_calculator("finance", runs)
     if st.button("Open the lesson: From scheduled energy to settlement", key="finance_lesson"):
         st.session_state[routes.HANDOFF_LESSON] = "energy-settlement"
+        routes.go("learn", "Learn")
+    st.header("Basis exposure with a simplified fixed-price hedge")
+    from mambo_explorer.basis_ui import render_basis_calculator
+
+    render_basis_calculator("finance_basis", runs)
+    if st.button(
+        "Open the lesson: Why a hedge at another location leaves basis exposure",
+        key="finance_basis_lesson",
+    ):
+        st.session_state[routes.HANDOFF_LESSON] = "basis-exposure"
         routes.go("learn", "Learn")
     st.header("Status of Finance features")
     st.table(

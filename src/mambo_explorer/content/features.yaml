@@ -135,6 +135,11 @@ features:
     section: finance
     status: done
     ui: true
+  - id: FIN-04
+    name: "Basis exposure with a simplified fixed-price hedge: cash-flow calculator and lesson (synthetic)"
+    section: finance
+    status: done
+    ui: true
   - id: COMP-01
     name: "Regulatory authorities and effective-dated rules"
     section: compliance

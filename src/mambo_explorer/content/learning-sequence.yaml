@@ -1,7 +1,8 @@
 # The order in which a novice moves through the platform. Lessons so far
 # (content/lessons/): fundamentals has an observation track (2-4) and a market-mechanics
 # track on a synthetic model (5-7), both after lesson 1; settlement has one introductory
-# lesson (8, after lesson 1). The other stages have no lessons yet.
+# lesson (8, after lesson 1); financial contracts and risk has one (9, after 6 and 8). The
+# other stages have no lessons yet.
 stages:
   - key: fundamentals
     title: Fundamentals

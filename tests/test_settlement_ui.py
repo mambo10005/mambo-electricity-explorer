@@ -34,7 +34,7 @@ def _texts(at):
 
 
 def _amounts(at):
-    t = _table(at, "Amount ($)")
+    t = _table(at, "Energy (MWh)")  # the settlement table (the basis tables have no such column)
     return None if t is None else dict(zip(t["Component"], t["Amount ($)"], strict=True))
 
 
@@ -45,12 +45,13 @@ def test_finance_page_shows_components_total_and_role_readings(data_dir):
     roles = _table(at, "Reading of the total")
     assert list(roles["Role"]) == ["Buyer", "Seller"]
     text = "\n".join(_texts(at))
-    assert "not implemented" in text and "not an invoice" in text
+    assert "not implemented" in text and "Neither is a market settlement engine, an invoice" in text
     status = _table(at, "Feature")
     assert dict(zip(status["ID"], status["Status"], strict=True)) == {
         "FIN-01": "planned",
         "FIN-02": "planned",
         "FIN-03": "done",
+        "FIN-04": "done",
     }
     assert_no_unauthorized_data(at, "finance")
     assert not data_dir.exists() or not any(data_dir.rglob("*.parquet"))

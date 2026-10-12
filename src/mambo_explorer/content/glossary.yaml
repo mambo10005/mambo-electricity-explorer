@@ -180,3 +180,22 @@ terms:
       How much a settlement amount changes when the quantity changes. In the
       teaching formula, one more MWh of actual energy changes the total by the
       real-time price.
+  # Basis lesson (Stage 12). Same status: agent-drafted, not human-reviewed.
+  - term: Basis
+    definition: >-
+      The price difference between otherwise identical products in different
+      markets (FERC glossary). In this app, basis = delivery-location price
+      minus hedge-reference price, in synthetic $ per MWh.
+  - term: Fixed-for-floating hedge
+    definition: >-
+      In this app's teaching scenario, a financial agreement in which the buyer
+      pays a fixed price K and receives a changing reference price on a hedge
+      quantity. It moves money, not electricity.
+  - term: Reference location
+    definition: >-
+      The location whose price a financial hedge settles against. It can differ
+      from the location where the energy is actually bought.
+  - term: Quantity mismatch
+    definition: >-
+      The difference between the energy actually bought and the hedge quantity.
+      Any mismatch stays exposed to the reference price.
