@@ -68,6 +68,7 @@ def test_every_rule_is_scoped_focus_only_and_changes_only_the_outline():
         'input[role="combobox"]',
         '[data-testid="stMultiSelectTagsContainer"]',
         '[data-baseweb="select"]',
+        '[data-testid="stNumberInputContainer"]',
     ],
 )
 def test_every_measured_control_type_is_covered(hook):

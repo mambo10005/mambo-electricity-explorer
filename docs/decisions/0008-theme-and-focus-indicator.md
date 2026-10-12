@@ -59,7 +59,8 @@ The hooks were read from the rendered DOM of Streamlit 1.65.0:
 - radios and checkboxes: a visually hidden input inside a `label`;
 - select boxes: a React Aria `role="group"` wrapper around `input[role="combobox"]`;
 - multiselects: `stMultiSelectTagsContainer`;
-- sliders: a hidden `input[type="range"]` inside the `data-rac` thumb.
+- sliders: a hidden `input[type="range"]` inside the `data-rac` thumb;
+- number inputs (added in Stage 11): `input` inside `stNumberInputContainer`.
 
 If an upgrade changes a hook, that control falls back to Streamlit's own (weaker) focus
 styling. Nothing breaks visually, and the layout is untouched.

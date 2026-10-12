@@ -150,3 +150,33 @@ terms:
     definition: >-
       An operating point where a capacity or line limit is just reached, so
       the cost changes at one rate below it and another above it.
+  # Settlement lesson (Stage 11). Same status: agent-drafted, not human-reviewed.
+  - term: Day-ahead schedule
+    definition: >-
+      In this app, the energy (MWh) committed day-ahead for an interval at the
+      day-ahead price. A financial commitment, not a forecast and not a
+      physical delivery path.
+  - term: Deviation
+    definition: >-
+      Actual energy minus scheduled energy, in MWh. Positive when more energy
+      was produced or used than scheduled; negative when less.
+  - term: Two-settlement system
+    definition: >-
+      A market design (ISO New England calls its version multi-settlement) in
+      which day-ahead commitments are settled first and the differences from
+      them are settled separately at real-time prices.
+  - term: Energy settlement
+    definition: >-
+      In this app's teaching formula, scheduled energy × day-ahead price plus
+      deviation × real-time price: one signed amount that a buyer pays and a
+      seller receives. Not a complete bill.
+  - term: Price exposure
+    definition: >-
+      How much a settlement amount changes when a price changes. In the
+      teaching formula, the total moves by the deviation (MWh) per unit change
+      of the real-time price.
+  - term: Volume exposure
+    definition: >-
+      How much a settlement amount changes when the quantity changes. In the
+      teaching formula, one more MWh of actual energy changes the total by the
+      real-time price.

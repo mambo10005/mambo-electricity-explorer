@@ -233,3 +233,42 @@ Stage 9 adds two lesson runs: `near-breakpoint` (demand 149.95 MW, the +0.1 MW c
 crosses G1's capacity: increase 25, decrease 20 $/MWh) and `zero-demand` (increase 20,
 decrease infeasible), plus the `blended_rate` exercise, which rebuilds the blend from G1's
 headroom and both offers and must match the re-solve within 1e-4.
+
+## `energy_settlement` v1.0.0 — Stage 11 (teaching formula; ADR 0009)
+
+`settlement.settle(Inputs)`; one location, one interval, energy only, synthetic inputs.
+
+| Quantity | Formula | Unit |
+|---|---|---|
+| Day-ahead component | scheduled_MWh × day_ahead_price | synthetic $ |
+| Deviation | actual_MWh − scheduled_MWh | MWh (signed) |
+| Deviation component | deviation × real_time_price | synthetic $ |
+| Energy settlement S | day-ahead component + deviation component | synthetic $ (signed) |
+
+- **Sign convention (this app's, not ISO-NE's invoice convention):** a buyer pays S, a seller
+  receives S; S < 0 is a credit to a buyer or a payment by a seller.
+- **Identity:** S = A·P_RT + D·(P_DA − P_RT), so P_DA = P_RT gives S = A·P. Exposures:
+  ∂S/∂A = P_RT (volume), ∂S/∂P_RT = A − D (price), ∂S/∂P_DA = D.
+- **Inputs:** energy 0–100,000 MWh; prices −1,000 to 10,000 per MWh; all finite; no
+  booleans or strings. Optional MW entry: MWh = MW × hours, with hours required, over 0
+  and up to 24.
+- **Provenance:** the result keeps every input, each price's source (synthetic, or modeled
+  with run id, scenario, bus, package commit, checks version, and "verified"), the formula
+  version, the assumptions, and the source ids. `snapshot_id` hashes all of it.
+- **Modeled-price import** (`settlement.modeled_price`) accepts only an optimal `opf.dc` run
+  with `price_status == "verified"`, the current `CHECKS_VERSION`, and the pinned package.
+  One run cannot supply both stages.
+
+**Benchmarks** (hand-derived in `tests/test_settlement.py`; P_DA = 40, P_RT = 55 unless
+stated):
+
+| Case | D (MWh) | A (MWh) | Day-ahead | Deviation | S |
+|---|---|---|---|---|---|
+| actual = schedule | 100 | 100 | 4,000 | 0 | 4,000 |
+| actual above | 100 | 120 | 4,000 | +1,100 | 5,100 |
+| actual below | 100 | 80 | 4,000 | −1,100 | 2,900 |
+| zero schedule | 0 | 100 | 0 | +5,500 | 5,500 |
+| zero actual | 100 | 0 | 4,000 | −5,500 | −1,500 (buyer credit) |
+| negative prices (−10, −20) | 100 | 120 | −1,000 | −400 | −1,400 |
+| equal prices (40, 40) | 100 | 130 | 4,000 | +1,200 | 5,200 = 130 × 40 |
+

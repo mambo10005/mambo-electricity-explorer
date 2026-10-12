@@ -18,7 +18,7 @@ from mambo_explorer.catalog import learning_sequence
 
 REVIEW_STATUSES = ("unreviewed", "human-reviewed")
 IMPLEMENTATION_STATUSES = ("implemented", "draft")
-EXERCISE_KINDS = ("data", "concept", "model")
+EXERCISE_KINDS = ("data", "concept", "model", "settlement")
 CALCULATION_IDS = (
     "power_energy",
     "series_summary",
@@ -26,11 +26,13 @@ CALCULATION_IDS = (
     "forecast_error",
     "dc_power_flow",
     "dc_opf",
+    "energy_settlement",
 )
 DATA_PANELS = ("power_energy_example", "demand_series", "forecast_comparison", "coverage")
 MODEL_PANELS = ("pf_vs_opf", "location_prices", "unverified_marginal")
 # Optional fields (default: empty list) for lessons backed by verified model runs.
-OPTIONAL = {"model_bindings": [], "model_panels": []}
+CALCULATORS = ("energy_settlement",)
+OPTIONAL = {"model_bindings": [], "model_panels": [], "calculators": []}
 REQUIRED = (
     "lesson_id",
     "title",
@@ -181,7 +183,7 @@ def validate_meta(meta: dict, source: str) -> None:
     unknown_panels = set(meta["data_panels"]) - set(DATA_PANELS)
     if unknown_panels:
         fail(f"unknown data_panels {sorted(unknown_panels)}")
-    from mambo_explorer import model_exercises  # local imports avoid a cycle
+    from mambo_explorer import model_exercises, settlement_exercises  # avoid a cycle
     from mambo_explorer.exercises import GENERATORS
     from mambo_explorer.modeling.cases import LESSON_RUNS
 
@@ -197,14 +199,22 @@ def validate_meta(meta: dict, source: str) -> None:
         fail(f"unknown model_panels {panels}")
     if panels and not bindings:
         fail("model panels need model_bindings")
+    calculators = meta.get("calculators", [])
+    if not isinstance(calculators, list) or set(calculators) - set(CALCULATORS):
+        fail(f"unknown calculators {calculators}")
 
     ids = set()
     for ex in meta["exercises"]:
         if not {"exercise_id", "kind", "generator", "calculation_id"} <= set(ex):
             fail(f"exercise needs exercise_id, kind, generator, calculation_id: {ex}")
-        known = model_exercises.GENERATORS if ex["kind"] == "model" else GENERATORS
+        known = {
+            "model": model_exercises.GENERATORS,
+            "settlement": settlement_exercises.GENERATORS,
+        }.get(ex["kind"], GENERATORS)
         if ex["kind"] not in EXERCISE_KINDS or ex["generator"] not in known:
             fail(f"exercise {ex['exercise_id']}: bad kind or unknown generator")
+        if ex["kind"] == "settlement" and "energy_settlement" not in calculators:
+            fail(f"exercise {ex['exercise_id']}: settlement exercises need the calculator")
         if ex["kind"] == "model":
             needed = set(model_exercises.REQUIRES[ex["generator"]]) - set(bindings)
             if needed:

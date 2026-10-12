@@ -83,6 +83,13 @@ apply `:focus-visible`). Real Tab and Shift+Tab presses were also used on Model 
 (radios, heading links, sliders), and the ring appeared on each control reached. The
 injected style adds 0 px of layout and no script.
 
+**Stage 11 (Finance page and lesson 8).** Number inputs only recolored a thin container
+border on focus, so `focus.css` now rings `stNumberInputContainer` as well. Measured on the
+Finance page in both themes: number inputs 3.68 (light) / 5.14 (dark); their step buttons
+3.28 / 4.03; radios, expanders, buttons, and links as above. Keyboard typing and Enter
+recompute the result; the modeled-price import was completed with the keyboard. Lesson 8
+and Finance have no overflow at 375 px (dark) or at 200% zoom.
+
 ## Button text and links (measured)
 
 | Element | Theme | State | Text | Background | Ratio |

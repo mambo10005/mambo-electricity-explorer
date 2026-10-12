@@ -28,6 +28,7 @@ REQUIRED_DOCS = [
     "docs/decisions/0006-mambo-power-adapter.md",
     "docs/decisions/0007-verified-dc-opf.md",
     "docs/decisions/0008-theme-and-focus-indicator.md",
+    "docs/decisions/0009-teaching-energy-settlement.md",
     "docs/testing-isolation.md",
     "docs/accessibility.md",
     "docs/review/human-review-checklist.md",

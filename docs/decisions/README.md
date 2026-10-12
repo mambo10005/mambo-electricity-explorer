@@ -13,3 +13,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | [0006](0006-mambo-power-adapter.md) | mambo-power dependency, adapter, and the first teaching lab | Accepted |
 | [0007](0007-verified-dc-opf.md) | Verified DC OPF (linear costs) and the economic-dispatch lab | Accepted |
 | [0008](0008-theme-and-focus-indicator.md) | Theme colors and a focus-only CSS override | Accepted |
+| [0009](0009-teaching-energy-settlement.md) | A teaching energy-settlement calculator, not a settlement engine | Accepted |

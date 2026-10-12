@@ -21,12 +21,27 @@ Review columns:
 | MISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | SPP | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | NYISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
-| ISO-NE | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
+| ISO-NE | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Data review pending. Three public pages are cited (paraphrased) in lesson 8; see "Reference documents" | No (no data ingested) |
 | Non-ISO balancing authorities | Utilities / BAs | Decided by U-7 | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | FERC | Regulator | After operators | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | NERC and regional entities | Reliability | After operators | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | State PUCs/PSCs | Regulators | After operators | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | CFTC | Regulator | After operators | Review pending | Review pending | Review pending | Review pending | Pending | No |
+
+## Reference documents cited in lessons (not data sources)
+
+These pages are cited and **paraphrased** in lesson text. Nothing is downloaded, stored,
+or redistributed from them, and no data is ingested. Short paraphrases with links are the
+only use. A data-source review (terms, redistribution) is still required before any data
+from these organizations is collected.
+
+| Reference | Used in | What it supports | Checked |
+|---|---|---|---|
+| ISO New England, [Day-Ahead and Real-Time Energy Markets](https://www.iso-ne.com/markets-operations/markets/da-rt-energy-markets) | Lesson 8, `settlement.py` | Day-ahead commitments settled; real-time settles differences from them at the RT LMP; "multi-settlement" | 2026-10-11 |
+| ISO New England, [bill item: Day-Ahead (DA) Energy](https://www.iso-ne.com/markets-operations/settlements/understand-bill/item-descriptions/da-energy) | Lesson 8 | Net cleared quantity per location, hourly, at the DA LMP; ISO-NE's invoice nets credits and charges with its own sign convention | 2026-10-11 |
+| ISO New England, [bill item: Real-Time (RT) Energy](https://www.iso-ne.com/markets-operations/settlements/understand-bill/item-descriptions/rt-energy) | Lesson 8 | Net deviation per location at the RT LMP, five-minute intervals; invoices include other allocations | 2026-10-11 |
+| PJM, [Manual 11, Revision 137](https://www.pjm.com/-/media/DotCom/documents/manuals/m11.pdf) | Lesson 6 | PJM LMP = system energy price + congestion price + loss price (Section 1 overview) | 2026-10-11 |
+| EIA, [Form EIA-930 instructions](https://www.eia.gov/survey/form/eia_930/instructions.pdf) | Lesson 1 | "Hourly integrated values in megawatts by hour ending time" (General Instructions, p. 3) | 2026-10-11 |
 
 ## Review record
 

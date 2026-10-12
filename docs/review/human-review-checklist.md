@@ -1,6 +1,6 @@
-# Human-review checklist: lessons 1–7 and the glossary
+# Human-review checklist: lessons 1–8 and the glossary
 
-**Status: not reviewed by a person.** All seven lessons, the glossary, and the exercise
+**Status: not reviewed by a person.** All eight lessons, the glossary, and the exercise
 wording were drafted by an AI agent (Claude). This checklist was also prepared by the
 agent; it lists what a reviewer should check and the potential issues the agent noticed.
 It is **not** a review. BL-3 stays open until a named person completes it.
@@ -170,16 +170,40 @@ Copy this block for each item you review. Leave fields blank until they are true
      wording called the ±0.1 MW quotients "one-sided rates" and said "more or less demand
      cannot be met" when only one direction failed.
 
+## Lesson 8 — From scheduled energy to settlement · `energy-settlement` · v1.0.0
+
+- Calculator: `energy_settlement` v1.0.0 (`settlement.py`); synthetic inputs, optional
+  import of one verified modeled price.
+- Sources: `iso-ne-da-rt-markets`, `iso-ne-da-energy-bill`, `iso-ne-rt-energy-bill` (ISO New
+  England; agent-checked 2026-10-11).
+- Exercises: `total-amount`, `deviation-component`, `role-reading`, `volume-exposure`,
+  `price-exposure` (settlement; answers from the calculator's current inputs).
+- Agent-noticed items:
+  1. Confirm the paraphrases of the three ISO New England pages: day-ahead commitments are
+     settled; real-time settles differences from them at the real-time LMP; day-ahead energy
+     is settled hourly on net cleared quantity at the day-ahead LMP; real-time energy is
+     settled on net deviation at the real-time LMP in five-minute intervals; invoices carry
+     other allocations.
+  2. The sign convention (a buyer pays the signed amount; a seller receives it) is the app's
+     own. ISO New England's invoice nets credits and charges with its own convention. Confirm
+     that the lesson says this clearly enough.
+  3. "Sold back at the real-time price" for a negative deviation is a teaching phrase. Decide
+     whether it could mislead.
+  4. Forecast-vintage limitation: the lesson says EIA demand forecasts are not day-ahead
+     cleared quantities. Confirm.
+
 ---
 
 ## Glossary (`src/mambo_explorer/content/glossary.yaml`)
 
-35 terms. Check each definition for accuracy, beginner readability, and consistency with
+41 terms. Check each definition for accuracy, beginner readability, and consistency with
 the lessons that use it.
 
 - [ ] Observation terms: Absent row, BA, Day-ahead demand forecast, Demand, EIA, EIA-930,
       ERCOT, Energy, Forecast error, MAE, Mean error, MW, MWh, Null value, Period label,
       Power, Revision, RMSE, UTC.
+- [ ] Settlement terms (lesson 8): Day-ahead schedule, Deviation, Energy settlement,
+      Price exposure, Two-settlement system, Volume exposure.
 - [ ] Model terms: Average change rate, Binding constraint, Breakpoint, Congestion, Cost rate,
       Dispatch, Line rating, Line-limit sensitivity, Marginal cost, Modeled, Modeled nodal
       price, Offer, Optimal power flow, Power flow, Reference bus, Synthetic.
