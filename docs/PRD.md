@@ -118,7 +118,7 @@ analyzing on their own machine. Explanations assume no prior industry knowledge.
 | U-3 | Order of regional operators after ERCOT (ERCOT itself is settled as R-29). | DATA-02 |
 | U-4 | Redistribution terms for each source. | PUB-01, SRC-01 |
 | U-5 | How far back history goes and the local storage budget. | STORE-01 |
-| U-6 | How "continuously updated" collection is scheduled locally (manual, OS scheduler, or in-app). | HEALTH-01, DATA-* |
+| U-6 | How "continuously updated" collection is scheduled locally (manual, OS scheduler, or in-app). | HEALTH-01, DATA-* — proposed in ADR 0013: manual `mambo refresh` or an optional per-user Windows task; never in-app. Registering a task remains the owner's choice. |
 | U-7 | Which balancing authorities and utilities count as "non-ISO markets" for R-7. | EXPLORE-01, LEARN-01 |
 | U-8 | Who authors and reviews lessons and rules for accuracy, and the citation standard. | LEARN-01, COMP-01 |
 | U-9 | Whether to test Python 3.12/3.13 and non-Windows platforms. Declared floor 3.11; tested on 3.11.16 and 3.14.2 on Windows only (ADR 0003). | — |
@@ -136,7 +136,7 @@ Anything not listed is not implemented yet.
 | R-4 physical system: demand | LEARN-03 | partial: demand only | lessons 1–2 |
 | R-5 forecasting | LEARN-03 | partial: published day-ahead forecast accuracy (descriptive) | lesson 3, `docs/calculations.md` |
 | R-7 ERCOT | DATA-01 | partial: EIA-930 `ERCO` only | source register |
-| R-13 continuously updated data; effective-dated lessons | DATA-01, LEARN-03, COMP-02 | partial: manual collection; lessons carry `effective_date` and `content_version`; responsibility records carry published/effective dates only when the source states them (point-in-time, not monitored) | `lessons.py` validation |
+| R-13 continuously updated data; effective-dated lessons | DATA-01, LEARN-03, COMP-02, OPS-01, HEALTH-01 | partial: bounded `mambo refresh` (manual, or an optional Windows task that is previewed but not registered), System Health freshness; lessons carry `effective_date` and `content_version`; responsibility records carry published/effective dates only when the source states them (point-in-time, not monitored) | `lessons.py` validation |
 | R-14 provenance, revisions, licensing, reproducibility, limitations | STORE-01/02, CALC-01, LEARN-03 | partial: lineage, revisions, calculation references, per-lesson sources and limitations | ADR 0004, `docs/calculations.md` |
 | R-15 data labels | EXPLORE-02, LEARN-03 | implemented for current pages: observed vs. synthetic | `tests/test_learn_ui.py`, `tests/guards.py` |
 | R-16/R-17 local, free | all | implemented: local files only, no accounts | `progress.py`, `config.py` |

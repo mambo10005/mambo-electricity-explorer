@@ -47,7 +47,13 @@ src/mambo_explorer/
   eia/redact.py    Credential redaction (raw, %-encoded, +-encoded, query, JSON echo)
   collect.py       Plan (bounded days + lookback), normalize, revisions, collect()
   storage.py       Parquet + SQLite catalog + DuckDB views; lock; validate/recover
-  cli.py           `mambo sources|collect|validate|status|storage`
+  cli.py           `mambo sources|collect|validate|status|storage|refresh|health`
+  refresh_config.py  validated, bounded refresh plan (content/refresh.yaml; ADR 0013)
+  refresh.py       Stage 15: plans EIA/ERCOT catch-up from committed runs and calls the
+                   existing collect() functions sequentially under a refresh lock;
+                   per-source budgets, partial results, redacted logs
+  health.py        read-only freshness/coverage/storage facts; content review status
+  system_health.py System Health page (HEALTH-01); never collects
   explore.py       Explore page (reads committed observations only)
 ```
 

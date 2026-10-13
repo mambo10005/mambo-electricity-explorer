@@ -93,6 +93,15 @@ non-trivial work.
     proposal never has one.
   - Never bypass a human-verification page; record the gap instead.
   - Never attribute a synthetic requirement to a real authority.
+- Refresh and health (ADR 0013).
+  - `mambo refresh` only orchestrates the existing collectors: no second ingestion
+    path, sequential, bounded by `content/refresh.yaml`.
+  - Plan catch-up from committed runs, never from absent rows; never fill gaps.
+  - System Health and the app never collect. Freshness comes from observation labels
+    or source publication time, never from request time; "unknown" when
+    undeterminable.
+  - Never register, change, or remove a scheduled task without the owner's explicit
+    request (`scripts/refresh-task.ps1` defaults to Preview).
 - `focus.css` is the only CSS the app adds (ADR 0008): focus-only, stable selectors,
   no generated classes, no script. New CSS needs an ADR.
 - Theme colors live in `.streamlit/config.toml`; re-measure rendered contrast
@@ -109,4 +118,6 @@ pwsh -File scripts/check.ps1 [-Python 3.11]       # routine; offline; nonzero on
 .venvs/py314/Scripts/python scripts/license_inventory.py   # after any uv lock
 .venvs/py314/Scripts/mambo collect --dry-run               # never needs a key
 .venvs/py314/Scripts/mambo validate                        # read-only store check
+.venvs/py314/Scripts/mambo refresh --dry-run              # refresh plan; sends nothing
+pwsh -File scripts/refresh-task.ps1                        # task preview only
 ```

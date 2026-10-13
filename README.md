@@ -94,6 +94,21 @@ days public. The data is stored separately from EIA in
 Units and time zone are not stated by ERCOT, so they are shown as published. See
 `docs/datasets/ercot-np6-345-cd.md`.
 
+### Refresh both sources and check health
+
+```powershell
+.venvs/py314/Scripts/mambo refresh --dry-run    # plan, catch-up findings, and request budgets; sends nothing
+.venvs/py314/Scripts/mambo refresh              # bounded, one source after another
+.venvs/py314/Scripts/mambo health               # read-only freshness and storage status
+```
+
+`mambo refresh` runs the same collectors with a validated, bounded plan
+(`content/refresh.yaml`). It reports partial success separately (exit 3), and plans
+catch-up only from successful runs. The **System Health** page shows the same status;
+it never collects. Nothing is real-time. An optional Windows scheduled task can be
+previewed with `pwsh -File scripts/refresh-task.ps1`; it is not registered unless you
+ask. See [docs/refresh-runbook.md](docs/refresh-runbook.md) and ADR 0013.
+
 ### Model Labs (no data or key needed)
 
 **Model Labs** runs a DC power flow on a **synthetic** three-bus network with
@@ -215,6 +230,7 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
 | [ERCOT NP6-345-CD contract](docs/datasets/ercot-np6-345-cd.md) | Direct ERCOT report: schema, units, time and DST fields |
 | [mambo-power capability register](docs/capability-register.md) | What is documented vs. inspected vs. verified vs. exposed |
+| [Refresh runbook](docs/refresh-runbook.md) | Refresh configuration, catch-up rules, recovery, optional scheduling |
 | [Backlog](docs/backlog.md) | Recorded, unscheduled tasks (e.g. ERCOT DST validation) |
 | [Lesson authoring](docs/lesson-authoring.md) | Lesson schema, review rules, and checks |
 | [Dependency licenses](docs/dependency-licenses.md) | Generated license inventory of locked packages |

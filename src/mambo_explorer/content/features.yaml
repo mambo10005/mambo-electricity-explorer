@@ -89,7 +89,12 @@ features:
   - id: HEALTH-01
     name: "Collection, freshness, and storage status"
     section: system-health
-    status: planned
+    status: done
+    ui: true
+  - id: OPS-01
+    name: "Bounded local refresh of existing collectors (plan, budgets, catch-up, logs) and optional Windows task scripts"
+    section: system-health
+    status: done
   - id: EXPLORE-01
     name: "Observation explorer across regions"
     section: explore

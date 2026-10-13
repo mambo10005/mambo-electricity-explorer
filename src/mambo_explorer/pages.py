@@ -10,6 +10,7 @@ from mambo_explorer.finance import render_finance
 from mambo_explorer.learn import render_learn
 from mambo_explorer.model_lab import render_model_lab
 from mambo_explorer.navigation import section_by_key
+from mambo_explorer.system_health import render_system_health
 
 NOT_IMPLEMENTED = "Not implemented"
 
@@ -75,6 +76,7 @@ IMPLEMENTED = {
     "model-labs": render_model_lab,
     "finance": render_finance,
     "compliance": render_compliance,
+    "system-health": render_system_health,
 }
 
 

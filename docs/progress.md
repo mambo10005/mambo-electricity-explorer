@@ -2,6 +2,45 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-12 — Stage 15: bounded local refresh and System Health (#29)
+
+Stacked on Stage 14 (PR #28) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
+`data/` and progress unchanged (gate check).
+
+- **Refresh** (`refresh.py`, `refresh_config.py`, `content/refresh.yaml`; ADR 0013).
+  - `mambo refresh [--dry-run] [--source …] [--config …]` calls the existing EIA and
+    ERCOT collectors one after another, under a refresh lock.
+  - Each source has its own budget. Results are complete (exit 0), partial (exit 3), or
+    failed (exit 2), with redacted diagnostics and pruned JSON logs.
+  - Catch-up is planned from committed runs. EIA: UTC days after the last committed day
+    plus a lookback, capped at 14. ERCOT: calendar-label OperDays plus one lookback
+    document, capped at 7; gaps older than the ~31-day public list are flagged as
+    outside history.
+  - Absent rows are never treated as a missed job or filled.
+- **System Health (HEALTH-01).** A read-only page and `mambo health`, showing separately:
+  last attempt vs last success, observation label, publication time (ERCOT only), and
+  retrieval time. Also shown:
+  - freshness from labels or publication time, and "unknown" when the store can't be
+    read;
+  - coverage and absent counts, storage validation, and recent refreshes;
+  - content versions, review dates, and status, with "no automatic monitoring" and the
+    regulatory snapshot notice.
+- **Scheduling (OPS-01).** `scripts/refresh-task.ps1` previews by default and has Task
+  Scheduler parse the XML; no task was registered.
+- **Live (scratch storage).** ERCOT refresh: 4 requests, 648 new values (OperDays
+  10/09–10/11/2026). Repeat: a 1-document lookback, 2 requests, 216 unchanged. Health
+  showed fresh, and validate passed. EIA was not run live (credential not reused).
+- **Browser (Playwright CLI; scratch data; PID-tracked server).**
+  - States: empty, successful, partial (a live refresh with no EIA key: EIA failed,
+    ERCOT succeeded, exit 3), stale (threshold lowered in a scratch plan), and unknown (a
+    hidden Parquet file).
+  - Keyboard: "Check again" (Enter) and the view selector (arrow keys).
+  - Dark theme at 640 CSS px (200% equivalent) and light theme at 375 px: no page
+    overflow.
+  - Fixes found: the per-source refresh-log result is now shown (failures before
+    collection were invisible); the coverage table is transposed for phones; lesson
+    labels no longer render as a Markdown list.
+
 ## 2026-10-11 — Stage 14: regulatory responsibility explorer and compliance lessons (#27)
 
 Stacked on Stage 13 (PR #26) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
