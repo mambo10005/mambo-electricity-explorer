@@ -67,6 +67,12 @@ def label_frame(rows: Sequence[dict], label_key: str = "period") -> pd.DataFrame
     return frame
 
 
+def utc_datetime(label: str) -> alt.DateTime:
+    """A Vega-Lite DateTime for a UTC source label, flagged utc so no browser zone applies."""
+    t = ds.parse_period(label)
+    return alt.DateTime(year=t.year, month=t.month, date=t.day, hours=t.hour, utc=True)
+
+
 def utc_label_chart(
     rows: Sequence[dict],
     *,
@@ -80,21 +86,25 @@ def utc_label_chart(
     label_key: str = "period",
     key: str | None = None,
     alt_text: str | None = None,
+    tick_labels: Sequence[str] | None = None,
 ) -> alt.Chart | None:
     """Draw values against verified UTC period labels; the browser's time zone never matters.
 
     Rows need the verbatim label (`label_key`) and `value_field`; `series_field` names the
     series for multi-series charts. The x axis is a Vega-Lite utc scale; the tooltip shows
     the verbatim label and the value. Returns the chart, or None when there are no rows.
+
+    `tick_labels` (UTC source labels) pins axis ticks to those instants. Production views
+    leave it unset (Vega chooses tick density); the time-position diagnostic sets it so
+    each observation can be matched to its own tick.
     """
     if not rows:
         return None
     frame = label_frame(rows, label_key)
-    x = alt.X(
-        "instant:T",
-        scale=alt.Scale(**UTC_SCALE),
-        axis=alt.Axis(title=AXIS_TITLE, format=AXIS_FORMAT, labelAngle=-45),
-    )
+    axis = dict(title=AXIS_TITLE, format=AXIS_FORMAT, labelAngle=-45)
+    if tick_labels is not None:
+        axis["values"] = [utc_datetime(label) for label in tick_labels]
+    x = alt.X("instant:T", scale=alt.Scale(**UTC_SCALE), axis=alt.Axis(**axis))
     y = alt.Y(f"{value_field}:Q", title=value_title)
     if stack is not None:
         y = alt.Y(f"{value_field}:Q", title=value_title, stack="zero" if stack else None)

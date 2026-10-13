@@ -36,6 +36,15 @@ or the end of the hour, and ERCOT's time zone for `OperDay`/`HourEnding`/`DSTFla
    observation selection is unchanged. The browser procedure emulates the three zones and
    reads the axis tick, the tooltip, and the table row for one observation.
 
+## Addendum (Stage 18, 2026-10-12)
+
+Stage 17's browser report quoted the first three ticks of a 48-hour axis as if they
+located a point 32 hours later. A position audit (`docs/timestamp-display.md`,
+"Position evidence") measured each mark against its own tick in UTC, Los Angeles,
+and Seoul and found correct placement (−0.5 px, Vega's half-pixel offset). No defect
+was found. `utc_label_chart` gained an optional `tick_labels` argument for the
+synthetic diagnostic only; production tick density is unchanged (test-enforced).
+
 ## Consequences
 
 - Lesson text did not change, so content versions and review statuses stay as they were.

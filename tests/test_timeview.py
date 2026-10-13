@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import re
 from datetime import UTC, datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -232,3 +233,77 @@ def test_no_streamlit_builtin_chart_is_fed_datetimes():
             if "parse_period" in call or "datetime" in call or "strptime" in call:
                 offenders.append(path.name)
     assert offenders == []
+
+
+# --- Stage 18: time-position diagnostic (synthetic) --------------------------------------
+# These check what the browser receives (spec and Arrow dataset). Visual point-to-tick
+# alignment is checked in the browser (docs/timestamp-display.md, "Position evidence").
+
+DIAG = Path(__file__).resolve().parents[1] / "scripts" / "diagnostics" / "time_position_app.py"
+FOUR = ["2026-03-08T07", "2026-03-08T08", "2026-03-08T09", "2026-03-08T10"]
+
+
+def _expected(label: str) -> datetime:
+    """Independent of ds.parse_period: build the UTC instant from the label's digits."""
+    y, mo, d, h = int(label[:4]), int(label[5:7]), int(label[8:10]), int(label[11:13])
+    return datetime(y, mo, d, h, tzinfo=UTC)
+
+
+def test_utc_datetime_is_a_utc_flagged_vega_datetime():
+    assert timeview.utc_datetime("2026-03-08T08").to_dict() == {
+        "year": 2026,
+        "month": 3,
+        "date": 8,
+        "hours": 8,
+        "utc": True,
+    }
+
+
+def test_diagnostic_charts_serialize_correct_instants_ticks_and_order():
+    at = AppTest.from_file(str(DIAG)).run(timeout=30)
+    assert not at.exception
+    charts = at.get("vega_lite_chart")
+    assert len(charts) == 3
+    expected_ticks = {
+        0: FOUR,
+        1: ["2026-03-07T22", "2026-03-07T23", "2026-03-08T00", "2026-03-08T01"],
+        2: FOUR,
+    }
+    for i, chart in enumerate(charts):
+        spec = json.loads(chart.proto.spec)
+        x = spec["encoding"]["x"]
+        assert x["scale"] == {"type": "utc"}
+        values = x["axis"]["values"]
+        assert [v["utc"] for v in values] == [True] * 4
+        assert [
+            datetime(v["year"], v["month"], v["date"], v["hours"], tzinfo=UTC) for v in values
+        ] == [_expected(lab) for lab in expected_ticks[i]]
+        rows = _dataset_rows(chart)
+        labels = [r["period"] for r in rows]
+        instants = [r["instant"].astimezone(UTC) for r in rows]
+        assert instants == [_expected(lab) for lab in labels]  # each instant matches its own label
+        assert (
+            sorted(set(labels)) == expected_ticks[i]
+        )  # the domain holds exactly the fixture hours
+        ordered = sorted(zip(instants, labels, strict=True))
+        assert [lab for _, lab in ordered] == sorted(labels)  # chronological = label order
+    tables = [t.value for t in at.table]
+    row = tables[0][tables[0]["Label (UTC)"] == "2026-03-08T08"]
+    assert list(row["Value (synthetic)"]) == ["800"]
+    four = {r["period"]: r["Value (synthetic)"] for r in _dataset_rows(charts[0])}
+    assert four == {
+        "2026-03-08T07": 700.0,
+        "2026-03-08T08": 800.0,
+        "2026-03-08T09": 900.0,
+        "2026-03-08T10": 1000.0,
+    }
+
+
+def test_production_views_keep_vega_tick_density():
+    """Explicit ticks are a diagnostic aid only; production charts never pin axis values."""
+    from pathlib import Path as _P
+
+    src = _P(__file__).resolve().parents[1] / "src" / "mambo_explorer"
+    for path in src.rglob("*.py"):
+        if path.name != "timeview.py":
+            assert "tick_labels" not in path.read_text("utf-8"), path.name
