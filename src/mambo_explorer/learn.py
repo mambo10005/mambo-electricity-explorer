@@ -32,6 +32,7 @@ from mambo_explorer.modeling.runs import RunStore
 from mambo_explorer.opf_lab import md_dollars
 from mambo_explorer.progress import UNDERSTANDING, Progress
 from mambo_explorer.storage import Store
+from mambo_explorer.timeview import format_utc, utc_label_chart
 
 STATE_HELP = (
     "**viewed**: you opened the lesson. **exercise completed**: you answered at least one "
@@ -88,8 +89,8 @@ def _freshness(last: dict | None) -> None:
     finished = datetime.fromisoformat(last["finished_at"]).astimezone(UTC)
     st.markdown(
         f"- **Observations:** EIA-930 (`{ds.ROUTE}`), entity `{ds.ENTITY}`, unit as reported "
-        f"(`{ds.EXPECTED_UNIT}`). Last successful local collection {finished:%Y-%m-%d %H:%M} "
-        f"UTC (run `{last['run_id']}`). Publication time is not provided by the source."
+        f"(`{ds.EXPECTED_UNIT}`). Last successful local collection {format_utc(finished)} "
+        f"(run `{last['run_id']}`). Publication time is not provided by the source."
     )
     if datetime.now(UTC) - finished > STALE_AFTER:
         st.warning(
@@ -107,7 +108,7 @@ def _generation_freshness(gen_store) -> None:
     st.markdown(
         f"- **Generation observations:** EIA-930 (`{ds.GENERATION_ROUTE}`), entity "
         f"`{ds.ENTITY}`, unit as reported (`{ds.EXPECTED_UNIT}`), signed as published. Last "
-        f"successful local collection {finished:%Y-%m-%d %H:%M} UTC (run `{last['run_id']}`). "
+        f"successful local collection {format_utc(finished)} (run `{last['run_id']}`). "
         "Publication time is not provided by the source."
     )
     if datetime.now(UTC) - finished > STALE_AFTER:
@@ -209,13 +210,12 @@ def panel_demand_series(obs, sel) -> None:
         "Line chart of hourly actual demand by UTC period label. Gaps mean no valid value. "
         "The same numbers are in the table below the chart."
     )
-    st.line_chart(
-        [
-            {"Period label (UTC)": ds.parse_period(o.period), "Actual demand (MWh)": o.value}
-            for o in rows
-        ],
-        x="Period label (UTC)",
-        color=["#1f77b4"],
+    utc_label_chart(
+        [{"period": o.period, "Actual demand (MWh)": o.value} for o in rows if o.value is not None],
+        value_field="Actual demand (MWh)",
+        value_title="Actual demand (MWh)",
+        colors=["#1f77b4"],
+        key="learn_demand_chart",
     )
     with st.expander(f"Data table for this chart ({len(rows)} rows)"):
         st.table(
@@ -274,13 +274,12 @@ def panel_forecast_comparison(obs, sel) -> None:
         "Above zero: demand above forecast. Below zero: demand below forecast. "
         "The pairs are listed in the table below."
     )
-    st.line_chart(
-        [
-            {"Period label (UTC)": ds.parse_period(p["period"]), "Error (MWh)": p["error"]}
-            for p in v["pair_errors"]
-        ],
-        x="Period label (UTC)",
-        color=["#d95f02"],
+    utc_label_chart(
+        [{"period": p["period"], "Error (MWh)": p["error"]} for p in v["pair_errors"]],
+        value_field="Error (MWh)",
+        value_title="Error (MWh)",
+        colors=["#d95f02"],
+        key="learn_error_chart",
     )
     with st.expander(f"Matched pairs ({v['pairs']} rows)"):
         st.table(

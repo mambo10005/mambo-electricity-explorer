@@ -102,6 +102,11 @@ non-trivial work.
     and never name the price-setting unit from the mix.
   - Disabled in the default refresh plan; its success never implies demand's, or
     the reverse.
+- Time display (ADR 0015): every time-axis chart of UTC labels goes through
+  `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
+  `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,
+  never place ERCOT labels on a time scale, never give synthetic intervals calendar
+  times. Retrieval times print with `format_utc`. See `docs/timestamp-display.md`.
 - Refresh and health (ADR 0013).
   - `mambo refresh` only orchestrates the existing collectors: no second ingestion
     path, sequential, bounded by `content/refresh.yaml`.

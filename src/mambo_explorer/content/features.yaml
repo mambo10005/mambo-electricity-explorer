@@ -36,6 +36,10 @@ features:
     name: "Keyboard focus indicator (focus-only CSS, measured in both themes)"
     section: platform
     status: done
+  - id: QA-06
+    name: "Timestamp display consistency: UTC labels on axes, tooltips, and tables regardless of browser time zone"
+    section: platform
+    status: done
   - id: LEARN-01
     name: "Lesson content following the learning sequence"
     section: learn

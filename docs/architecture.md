@@ -49,6 +49,8 @@ src/mambo_explorer/
   generation.py    Stage 16: same plan rules for EIA-930 net generation by energy source,
                    own store namespace eia930-fuel-type, identity incl. energy_source (ADR 0014)
   generation_explore.py, generation_exercises.py  signed chart/coverage/totals view; lesson 13
+  timeview.py      Stage 17: display conventions for every kind of time value; utc_label_chart
+                   (Vega-Lite utc scale + verbatim-label tooltip), format_utc (ADR 0015)
   storage.py       Parquet + SQLite catalog + DuckDB views; lock; validate/recover
   cli.py           `mambo sources|collect|validate|status|storage|refresh|health`
   refresh_config.py  validated, bounded refresh plan (content/refresh.yaml; ADR 0013)
