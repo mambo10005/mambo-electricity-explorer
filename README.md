@@ -126,6 +126,20 @@ final. **Explore** shows the day; lesson 14, *Reading an actual day-ahead electr
 price*, explains it. Opt-in in the refresh plan (ADR 0016,
 `docs/datasets/ercot-np4-190-cd.md`).
 
+### ERCOT real-time price at the North Hub (no key needed)
+
+```powershell
+.venvs/py314/Scripts/mambo sources --source ercot-rt-spp               # reviewed contract (offline)
+.venvs/py314/Scripts/mambo collect --source ercot-rt-spp --dry-run     # scope and budget; sends nothing
+.venvs/py314/Scripts/mambo collect --source ercot-rt-spp --latest 4    # newest 4 intervals not stored
+```
+
+ERCOT NP6-905-CD real-time Settlement Point Prices (produced from SCED LMPs every 15
+minutes, including ERCOT's reliability deployment price adder, floored at −$251/MWh), stored
+for `HB_NORTH` only in `<MAMBO_DATA_DIR>/ercot-np6-905-cd/`. Each interval keeps ERCOT's
+DeliveryDate/DeliveryHour/DeliveryInterval/DSTFlag (no UTC). Lesson 15 explains it. Opt-in,
+under the shared ercot.com request cap (ADR 0017, `docs/datasets/ercot-np6-905-cd.md`).
+
 ### Refresh both sources and check health
 
 ```powershell
@@ -261,6 +275,7 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Source register](docs/source-register.md) | Data source access and licensing review |
 | [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
 | [ERCOT NP6-345-CD contract](docs/datasets/ercot-np6-345-cd.md) | Direct ERCOT report: schema, units, time and DST fields |
+| [ERCOT NP6-905-CD contract](docs/datasets/ercot-np6-905-cd.md) | Real-time hub price: product, price definition, 15-minute interval identity, finality |
 | [ERCOT NP4-190-CD contract](docs/datasets/ercot-np4-190-cd.md) | Day-ahead hub price: report, location evidence, units, labels, finality |
 | [EIA-930 generation contract](docs/datasets/eia930-fuel-type-data.md) | Net generation by energy source: route, codes, sign conventions, totals |
 | [Timestamp display](docs/timestamp-display.md) | Inventory of every time value shown, its kind, and its display convention; browser regression steps |

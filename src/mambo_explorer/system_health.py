@@ -13,6 +13,7 @@ from mambo_explorer.catalog import features
 from mambo_explorer.config import ConfigError, load_settings
 from mambo_explorer.ercot import collect as ercot_collect
 from mambo_explorer.ercot import prices as ercot_prices
+from mambo_explorer.ercot import rt_prices as ercot_rt
 from mambo_explorer.storage import Store
 
 # Replaceable clock (tests use a fixed time; nothing depends on today's date).
@@ -101,6 +102,7 @@ def render_system_health() -> None:
         "ercot": ercot_collect.store(settings.data_dir),
         "eia-generation": generation.store(settings.data_dir),
         "ercot-dam-spp": ercot_prices.store(settings.data_dir),
+        "ercot-rt-spp": ercot_rt.store(settings.data_dir),
     }
     now = NOW()
     st.caption(f"Checked at {now.astimezone(UTC).isoformat(timespec='seconds')} (UTC).")
@@ -108,13 +110,14 @@ def render_system_health() -> None:
 
     view = st.radio(
         "Show",
-        ["all", "eia", "ercot", "eia-generation", "ercot-dam-spp"],
+        ["all", "eia", "ercot", "eia-generation", "ercot-dam-spp", "ercot-rt-spp"],
         format_func={
             "all": "All sources",
             "eia": "EIA-930 demand",
             "ercot": "ERCOT NP6-345-CD",
             "eia-generation": "EIA-930 generation",
             "ercot-dam-spp": "ERCOT DAM price (HB_NORTH)",
+            "ercot-rt-spp": "ERCOT real-time price (HB_NORTH)",
         }.get,
         horizontal=True,
         key="health_view",
@@ -156,7 +159,13 @@ def render_system_health() -> None:
                     "Collection interval (your schedule)": f"{s.collection_interval_hours} h",
                     "Request budget per refresh": str(s.request_budget),
                 }
-                for s in (config.eia, config.ercot, config.generation, config.prices)
+                for s in (
+                    config.eia,
+                    config.ercot,
+                    config.generation,
+                    config.prices,
+                    config.rt_prices,
+                )
             ],
             hide_index=True,
         )

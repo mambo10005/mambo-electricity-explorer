@@ -50,6 +50,20 @@ only HB_NORTH is stored. Planning counts DeliveryDates; the newest expected is t
 (the DAM posts the day before). A successful refresh never makes a price final (Protocols:
 final at 1000 on the second Business Day; not computed).
 
+**ERCOT real-time price dataset (`ercot-rt-spp`, Stage 20).** One document per
+15-minute interval (about 8 KB). The section is **disabled by default** and optional in plan
+files. Settings: window 4, catch-up cap 8 unstored intervals, budget 10, collection
+interval 1 h, and freshness 2 h by publication time.
+- **Planning:** at collection time from ERCOT's public list, not from a clock, because the
+  labels carry no time zone.
+- **Reported each run:** "no newer document published yet", documents published but not
+  requested, and the oldest listed document (the list keeps about 7 days).
+- **Re-checks:** `mambo collect --source ercot-rt-spp --latest N --include-stored`
+  re-downloads the newest N to check for revisions.
+- **Shared cap:** this dataset shares the ercot.com cap, which is **not raised**. With load
+  and day-ahead enabled (12 + 6 = 18), real-time is skipped with a host-budget finding until
+  you raise `hosts.ercot.com.max_requests_per_refresh` in your own plan.
+
 **Shared host limits (`hosts`).** `hosts: {ercot.com: {max_requests_per_refresh: 18}}`
 caps requests to one host across all its datasets in one refresh (load 12 + prices 6 by
 default). A later dataset that would exceed the cap is skipped with a `host-budget`

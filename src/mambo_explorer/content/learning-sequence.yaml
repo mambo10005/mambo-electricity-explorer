@@ -3,8 +3,8 @@
 # mix after 2) and a market-mechanics track on a synthetic model (5-7), both after lesson 1; settlement has one introductory
 # lesson (8, after lesson 1); financial contracts and risk has two (9 after 6 and 8; 10
 # after 1 and 9); compliance has two (11 after 1; 12 after 11); individual regional
-# markets has one (14, the ERCOT day-ahead price, after 1 and 6). The other stages have no
-# lessons yet.
+# markets has two (14, the ERCOT day-ahead price, after 1 and 6; 15, the real-time price,
+# after 14). The other stages have no lessons yet.
 stages:
   - key: fundamentals
     title: Fundamentals

@@ -22,6 +22,7 @@ SOURCES = {
     "ercot": "ERCOT direct: NP6-345-CD actual load by weather zone",
     "eia-generation": "EIA-930 via EIA API (ERCO net generation by energy source)",
     "ercot-dam-spp": "ERCOT direct: NP4-190-CD day-ahead settlement point price (HB_NORTH)",
+    "ercot-rt-spp": "ERCOT direct: NP6-905-CD real-time settlement point price (HB_NORTH)",
 }
 
 SETUP_INSTRUCTIONS = """\
@@ -82,6 +83,11 @@ def render_explore() -> None:
         from mambo_explorer.price_view import render_prices
 
         render_prices(settings)
+        return
+    if source == "ercot-rt-spp":
+        from mambo_explorer.rt_price_view import render_rt_prices
+
+        render_rt_prices(settings)
         return
     _render_eia(settings)
 

@@ -20,6 +20,7 @@ from mambo_explorer import (
     price_exercises,
     responsibilities,
     routes,
+    rt_price_exercises,
     settlement_exercises,
     shape_exercises,
 )
@@ -370,6 +371,8 @@ def _generation_context(data_dir):
 def _binding_kind(binding: dict) -> str:
     if binding.get("dataset") == "NP4-190-CD":
         return "price"
+    if binding.get("dataset") == "NP6-905-CD":
+        return "rtprice"
     if binding.get("route") == ds.GENERATION_ROUTE:
         return "generation"
     return "demand"
@@ -395,6 +398,27 @@ def panel_dam_price(data_dir):
         return None, None
     hours = price_view.render_day(target, day, "learn_price")
     return day, hours
+
+
+def panel_rt_price(data_dir):
+    """Lesson 15 panel: one DeliveryDate of HB_NORTH real-time intervals; returns (day, rows)."""
+    from mambo_explorer import rt_price_view
+    from mambo_explorer.ercot import rt_prices as rt
+
+    st.subheader(f"Real-time price at {rt.LOCATION} (observed)")
+    if data_dir is None:
+        st.info("Prices cannot be shown without a safe data directory.")
+        return None, None
+    target = rt.store(data_dir)
+    day = rt_price_view.day_picker(target, "learn_rt_day")
+    if day is None:
+        st.info(
+            "No ERCOT real-time prices have been collected on this computer, so this part of "
+            "the lesson has no actual data to show. Collection runs from the command line "
+            "(`mambo collect --source ercot-rt-spp`), never from this page."
+        )
+        return None, None
+    return day, rt_price_view.render_day(target, day, "learn_rt")
 
 
 def panel_generation_mix(obs, sel) -> None:
@@ -624,6 +648,7 @@ def render_learn() -> None:
     obs = sel = last = None
     gen_obs = gen_sel = None
     price_day = price_hours = None
+    rt_day = rt_intervals = None
     bindings = meta["dataset_bindings"]
     kinds = {_binding_kind(b) for b in bindings}
     if "generation" in kinds:
@@ -635,6 +660,8 @@ def render_learn() -> None:
             PANELS[panel](gen_obs, gen_sel)
         elif panel == "dam_price":
             price_day, price_hours = panel_dam_price(settings.data_dir if store else None)
+        elif panel == "rt_price":
+            rt_day, rt_intervals = panel_rt_price(settings.data_dir if store else None)
         else:
             PANELS[panel](obs, sel)
 
@@ -678,6 +705,8 @@ def render_learn() -> None:
             exercise = generation_exercises.generate(spec, gen_obs, gen_sel)
         elif spec["kind"] == "price":
             exercise = price_exercises.generate(spec, price_day, price_hours)
+        elif spec["kind"] == "rtprice":
+            exercise = rt_price_exercises.generate(spec, rt_day, rt_intervals)
         else:
             exercise = generate(spec, obs, sel)
         _exercise(lesson, spec, exercise, progress)

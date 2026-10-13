@@ -43,7 +43,7 @@ def _text(at: AppTest) -> str:
     return "\n".join(parts)
 
 
-def test_default_source_is_eia_and_selector_offers_all_four(data_dir):
+def test_default_source_is_eia_and_selector_offers_all_five(data_dir):
     at = AppTest.from_string(EXPLORE).run(timeout=30)
     assert not at.exception
     assert at.radio(key="explore_source").value == "eia"
@@ -52,6 +52,7 @@ def test_default_source_is_eia_and_selector_offers_all_four(data_dir):
         "ERCOT direct: NP6-345-CD actual load by weather zone",
         "EIA-930 via EIA API (ERCO net generation by energy source)",
         "ERCOT direct: NP4-190-CD day-ahead settlement point price (HB_NORTH)",
+        "ERCOT direct: NP6-905-CD real-time settlement point price (HB_NORTH)",
     ]
 
 

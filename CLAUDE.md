@@ -107,7 +107,10 @@ non-trivial work.
     report's conventions; never call a price final; missing is not zero.
   - Never inject actual prices into calculators automatically, never use a day-ahead
     price as real-time, never infer K, never join with EIA data.
-  - Respect the shared `hosts` request cap for ercot.com.
+  - Respect the shared `hosts` request cap for ercot.com; never raise it silently.
+  - Real-time (ADR 0017): NP6-905-CD SPP (not LMP) at `HB_NORTH`/`HU`; keep
+    DeliveryDate/Hour/Interval/DSTFlag raw; never assume 96 intervals; never compare
+    with day-ahead until the prerequisites in `docs/calculations.md` are met.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,

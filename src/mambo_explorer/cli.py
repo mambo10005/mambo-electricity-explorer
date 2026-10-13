@@ -42,13 +42,14 @@ from mambo_explorer.eia.client import EIAClient, EIAError
 from mambo_explorer.ercot import collect as ercot
 from mambo_explorer.ercot import dataset as ercot_ds
 from mambo_explorer.ercot import prices as ercot_prices
+from mambo_explorer.ercot import rt_prices as ercot_rt
 from mambo_explorer.ercot.client import ErcotClient, ErcotError
 from mambo_explorer.refresh import RefreshLockError
 from mambo_explorer.refresh_config import RefreshConfigError
 from mambo_explorer.safe_zip import ArchiveError
 from mambo_explorer.storage import Store, WriterLockError
 
-SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp")
+SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp", "ercot-rt-spp")
 
 
 def _print(obj: object) -> None:
@@ -62,6 +63,8 @@ def _store(args, settings) -> Store:
         return generation.store(settings.data_dir)
     if args.source == "ercot-dam-spp":
         return ercot_prices.store(settings.data_dir)
+    if args.source == "ercot-rt-spp":
+        return ercot_rt.store(settings.data_dir)
     return Store(settings.data_dir)
 
 
@@ -89,6 +92,24 @@ def cmd_sources(args, settings) -> int:
                 "public_csv_documents": len(documents),
                 "publish_times": [d.publish_time_raw for d in documents],
                 "requests_used": client.stats.requests,
+            }
+        )
+        return 0
+    if args.source == "ercot-rt-spp":
+        _print(
+            {
+                "source": f"ERCOT {ercot_rt.DATASET} — {ercot_rt.REPORT_NAME}",
+                "report_type_id": ercot_rt.REPORT_TYPE_ID,
+                "product_page": ercot_rt.PRODUCT_PAGE,
+                "market_stage": ercot_rt.MARKET_STAGE,
+                "location": f"{ercot_rt.LOCATION} — {ercot_rt.LOCATION_NAME}",
+                "price": ercot_rt.PRICE_DEFINITION,
+                "interval_minutes": ercot_rt.INTERVAL_MINUTES,
+                "columns": list(ercot_rt.HEADER),
+                "units": ercot_rt.UNIT_TEXT,
+                "time_labels": ercot_rt.TIME_TEXT,
+                "finality": ercot_rt.FINALITY_TEXT,
+                "review": "docs/source-register.md — ERCOT NP6-905-CD review",
             }
         )
         return 0
@@ -126,6 +147,21 @@ def cmd_sources(args, settings) -> int:
 
 
 def cmd_collect(args, settings) -> int:
+    if args.source == "ercot-rt-spp":
+        if args.publish_date:
+            raise ercot_rt.SelectionError("--publish-date is not supported for ercot-rt-spp")
+        selection = ercot_rt.Selection(
+            latest=args.latest or ercot_rt.DEFAULT_LATEST, include_stored=args.include_stored
+        )
+        print("Collection plan:")
+        _print(selection.describe())
+        if args.dry_run:
+            print("\nDry run: no requests sent, nothing written.")
+            return 0
+        summary = ercot_rt.collect(selection, ErcotClient(), ercot_rt.store(settings.data_dir))
+        print("\nCollection committed:")
+        _print(summary)
+        return 0
     if args.source == "ercot-dam-spp":
         selection = ercot_prices.Selection(
             latest=None if args.publish_date else (args.latest or ercot_prices.DEFAULT_LATEST),
@@ -230,6 +266,7 @@ def _refresh_parts(settings, config_path):
         "ercot": ercot.store(settings.data_dir),
         "eia-generation": generation.store(settings.data_dir),
         "ercot-dam-spp": ercot_prices.store(settings.data_dir),
+        "ercot-rt-spp": ercot_rt.store(settings.data_dir),
     }
     return config, stores
 
@@ -246,6 +283,7 @@ def cmd_refresh(args, settings) -> int:
         "eia-generation": lambda budget: EIAClient(settings.api_key, max_requests=budget),
         "ercot": lambda budget: ErcotClient(max_requests=budget),
         "ercot-dam-spp": lambda budget: ErcotClient(max_requests=budget),
+        "ercot-rt-spp": lambda budget: ErcotClient(max_requests=budget),
     }
     record = refresh.refresh(
         config,
@@ -295,7 +333,8 @@ def build_parser() -> argparse.ArgumentParser:
             default="eia",
             help="eia (EIA-930 demand/forecast), ercot (ERCOT NP6-345-CD direct), or "
             "eia-generation (EIA-930 net generation by energy source), or ercot-dam-spp "
-            "(ERCOT NP4-190-CD DAM settlement point price, HB_NORTH)",
+            "(ERCOT NP4-190-CD DAM settlement point price, HB_NORTH), or ercot-rt-spp "
+            "(ERCOT NP6-905-CD real-time settlement point price, HB_NORTH)",
         )
         p.set_defaults(func=func)
         return p
@@ -328,6 +367,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--publish-date",
         action="append",
         help="ERCOT PublishDate (YYYY-MM-DD) to fetch; repeatable",
+    )
+    ercot_group.add_argument(
+        "--include-stored",
+        action="store_true",
+        help="ercot-rt-spp: re-download already-stored intervals (revision check)",
     )
     p.epilog = (
         f"EIA: at most {MAX_DAYS_PER_RUN} days per run including lookback. "
@@ -392,6 +436,10 @@ def main(argv: list[str] | None = None) -> int:
         ArchiveError,
         RefreshConfigError,
         RefreshLockError,
+        ercot_prices.PriceFormatError,
+        ercot_prices.SelectionError,
+        ercot_rt.RtFormatError,
+        ercot_rt.SelectionError,
     ) as exc:
         print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2

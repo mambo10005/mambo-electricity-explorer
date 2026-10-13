@@ -105,6 +105,9 @@ src/mambo_explorer/
   ercot/prices.py      Stage 19: NP4-190-CD DAM settlement point price, HB_NORTH only; own
                        store ercot-np4-190-cd; client takes a Report (ADR 0016)
   price_view.py, price_exercises.py  source-label price view, provenance, lesson 14
+  ercot/rt_prices.py   Stage 20: NP6-905-CD real-time SPP, HB_NORTH only, one 15-minute
+                       interval per document; store ercot-np6-905-cd (ADR 0017)
+  rt_price_view.py, rt_price_exercises.py  interval chart/viewer/table, lesson 15
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)
 ```
 

@@ -11,6 +11,7 @@ No credentials are used or accepted. In particular this client never reads EIA_A
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -75,6 +76,14 @@ class Report:
     csv_friendly_name: str
     label: str
     limits: Limits
+    # Reports with one document per interval give each document its own FriendlyName
+    # (e.g. SPPHLZNP6905_20261013_0015_csv); a full-match regex selects their CSV twins.
+    csv_name_pattern: str | None = None
+
+    def is_csv(self, friendly_name: str) -> bool:
+        if self.csv_name_pattern:
+            return re.fullmatch(self.csv_name_pattern, friendly_name) is not None
+        return friendly_name == self.csv_friendly_name
 
 
 LOAD_REPORT = Report(ds.REPORT_TYPE_ID, ds.CSV_FRIENDLY_NAME, ds.DATASET, ZIP_LIMITS)
@@ -87,6 +96,7 @@ class Document:
     name: str
     publish_time_raw: str
     content_size: int
+    friendly_name: str = ""
 
 
 @dataclass
@@ -168,7 +178,7 @@ class ErcotClient:
             doc = entry.get("Document") if isinstance(entry, dict) else None
             if not isinstance(doc, dict):
                 raise ResponseError("DocumentList entry without a Document object")
-            if doc.get("FriendlyName") != report.csv_friendly_name:
+            if not report.is_csv(str(doc.get("FriendlyName", ""))):
                 continue  # XML twin of each document; only CSV is used
             if doc.get("ReportTypeID") != report.report_type_id or doc.get("SecurityStatus") != "P":
                 raise ResponseError(f"unexpected document metadata for {doc.get('DocID')!r}")
@@ -181,7 +191,13 @@ class ErcotClient:
             except ValueError:
                 raise ResponseError(f"invalid ContentSize for {doc_id}") from None
             documents.append(
-                Document(doc_id, str(doc.get("ConstructedName", "")), str(doc["PublishDate"]), size)
+                Document(
+                    doc_id,
+                    str(doc.get("ConstructedName", "")),
+                    str(doc["PublishDate"]),
+                    size,
+                    str(doc.get("FriendlyName", "")),
+                )
             )
         return sorted(
             documents, key=lambda d: (ds.parse_publish_time(d.publish_time_raw), d.doc_id)

@@ -4,7 +4,7 @@ Status key: `planned` · `in-progress` · `done` · `dropped`
 
 The source of truth is `src/mambo_explorer/content/features.yaml`.
 `tests/test_feature_status.py` fails if this table and that file disagree on
-IDs or statuses. Only EXPLORE-02, EXPLORE-03, EXPLORE-04, EXPLORE-05, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, COMP-02, and HEALTH-01 are pages (`ui: true`
+IDs or statuses. Only EXPLORE-02, EXPLORE-03, EXPLORE-04, EXPLORE-05, EXPLORE-06, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, COMP-02, and HEALTH-01 are pages (`ui: true`
 in the YAML), so Explore, Learn, Model Labs, Finance, Compliance, and System Health are the only sections allowed to show data elements. Compliance shows none: its tables are source records, not data. Done backend features (DATA-01, STORE-01/02)
 do not unlock charts on Sources or System Health.
 
@@ -27,6 +27,7 @@ do not unlock charts on Sources or System Health.
 | DATA-01 | EIA connector (EIA-930 ERCOT demand and forecast) | sources | done | Live-verified 2026-10-11 (metadata, collection, repeat ingest); one BA, two metrics |
 | DATA-02 | Regional operator connectors | sources | planned | ERCOT started (DATA-04); other operators planned |
 | DATA-04 | ERCOT direct connector: NP6-345-CD actual load by weather zone | sources | done | Stage 5; public download, live-verified 2026-10-11 (ADR 0005) |
+| DATA-07 | ERCOT direct connector: NP6-905-CD real-time settlement point price at HB_NORTH (15-minute intervals, own store namespace) | sources | done | Stage 20: ADR 0017; opt-in; counts against the shared ercot.com cap (not raised) |
 | DATA-06 | ERCOT direct connector: NP4-190-CD DAM settlement point price at HB_NORTH (one hub, own store namespace) | sources | done | Stage 19: ADR 0016; opt-in in refresh; shared ercot.com cap |
 | DATA-05 | EIA connector: EIA-930 hourly net generation by energy source (ERCO), own store namespace | sources | done | Stage 16: route `fuel-type-data`, ADR 0014; disabled in the default refresh plan |
 | DATA-03 | Regulatory source connectors | sources | planned | |
@@ -38,6 +39,7 @@ do not unlock charts on Sources or System Health.
 | EXPLORE-01 | Observation explorer across regions | explore | planned | U-7 |
 | EXPLORE-02 | ERCOT actual demand vs. published day-ahead forecast | explore | done | Stage 3; browser-checked with synthetic and live data |
 | EXPLORE-03 | ERCOT direct actual load by weather zone (separate from EIA) | explore | done | Stage 5; no EIA join |
+| EXPLORE-06 | Real-time price view at HB_NORTH: source-label chart, interval viewer, table, coverage, provenance, and lesson 15 | explore | done | Stage 20; ERCOT interval labels, no UTC; no day-ahead comparison; finality not determined |
 | EXPLORE-05 | Day-ahead price view at HB_NORTH: source-label chart, table, coverage, publication and revision provenance, and lesson 14 | explore | done | Stage 19; ERCOT labels, no UTC; finality not determined; no join with EIA |
 | EXPLORE-04 | Net generation by energy source: signed chart, category coverage, totals with completeness rules, and lesson 13 | explore | done | Stage 16; no pie chart, no system total, shares withheld when misleading; lesson agent-authored, unreviewed |
 | REPLAY-01 | Actual operating-day replay | replay | planned | |

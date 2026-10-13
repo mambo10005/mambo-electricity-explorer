@@ -18,16 +18,18 @@ import yaml
 from mambo_explorer.collect import MAX_DAYS_PER_RUN
 from mambo_explorer.ercot.collect import MAX_DOCUMENTS_PER_RUN
 from mambo_explorer.ercot.prices import MAX_DOCUMENTS_PER_RUN as PRICE_DOCS_PER_RUN
+from mambo_explorer.ercot.rt_prices import MAX_DOCUMENTS_PER_RUN as RT_DOCS_PER_RUN
 
-SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp")
+SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp", "ercot-rt-spp")
 # Datasets a plan may leave out; a missing section means "disabled".
-OPTIONAL_SOURCES = ("eia-generation", "ercot-dam-spp")
+OPTIONAL_SOURCES = ("eia-generation", "ercot-dam-spp", "ercot-rt-spp")
 # Which host each dataset sends requests to (shared per-host budgets).
 HOSTS = {
     "eia": "api.eia.gov",
     "eia-generation": "api.eia.gov",
     "ercot": "ercot.com",
     "ercot-dam-spp": "ercot.com",
+    "ercot-rt-spp": "ercot.com",
 }
 ENV = "MAMBO_REFRESH_CONFIG"  # optional path to a local plan (outside the repository)
 # Keys that look like secrets are rejected wherever they appear.
@@ -70,6 +72,7 @@ class RefreshConfig:
     ercot: ErcotSettings
     generation: EiaSettings  # same shape as demand; disabled unless a plan enables it
     prices: ErcotSettings  # ERCOT DAM settlement point price; opt-in
+    rt_prices: ErcotSettings  # ERCOT real-time settlement point price; opt-in
     host_budgets: dict  # host -> max requests per refresh across its datasets
     log_retention_days: int
     log_max_files: int
@@ -81,6 +84,7 @@ class RefreshConfig:
             "ercot": self.ercot,
             "eia-generation": self.generation,
             "ercot-dam-spp": self.prices,
+            "ercot-rt-spp": self.rt_prices,
         }[name]
 
     def host_budget(self, host: str) -> int | None:
@@ -173,6 +177,11 @@ def validate(data: dict, origin: str = "default") -> RefreshConfig:
         if "ercot-dam-spp" in sources
         else _disabled_prices()
     )
+    rt_prices = (
+        _ercot_settings(sources["ercot-rt-spp"], "sources.ercot-rt-spp", RT_DOCS_PER_RUN)
+        if "ercot-rt-spp" in sources
+        else _disabled_rt_prices()
+    )
     hosts = data.get("hosts", {})
     if not isinstance(hosts, dict):
         raise RefreshConfigError("hosts must be a mapping")
@@ -188,6 +197,7 @@ def validate(data: dict, origin: str = "default") -> RefreshConfig:
                 "ercot": ercot,
                 "eia-generation": generation,
                 "ercot-dam-spp": prices,
+                "ercot-rt-spp": rt_prices,
             }[name]
             if HOSTS[name] == host and settings.enabled and settings.request_budget > cap:
                 raise RefreshConfigError(
@@ -202,6 +212,7 @@ def validate(data: dict, origin: str = "default") -> RefreshConfig:
         ercot=ercot,
         generation=generation,
         prices=prices,
+        rt_prices=rt_prices,
         host_budgets=host_budgets,
         log_retention_days=_int(logs, "retention_days", 1, 365, "logs"),
         log_max_files=_int(logs, "max_files", 1, 10_000, "logs"),
@@ -227,6 +238,12 @@ def _ercot_settings(r: dict, w: str, max_docs: int) -> ErcotSettings:
             f"{settings.max_catchup_documents} downloads"
         )
     return settings
+
+
+def _disabled_rt_prices() -> ErcotSettings:
+    """A plan without the section: the packaged defaults, but disabled."""
+    packaged = yaml.safe_load(default_text())["sources"]["ercot-rt-spp"]
+    return _ercot_settings({**packaged, "enabled": False}, "sources.ercot-rt-spp", RT_DOCS_PER_RUN)
 
 
 def _disabled_prices() -> ErcotSettings:

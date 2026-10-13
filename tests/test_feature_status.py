@@ -23,6 +23,8 @@ DONE_FEATURES = {
     "EXPLORE-03",
     "EXPLORE-04",
     "EXPLORE-05",
+    "EXPLORE-06",
+    "DATA-07",
     "DATA-06",
     "DATA-05",
     "LEARN-03",

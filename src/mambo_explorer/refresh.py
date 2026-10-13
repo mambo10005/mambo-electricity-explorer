@@ -32,6 +32,7 @@ from mambo_explorer.eia.redact import redact
 from mambo_explorer.ercot import collect as ercot_collect
 from mambo_explorer.ercot import dataset as ercot_ds
 from mambo_explorer.ercot import prices as ercot_prices
+from mambo_explorer.ercot import rt_prices as ercot_rt
 from mambo_explorer.refresh_config import RefreshConfig
 from mambo_explorer.storage import Store, atomic_write
 
@@ -73,6 +74,7 @@ class SourcePlan:
     ercot_selection: ercot_collect.Selection | None = None
     generation_plan: generation.GenerationPlan | None = None
     price_selection: ercot_prices.Selection | None = None
+    rt_selection: ercot_rt.Selection | None = None
 
     def describe(self) -> dict:
         out = {
@@ -90,6 +92,8 @@ class SourcePlan:
             out["collector_plan"] = self.generation_plan.describe()
         if self.price_selection:
             out["collector_plan"] = self.price_selection.describe()
+        if self.rt_selection:
+            out["collector_plan"] = self.rt_selection.describe()
         return out
 
 
@@ -356,6 +360,62 @@ def plan_ercot(
     )
 
 
+def plan_ercot_rt(config: RefreshConfig, store: Store, now: datetime) -> SourcePlan:
+    """Real-time intervals: planned from the public list at collection time, not from a clock.
+
+    ERCOT's interval labels carry no time zone, so the plan cannot say which intervals "should"
+    exist by now. The collector lists the published documents and takes the newest ones not yet
+    stored (capped); it reports documents published but not requested (catch-up limit), the
+    oldest listed document (available history), and "no newer document published yet".
+    """
+    s = config.rt_prices
+    source = "ercot-rt-spp"
+    if not s.enabled:
+        return SourcePlan(source, "skip", "disabled in the refresh configuration", 0)
+    history = run_history(store)
+    findings = _common_findings(history, s.collection_interval_hours, now)
+    if not history["committed"]:
+        documents = s.window_documents
+        findings.append(
+            Finding(
+                NEVER_COLLECTED,
+                f"no stored real-time interval; requesting the newest {documents} published "
+                "documents",
+            )
+        )
+    else:
+        documents = s.max_catchup_documents
+        findings.append(
+            Finding(
+                BEYOND_CATCHUP,
+                f"up to {documents} newest unstored intervals are requested; the collector "
+                "reports any older published ones it leaves (catch-up limit) and whether "
+                "nothing newer is published yet",
+            )
+        )
+    findings.append(
+        Finding(
+            OUTSIDE_HISTORY,
+            f"ERCOT's public list keeps about {ercot_rt.PUBLIC_RETENTION_DAYS} days; older "
+            "intervals are not available through the access method this app implements",
+        )
+    )
+    findings.append(Finding(MISSING_OBSERVATIONS, "absent intervals are reported, never filled"))
+    findings.append(Finding("finality-not-determined", ercot_rt.FINALITY_TEXT))
+    if s.request_budget < 1 + documents:
+        return SourcePlan(
+            source, "skip", "request budget below 1 list + downloads", s.request_budget, findings
+        )
+    return SourcePlan(
+        source,
+        "collect",
+        "bounded ERCOT real-time price collection (HB_NORTH)",
+        s.request_budget,
+        findings,
+        rt_selection=ercot_rt.Selection(latest=documents),
+    )
+
+
 def plan_refresh(
     config: RefreshConfig,
     sources: list[str],
@@ -367,6 +427,8 @@ def plan_refresh(
     for source in sources:
         if source in ("eia", "eia-generation"):
             plans.append(plan_eia(config, stores[source], now, source))
+        elif source == "ercot-rt-spp":
+            plans.append(plan_ercot_rt(config, stores[source], now))
         else:
             plans.append(plan_ercot(config, stores[source], now, local_today, source))
     return apply_host_budgets(config, plans)
@@ -472,6 +534,8 @@ def execute(
                 summary = generation.collect(plan.generation_plan, client, stores[plan.source])
             elif plan.source == "ercot-dam-spp":
                 summary = ercot_prices.collect(plan.price_selection, client, stores[plan.source])
+            elif plan.source == "ercot-rt-spp":
+                summary = ercot_rt.collect(plan.rt_selection, client, stores[plan.source])
             else:
                 summary = ercot_collect.collect(plan.ercot_selection, client, stores["ercot"])
             results.append(

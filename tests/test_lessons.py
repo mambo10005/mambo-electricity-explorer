@@ -19,6 +19,7 @@ EXPECTED = [
     "requirement-to-evidence",
     "generation-mix",
     "day-ahead-price",
+    "real-time-price",
 ]
 # Two tracks share the first lesson: observations (2-4) and market mechanics (5-7).
 PREREQUISITES = {
@@ -36,6 +37,7 @@ PREREQUISITES = {
     "requirement-to-evidence": ["who-sets-the-rules"],
     "generation-mix": ["reading-demand"],
     "day-ahead-price": ["power-vs-energy", "location-prices"],
+    "real-time-price": ["day-ahead-price"],
 }
 # Lessons outside the observation track and their exact cited sources.
 OTHER_SOURCES = {
@@ -59,6 +61,12 @@ OTHER_SOURCES = {
         "ercot-nodal-protocols",
         "ercot-np4-160-sg",
     },
+    "real-time-price": {
+        "ercot-np6-905-cd",
+        "ercot-nodal-protocols",
+        "ercot-np4-197-m",
+        "ercot-prices",
+    },
 }
 # Official sites only: statutes and the Federal Register via GovInfo, eCFR, and the
 # organizations' own pages.
@@ -76,6 +84,7 @@ OTHER_URL_PREFIX = {
     "who-sets-the-rules": OFFICIAL,
     "requirement-to-evidence": OFFICIAL,
     "day-ahead-price": "https://www.ercot.com/",
+    "real-time-price": "https://www.ercot.com/",
 }
 MODEL_LESSONS = ["pf-vs-dispatch", "location-prices", "unverified-marginal"]
 MODEL_SOURCES = {"location-prices": {"pjm-manual-11"}}
@@ -117,7 +126,7 @@ More text.
 """
 
 
-def test_fourteen_lessons_load_in_order_with_valid_prerequisites():
+def test_fifteen_lessons_load_in_order_with_valid_prerequisites():
     lessons = load_lessons()
     assert [le.id for le in lessons] == EXPECTED
     assert {le.id: le.meta["prerequisites"] for le in lessons} == PREREQUISITES

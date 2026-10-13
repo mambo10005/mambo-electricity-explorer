@@ -2,6 +2,37 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-12 — Stage 20: ERCOT real-time price at HB_NORTH and lesson 15 (#39)
+
+Stacked on Stage 19 (PR #38) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and
+progress unchanged (gate check).
+
+- **Product verified** (ADR 0017; `docs/datasets/ercot-np6-905-cd.md`): NP6-905-CD (type
+  12301), real-time Settlement Point Prices "produced from SCED LMPs every 15 minutes"; not an
+  LMP report.
+  - North Hub price: Max[−$251, RTRDP + time-weighted Hub Bus prices], so the adder is
+    included (Protocols §3.5.2.1(4)). Unit $/MWh.
+  - Finality rule §6.3(7) is recorded, not computed. Corrections report NP4-197-M is not
+    collected.
+- **Interval contract:** DeliveryDate/DeliveryHour/DeliveryInterval/DSTFlag raw, 15 minutes,
+  no UTC, no assumed 96 per day. The schema is from a live file; rows are unique by (name,
+  type).
+- **Connector:** the client matches FriendlyName patterns; one interval per document;
+  `HB_NORTH`/`HU` only; downloaded scope recorded; store `ercot-np6-905-cd`; revisions; a
+  `--include-stored` re-check.
+- **Refresh:** `ercot-rt-spp`, opt-in; planned from the public list. Reports not yet
+  published, published but not requested, and the oldest listed. The shared ercot.com cap
+  stays 18 (not raised).
+- **Explore and lesson 15 (EXPLORE-06):** chart, interval viewer, all-interval table,
+  coverage, provenance, and definitions; five snapshot-bound exercises; 5 glossary terms.
+- **Comparison prerequisites** with day-ahead are documented in `docs/calculations.md`; not
+  implemented.
+- **Live (scratch):**
+  - The first attempt was rejected by the parser (duplicate name with another type); fixed,
+    with a regression test.
+  - Then 5 requests, 4 intervals from 4,568 downloaded rows, 4/4 matching the archive.
+  - Repeat: 4 unchanged.
+
 ## 2026-10-12 — Stage 19: ERCOT day-ahead price at HB_NORTH and lesson 14 (#37)
 
 Stacked on Stage 18 (PR #36) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and

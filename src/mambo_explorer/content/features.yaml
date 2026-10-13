@@ -82,6 +82,10 @@ features:
     name: "ERCOT direct connector: NP4-190-CD DAM settlement point price at HB_NORTH (one hub, own store namespace)"
     section: sources
     status: done
+  - id: DATA-07
+    name: "ERCOT direct connector: NP6-905-CD real-time settlement point price at HB_NORTH (15-minute intervals, own store namespace)"
+    section: sources
+    status: done
   - id: DATA-03
     name: "Regulatory source connectors"
     section: sources
@@ -114,6 +118,11 @@ features:
     ui: true
   - id: EXPLORE-05
     name: "Day-ahead price view at HB_NORTH: source-label chart, table, coverage, publication and revision provenance, and lesson 14"
+    section: explore
+    status: done
+    ui: true
+  - id: EXPLORE-06
+    name: "Real-time price view at HB_NORTH: source-label chart, interval viewer, table, coverage, provenance, and lesson 15"
     section: explore
     status: done
     ui: true

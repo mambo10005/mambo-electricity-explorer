@@ -179,7 +179,7 @@ def test_system_health_shows_generation_separately(data_dir):
         for t in at.table
         if list(t.value.columns) == ["Item", "Value"] and "Freshness" in list(t.value["Item"])
     ]
-    assert [i["Freshness"] for i in items] == ["no data", "no data", "fresh", "no data"]
+    assert [i["Freshness"] for i in items] == ["no data", "no data", "fresh", "no data", "no data"]
     at.radio(key="health_view").set_value("eia-generation").run(timeout=30)
     cov = _table(at, "Measure", "BAT")
     assert cov is not None and "negative values" in list(cov["Measure"])

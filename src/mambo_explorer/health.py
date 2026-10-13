@@ -308,6 +308,8 @@ def source_health(
         out.append(eia_health(stores["eia-generation"], config, now, "eia-generation"))
     if "ercot-dam-spp" in stores:
         out.append(price_health(stores["ercot-dam-spp"], config, now))
+    if "ercot-rt-spp" in stores:
+        out.append(rt_price_health(stores["ercot-rt-spp"], config, now))
     for h in out:
         h.last_refresh = last_refresh(logs or [], h.source)
         if h.last_refresh and h.last_refresh["status"] == "failed":
@@ -418,6 +420,91 @@ def price_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHe
             "Only HB_NORTH is stored; each downloaded document holds every settlement point.",
             f"ERCOT's public list keeps about {px.PUBLIC_RETENTION_DAYS} days; older "
             "DeliveryDates are not available through the access method this app implements.",
+        ],
+        **base,
+    )
+
+
+def rt_price_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHealth:
+    """ERCOT NP6-905-CD real-time price at HB_NORTH, per 15-minute interval as published."""
+    from mambo_explorer.ercot import rt_prices as rt
+
+    s = config.rt_prices
+    history = refresh.run_history(store)
+    problems, storage = _problems(store, history)
+    base = dict(
+        source="ercot-rt-spp",
+        title=s.title,
+        last_attempt=_attempt(history["last_attempt"]),
+        last_success=_attempt(history["last_success"]),
+        threshold_hours=s.freshness_threshold_hours,
+        problems=problems,
+        storage=storage,
+    )
+    if not store.committed_files("observations"):
+        return SourceHealth(
+            collected=False,
+            latest_label=None,
+            publication_time="nothing collected",
+            retrieval_time=None,
+            freshness=NO_DATA,
+            freshness_basis="nothing has been collected",
+            **base,
+        )
+    try:
+        with store.query() as con:
+            day, hour, interval, flag, published_raw, published, retrieved = con.execute(
+                "SELECT delivery_date_raw, delivery_hour, delivery_interval, dst_flag, "
+                "publish_time_raw, epoch_us(publication_time_utc), epoch_us(retrieved_at_utc) "
+                "FROM latest ORDER BY publication_time_utc DESC LIMIT 1"
+            ).fetchone()
+            days, intervals, nulls, negatives, revised = con.execute(
+                "SELECT count(DISTINCT delivery_date), count(*), "
+                "count(*) FILTER (WHERE value IS NULL), count(*) FILTER (WHERE value < 0), "
+                "count(*) FILTER (WHERE revision > 1) FROM latest"
+            ).fetchone()
+            per_day = con.execute(
+                "SELECT delivery_date_raw, count(*) FROM latest GROUP BY delivery_date_raw, "
+                "delivery_date ORDER BY delivery_date"
+            ).fetchall()
+    except (duckdb.Error, OSError) as exc:
+        return _unreadable({**base, "publication_time": "unknown"}, exc)
+    published = _from_us(published)
+    age = now - published if isinstance(published, datetime) else None
+    return SourceHealth(
+        collected=True,
+        latest_label=(
+            f"DeliveryDate {day}, DeliveryHour {hour}, DeliveryInterval {interval}, "
+            f"DSTFlag {flag} (ERCOT labels; not converted)"
+        ),
+        publication_time=f"{published_raw} (ERCOT listing PublishDate)",
+        retrieval_time=_iso(retrieved),
+        freshness=_freshness(age, s.freshness_threshold_hours),
+        freshness_basis=(
+            "age of the newest stored interval's publication time, as ERCOT states it "
+            "(real-time intervals are published about every 15 minutes)"
+        ),
+        coverage={
+            rt.LOCATION: {
+                "delivery_dates_present": days,
+                "intervals_stored": intervals,
+                "intervals_per_delivery_date": ", ".join(f"{d}: {n}" for d, n in per_day),
+                "null_values": nulls,
+                "negative_prices": negatives,
+                "revised_intervals": revised,
+            }
+        },
+        notes=_unchanged_note(history)
+        + [
+            "Finality: " + rt.FINALITY_TEXT,
+            "Intervals per delivery date are counted, not compared with 96: the count on "
+            "daylight-saving days is not assumed, and a missing interval may be unpublished, "
+            "not yet collected, or outside ERCOT's public list.",
+            f"ERCOT's public list keeps about {rt.PUBLIC_RETENTION_DAYS} days; older intervals "
+            "are not available through the access method this app implements.",
+            "Day-ahead freshness is judged the same way (publication time), so a day-ahead "
+            "price for a future delivery date is never called stale because its date has not "
+            "happened yet.",
         ],
         **base,
     )
