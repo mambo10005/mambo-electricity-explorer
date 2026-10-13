@@ -1,6 +1,6 @@
-# Human-review checklist: lessons 1–13, the glossary, and the responsibility records
+# Human-review checklist: lessons 1–14, the glossary, and the responsibility records
 
-**Status: not reviewed by a person.** All thirteen lessons, the glossary, the exercise
+**Status: not reviewed by a person.** All fourteen lessons, the glossary, the exercise
 wording, and the regulatory responsibility records were drafted by an AI agent (Claude). This checklist was also prepared by the
 agent; it lists what a reviewer should check and the potential issues the agent noticed.
 It is **not** a review. BL-3 stays open until a named person completes it.
@@ -297,6 +297,24 @@ Copy this block for each item you review. Leave fields blank until they are true
   4. The exercise "largest category" sums signed valid values; confirm a beginner reads
      "largest" as energy over the window, not capacity or share.
 
+## Lesson 14 — Reading an actual day-ahead electricity price · `day-ahead-price` · v1.0.0
+
+- Data: ERCOT NP4-190-CD DAM Settlement Point Prices, `HB_NORTH` only (own store;
+  `mambo collect --source ercot-dam-spp`). Calculation `dam_price_reading` v1.
+- Sources: `ercot-np4-190-cd`, `ercot-dam`, `ercot-nodal-protocols` (Sections 2, 3.5.2.1,
+  4.5.3), `ercot-np4-160-sg` (agent-checked 2026-10-12).
+- Exercises: `highest-hour`, `negative-count`, `missing-not-zero`, `not-a-bill`,
+  `finality-unknown` (price; answers from the chosen DeliveryDate's stored prices).
+- Agent-noticed items:
+  1. The unit ($/MWh) comes from the Protocols' correction thresholds, not the file.
+     Confirm a reviewer accepts that basis.
+  2. `HB_NORTH` ↔ North 345 kV Hub rests on matching 75/75 hub buses between NP4-160-SG and
+     Protocols §3.5.2.1. Confirm.
+  3. The lesson says the DAM "matches buyers and sellers for each hour"; check this
+     simplification against the DAM page wording ("voluntary, financially-binding forward
+     energy market").
+  4. Finality is shown as "not determined"; confirm the explanation of §4.5.3(6) is fair.
+
 ## Regulatory responsibility records (`content/responsibilities.yaml`, set v1.0.0)
 
 - 17 records, 11 sources, 4 open questions, 7 source gaps. Each record: claim paraphrase,
@@ -313,7 +331,7 @@ Copy this block for each item you review. Leave fields blank until they are true
 
 ## Glossary (`src/mambo_explorer/content/glossary.yaml`)
 
-75 terms. Check each definition for accuracy, beginner readability, and consistency with
+80 terms. Check each definition for accuracy, beginner readability, and consistency with
 the lessons that use it.
 
 - [ ] Observation terms: Absent row, BA, Day-ahead demand forecast, Demand, EIA, EIA-930,
@@ -324,6 +342,8 @@ the lessons that use it.
 - [ ] Basis terms (lesson 9): Basis, Fixed-for-floating hedge, Quantity mismatch,
       Reference location.
 - [ ] Shape terms (lesson 10): Flat-block hedge, Load shape, Time-shape component.
+- [ ] Price terms (lesson 14): Day-Ahead Market, Delivery date, Price finality, Settlement
+      Point Price, Trading hub.
 - [ ] Generation terms (lesson 13): Category sum, Energy source category, Fuel consumption,
       Installed capacity, Marginal generation, Net generation, Net storage.
 - [ ] Compliance terms (lessons 11–12): Applicability, Bulk-power system, Compliance review,

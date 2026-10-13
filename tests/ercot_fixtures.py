@@ -128,3 +128,14 @@ class FakeErcot:
 
 def day_doc(day: date, doc_id: str, published: str, **kw) -> tuple[str, tuple[str, bytes]]:
     return doc_id, (published, zip_bytes(csv_bytes(rows_for(day, **kw))))
+
+
+def three_days_docs() -> dict:
+    """Three SYNTHETIC NP6-345-CD documents (OperDays 2026-10-08 .. 10), oldest first."""
+    return dict(
+        [
+            day_doc(date(2026, 10, 8), "101", "2026-10-09T05:50:00-05:00"),
+            day_doc(date(2026, 10, 9), "102", "2026-10-10T05:50:00-05:00"),
+            day_doc(date(2026, 10, 10), "103", "2026-10-11T05:50:00-05:00"),
+        ]
+    )

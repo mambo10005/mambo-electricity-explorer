@@ -102,6 +102,9 @@ src/mambo_explorer/
   ercot/dataset.py     NP6-345-CD contract: header, zones, schema, identity, strict CSV parser
   ercot/client.py      Public listing + download; budget, timeouts, retries, pauses, validation
   ercot/collect.py     Selection (latest N / publish dates), normalize, revisions, collect()
+  ercot/prices.py      Stage 19: NP4-190-CD DAM settlement point price, HB_NORTH only; own
+                       store ercot-np4-190-cd; client takes a Report (ADR 0016)
+  price_view.py, price_exercises.py  source-label price view, provenance, lesson 14
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)
 ```
 

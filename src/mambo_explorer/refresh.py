@@ -31,6 +31,7 @@ from mambo_explorer import generation
 from mambo_explorer.eia.redact import redact
 from mambo_explorer.ercot import collect as ercot_collect
 from mambo_explorer.ercot import dataset as ercot_ds
+from mambo_explorer.ercot import prices as ercot_prices
 from mambo_explorer.refresh_config import RefreshConfig
 from mambo_explorer.storage import Store, atomic_write
 
@@ -71,6 +72,7 @@ class SourcePlan:
     eia_plan: eia_collect.Plan | None = None
     ercot_selection: ercot_collect.Selection | None = None
     generation_plan: generation.GenerationPlan | None = None
+    price_selection: ercot_prices.Selection | None = None
 
     def describe(self) -> dict:
         out = {
@@ -86,6 +88,8 @@ class SourcePlan:
             out["collector_plan"] = self.ercot_selection.describe()
         if self.generation_plan:
             out["collector_plan"] = self.generation_plan.describe()
+        if self.price_selection:
+            out["collector_plan"] = self.price_selection.describe()
         return out
 
 
@@ -236,38 +240,63 @@ def latest_oper_date(store: Store) -> date | None:
         return con.execute("SELECT max(oper_date) FROM latest").fetchone()[0]
 
 
-def plan_ercot(config: RefreshConfig, store: Store, now: datetime, local_today: date) -> SourcePlan:
-    """ERCOT OperDay labels are compared by calendar date only; nothing is converted to UTC."""
-    s = config.ercot
+def latest_delivery_date(store: Store) -> date | None:
+    if not store.committed_files("observations"):
+        return None
+    with store.query() as con:
+        return con.execute("SELECT max(delivery_date) FROM latest").fetchone()[0]
+
+
+def plan_ercot(
+    config: RefreshConfig,
+    store: Store,
+    now: datetime,
+    local_today: date,
+    source: str = "ercot",
+) -> SourcePlan:
+    """ERCOT labels are compared by calendar date only; nothing is converted to UTC.
+
+    "ercot" (NP6-345-CD load: one document per OperDay, posted the next morning) or
+    "ercot-dam-spp" (NP4-190-CD DAM prices: one document per DAM run, posted the day BEFORE
+    the Operating Day, so the newest DeliveryDate one can expect today is tomorrow).
+    """
+    s = config.source(source)
+    prices = source == "ercot-dam-spp"
+    retention = ercot_prices.PUBLIC_RETENTION_DAYS if prices else ercot_ds.PUBLIC_RETENTION_DAYS
+    label = "DeliveryDate" if prices else "OperDay"
     if not s.enabled:
-        return SourcePlan("ercot", "skip", "disabled in the refresh configuration", 0)
+        return SourcePlan(source, "skip", "disabled in the refresh configuration", 0)
     history = run_history(store)
     findings = _common_findings(history, s.collection_interval_hours, now)
-    last_day = latest_oper_date(store) if history["committed"] else None
+    if prices:
+        last_day = latest_delivery_date(store) if history["committed"] else None
+    else:
+        last_day = latest_oper_date(store) if history["committed"] else None
     if last_day is None:
         documents = s.window_documents
         findings.append(
             Finding(
                 NEVER_COLLECTED,
-                f"no stored ERCOT OperDay; requesting the latest {documents} public documents",
+                f"no stored ERCOT {label}; requesting the latest {documents} public documents",
             )
         )
     else:
         # The document for an OperDay is posted the next morning, so the newest OperDay one
         # can expect today is yesterday (by calendar label; approximate, no conversion).
-        new_days = max(0, (local_today - last_day).days - 1)
+        newest_expected = local_today + timedelta(days=1) if prices else local_today
+        new_days = max(0, (newest_expected - last_day).days - (0 if prices else 1))
         lookback = s.revision_lookback_documents
-        if new_days > ercot_ds.PUBLIC_RETENTION_DAYS:
-            lost = new_days - ercot_ds.PUBLIC_RETENTION_DAYS
+        if new_days > retention:
+            lost = new_days - retention
             findings.append(
                 Finding(
                     OUTSIDE_HISTORY,
-                    f"about {lost} OperDay(s) after {last_day} are older than ERCOT's public list "
-                    f"(about {ercot_ds.PUBLIC_RETENTION_DAYS} days) and are not available "
+                    f"about {lost} {label}(s) after {last_day} are older than ERCOT's public list "
+                    f"(about {retention} days) and are not available "
                     "through the public report listing this app uses",
                 )
             )
-            new_days = ercot_ds.PUBLIC_RETENTION_DAYS
+            new_days = retention
         if new_days + lookback > s.max_catchup_documents:
             documents = s.max_catchup_documents
             skipped = new_days + lookback - documents
@@ -276,7 +305,7 @@ def plan_ercot(config: RefreshConfig, store: Store, now: datetime, local_today: 
                     BEYOND_CATCHUP,
                     f"about {skipped} older document(s) are not requested (cap "
                     f"{s.max_catchup_documents}). While they remain in the public list, fetch "
-                    "them with `mambo collect --source ercot --publish-date YYYY-MM-DD`.",
+                    f"them with `mambo collect --source {source} --publish-date YYYY-MM-DD`.",
                 )
             )
         else:
@@ -290,20 +319,31 @@ def plan_ercot(config: RefreshConfig, store: Store, now: datetime, local_today: 
             )
         if documents == 0:
             findings.append(
-                Finding(UP_TO_DATE, f"latest stored OperDay {last_day}; nothing newer expected yet")
+                Finding(UP_TO_DATE, f"latest stored {label} {last_day}; nothing newer expected yet")
             )
             return SourcePlan(
-                "ercot", "skip", "no new document expected", s.request_budget, findings
+                source, "skip", "no new document expected", s.request_budget, findings
             )
     findings.append(
         Finding(
             MISSING_OBSERVATIONS,
-            "absent OperDays or hours are reported by System Health, never filled",
+            f"absent {label}s or hours are reported by System Health, never filled",
         )
     )
+    if prices:
+        findings.append(Finding("finality-not-determined", ercot_prices.FINALITY_TEXT))
     if s.request_budget < 1 + documents:
         return SourcePlan(
-            "ercot", "skip", "request budget below 1 list + downloads", s.request_budget, findings
+            source, "skip", "request budget below 1 list + downloads", s.request_budget, findings
+        )
+    if prices:
+        return SourcePlan(
+            source,
+            "collect",
+            "bounded ERCOT DAM price collection (HB_NORTH)",
+            s.request_budget,
+            findings,
+            price_selection=ercot_prices.Selection(latest=documents),
         )
     selection = ercot_collect.Selection(latest=documents)
     return SourcePlan(
@@ -328,8 +368,43 @@ def plan_refresh(
         if source in ("eia", "eia-generation"):
             plans.append(plan_eia(config, stores[source], now, source))
         else:
-            plans.append(plan_ercot(config, stores["ercot"], now, local_today))
+            plans.append(plan_ercot(config, stores[source], now, local_today, source))
+    return apply_host_budgets(config, plans)
+
+
+def apply_host_budgets(config: RefreshConfig, plans: list[SourcePlan]) -> list[SourcePlan]:
+    """Skip any later dataset whose budget would push its host past the shared cap."""
+    from mambo_explorer.refresh_config import HOSTS
+
+    used: dict[str, int] = {}
+    for plan in plans:
+        if plan.action != "collect":
+            continue
+        host = HOSTS[plan.source]
+        cap = config.host_budget(host)
+        if cap is not None and used.get(host, 0) + plan.request_budget > cap:
+            plan.action = "skip"
+            plan.reason = (
+                f"shared {host} budget: {used.get(host, 0)} of {cap} requests already "
+                f"budgeted by earlier datasets in this refresh; this one needs "
+                f"{plan.request_budget}"
+            )
+            plan.findings.append(Finding("host-budget", plan.reason))
+            continue
+        used[host] = used.get(host, 0) + plan.request_budget
     return plans
+
+
+def host_budget_summary(config: RefreshConfig, plans: list[SourcePlan]) -> dict:
+    from mambo_explorer.refresh_config import HOSTS
+
+    out: dict[str, dict] = {}
+    for plan in plans:
+        if plan.action == "collect":
+            host = HOSTS[plan.source]
+            entry = out.setdefault(host, {"budgeted": 0, "cap": config.host_budget(host)})
+            entry["budgeted"] += plan.request_budget
+    return out
 
 
 @contextmanager
@@ -395,6 +470,8 @@ def execute(
                 summary = eia_collect.collect(plan.eia_plan, client, stores["eia"])
             elif plan.source == "eia-generation":
                 summary = generation.collect(plan.generation_plan, client, stores[plan.source])
+            elif plan.source == "ercot-dam-spp":
+                summary = ercot_prices.collect(plan.price_selection, client, stores[plan.source])
             else:
                 summary = ercot_collect.collect(plan.ercot_selection, client, stores["ercot"])
             results.append(
@@ -491,6 +568,7 @@ def refresh(
         record["eia_api_requests_budgeted"] = _eia_budget(
             [(p.source, p.request_budget) for p in plans if p.action == "collect"]
         )
+        record["host_requests_budgeted"] = host_budget_summary(config, plans)
         return json.loads(redact(json.dumps(record, default=str), secrets))
     with refresh_lock(data_dir, started):
         results = execute(plans, stores=stores, clients=clients, secrets=secrets)
@@ -503,6 +581,7 @@ def refresh(
         record["eia_api_requests_budgeted"] = _eia_budget(
             [(r.source, r.request_budget) for r in results if r.status in ("succeeded", "failed")]
         )
+        record["host_requests_budgeted"] = host_budget_summary(config, plans)
         record["finished_at_utc"] = now().astimezone(UTC).isoformat()
         record["log"] = str(write_log(data_dir, config, record, started, secrets).name)
     return json.loads(redact(json.dumps(record, default=str), secrets))

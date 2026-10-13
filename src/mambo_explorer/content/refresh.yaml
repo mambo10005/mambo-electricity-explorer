@@ -51,6 +51,27 @@ sources:
     request_budget: 12           # 1 list request + downloads + retries
     freshness_threshold_hours: 48
 
+  ercot-dam-spp:
+    enabled: false            # opt-in: one more dataset on the same ERCOT host
+    title: ERCOT NP4-190-CD DAM Settlement Point Price, HB_NORTH (North 345 kV Hub)
+    publication_cadence: >-
+      One document per Day-Ahead Market run, posted the day before the Operating Day
+      (Protocols: results no later than 1330). The public list keeps about 31 days. Prices are
+      final at 1000 on the second Business Day after the Operating Day; corrections are a
+      separate report that is not collected.
+    collection_interval_hours: 24
+    window_documents: 2
+    revision_lookback_documents: 1
+    max_catchup_documents: 3     # each document is ~190 KB and holds every settlement point
+    request_budget: 6            # 1 list + 3 downloads + 2 retries
+    freshness_threshold_hours: 48
+
+# Shared per-host limits: every enabled dataset on a host counts against one budget per
+# refresh, so per-dataset budgets never add up to more load on one host than this.
+hosts:
+  ercot.com:
+    max_requests_per_refresh: 18
+
 logs:
   retention_days: 30   # refresh logs older than this are pruned after each refresh
   max_files: 200       # and never more than this many are kept

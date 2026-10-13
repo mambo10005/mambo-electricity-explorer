@@ -17,6 +17,8 @@ import yaml
 from mambo_explorer.catalog import learning_sequence
 from mambo_explorer.eia.dataset import GENERATION_ROUTE
 
+PRICE_DATASET = "NP4-190-CD"  # ERCOT DAM Settlement Point Prices (ercot/prices.py)
+
 REVIEW_STATUSES = ("unreviewed", "human-reviewed")
 IMPLEMENTATION_STATUSES = ("implemented", "draft")
 EXERCISE_KINDS = (
@@ -28,6 +30,7 @@ EXERCISE_KINDS = (
     "shape",
     "compliance",
     "generation",
+    "price",
 )
 CALCULATION_IDS = (
     "power_energy",
@@ -41,6 +44,7 @@ CALCULATION_IDS = (
     "time_shape",
     "responsibility_records",  # not arithmetic: answers come from the record set (ADR 0012)
     "generation_mix",
+    "dam_price_reading",
 )
 DATA_PANELS = (
     "power_energy_example",
@@ -48,6 +52,7 @@ DATA_PANELS = (
     "forecast_comparison",
     "coverage",
     "generation_mix",
+    "dam_price",
 )
 MODEL_PANELS = ("pf_vs_opf", "location_prices", "unverified_marginal")
 # Optional fields (default: empty list) for lessons backed by verified model runs, calculators,
@@ -209,6 +214,7 @@ def validate_meta(meta: dict, source: str) -> None:
         compliance_exercises,
         generation_exercises,
         model_exercises,
+        price_exercises,
         responsibilities,
         settlement_exercises,
         shape_exercises,
@@ -247,6 +253,9 @@ def validate_meta(meta: dict, source: str) -> None:
     generation_bound = any(b.get("route") == GENERATION_ROUTE for b in meta["dataset_bindings"])
     if "generation_mix" in meta["data_panels"] and not generation_bound:
         fail(f"data panel generation_mix needs a dataset binding to route {GENERATION_ROUTE}")
+    price_bound = any(b.get("dataset") == PRICE_DATASET for b in meta["dataset_bindings"])
+    if "dam_price" in meta["data_panels"] and not price_bound:
+        fail(f"data panel dam_price needs a dataset binding to {PRICE_DATASET}")
 
     ids = set()
     for ex in meta["exercises"]:
@@ -259,6 +268,7 @@ def validate_meta(meta: dict, source: str) -> None:
             "shape": shape_exercises.GENERATORS,
             "compliance": compliance_exercises.GENERATORS,
             "generation": generation_exercises.GENERATORS,
+            "price": price_exercises.GENERATORS,
         }.get(ex["kind"], GENERATORS)
         if ex["kind"] not in EXERCISE_KINDS or ex["generator"] not in known:
             fail(f"exercise {ex['exercise_id']}: bad kind or unknown generator")
@@ -280,6 +290,8 @@ def validate_meta(meta: dict, source: str) -> None:
             fail(f"exercise {ex['exercise_id']}: calculation_id not declared by the lesson")
         if ex["kind"] == "data" and not meta["dataset_bindings"]:
             fail(f"exercise {ex['exercise_id']}: data exercise needs a dataset binding")
+        if ex["kind"] == "price" and not price_bound:
+            fail(f"exercise {ex['exercise_id']}: price exercises need a binding to {PRICE_DATASET}")
         if ex["kind"] == "generation" and not generation_bound:
             fail(
                 f"exercise {ex['exercise_id']}: generation exercises need a dataset binding to "

@@ -18,6 +18,7 @@ EXPECTED = [
     "who-sets-the-rules",
     "requirement-to-evidence",
     "generation-mix",
+    "day-ahead-price",
 ]
 # Two tracks share the first lesson: observations (2-4) and market mechanics (5-7).
 PREREQUISITES = {
@@ -34,6 +35,7 @@ PREREQUISITES = {
     "who-sets-the-rules": ["power-vs-energy"],
     "requirement-to-evidence": ["who-sets-the-rules"],
     "generation-mix": ["reading-demand"],
+    "day-ahead-price": ["power-vs-energy", "location-prices"],
 }
 # Lessons outside the observation track and their exact cited sources.
 OTHER_SOURCES = {
@@ -51,6 +53,12 @@ OTHER_SOURCES = {
         "cea-2",
     },
     "requirement-to-evidence": {"fr-2023-18729", "fr-2025-18396", "fr-2026-05711", "cfr-18-40-1"},
+    "day-ahead-price": {
+        "ercot-np4-190-cd",
+        "ercot-dam",
+        "ercot-nodal-protocols",
+        "ercot-np4-160-sg",
+    },
 }
 # Official sites only: statutes and the Federal Register via GovInfo, eCFR, and the
 # organizations' own pages.
@@ -67,6 +75,7 @@ OTHER_URL_PREFIX = {
     "shape-exposure": "https://www.eia.gov/",
     "who-sets-the-rules": OFFICIAL,
     "requirement-to-evidence": OFFICIAL,
+    "day-ahead-price": "https://www.ercot.com/",
 }
 MODEL_LESSONS = ["pf-vs-dispatch", "location-prices", "unverified-marginal"]
 MODEL_SOURCES = {"location-prices": {"pjm-manual-11"}}
@@ -108,7 +117,7 @@ More text.
 """
 
 
-def test_thirteen_lessons_load_in_order_with_valid_prerequisites():
+def test_fourteen_lessons_load_in_order_with_valid_prerequisites():
     lessons = load_lessons()
     assert [le.id for le in lessons] == EXPECTED
     assert {le.id: le.meta["prerequisites"] for le in lessons} == PREREQUISITES

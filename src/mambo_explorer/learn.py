@@ -17,6 +17,7 @@ from mambo_explorer import (
     generation,
     generation_exercises,
     model_exercises,
+    price_exercises,
     responsibilities,
     routes,
     settlement_exercises,
@@ -366,6 +367,36 @@ def _generation_context(data_dir):
     return calc.load_generation(store, sel), sel
 
 
+def _binding_kind(binding: dict) -> str:
+    if binding.get("dataset") == "NP4-190-CD":
+        return "price"
+    if binding.get("route") == ds.GENERATION_ROUTE:
+        return "generation"
+    return "demand"
+
+
+def panel_dam_price(data_dir):
+    """Lesson 14 panel: one DeliveryDate of HB_NORTH day-ahead prices; returns (day, hours)."""
+    from mambo_explorer import price_view
+    from mambo_explorer.ercot import prices as px
+
+    st.subheader(f"Day-ahead price at {px.LOCATION} (observed)")
+    if data_dir is None:
+        st.info("Prices cannot be shown without a safe data directory.")
+        return None, None
+    target = px.store(data_dir)
+    day = price_view.day_picker(target, "learn_price_day")
+    if day is None:
+        st.info(
+            "No ERCOT day-ahead prices have been collected on this computer, so this part of "
+            "the lesson has no actual data to show. Collection runs from the command line "
+            "(`mambo collect --source ercot-dam-spp`), never from this page."
+        )
+        return None, None
+    hours = price_view.render_day(target, day, "learn_price")
+    return day, hours
+
+
 def panel_generation_mix(obs, sel) -> None:
     from mambo_explorer.generation_explore import render_mix
 
@@ -592,14 +623,18 @@ def render_learn() -> None:
 
     obs = sel = last = None
     gen_obs = gen_sel = None
+    price_day = price_hours = None
     bindings = meta["dataset_bindings"]
-    if any(b.get("route") == ds.GENERATION_ROUTE for b in bindings):
+    kinds = {_binding_kind(b) for b in bindings}
+    if "generation" in kinds:
         gen_obs, gen_sel = _generation_context(settings.data_dir if store else None)
-    if any(b.get("route") != ds.GENERATION_ROUTE for b in bindings):
+    if "demand" in kinds:
         obs, sel, last = _data_context(store)
     for panel in meta["data_panels"]:
         if panel == "generation_mix":
             PANELS[panel](gen_obs, gen_sel)
+        elif panel == "dam_price":
+            price_day, price_hours = panel_dam_price(settings.data_dir if store else None)
         else:
             PANELS[panel](obs, sel)
 
@@ -641,6 +676,8 @@ def render_learn() -> None:
             exercise = compliance_exercises.generate(spec)
         elif spec["kind"] == "generation":
             exercise = generation_exercises.generate(spec, gen_obs, gen_sel)
+        elif spec["kind"] == "price":
+            exercise = price_exercises.generate(spec, price_day, price_hours)
         else:
             exercise = generate(spec, obs, sel)
         _exercise(lesson, spec, exercise, progress)
@@ -674,9 +711,9 @@ def render_learn() -> None:
             "under *Model provenance*. The formulation and its verification are documented in "
             "the project's calculations notes and ADR 0007."
         )
-    if any(b.get("route") != ds.GENERATION_ROUTE for b in bindings):
+    if "demand" in kinds:
         _freshness(store.last_committed_run() if store else None)
-    if gen_sel is not None or any(b.get("route") == ds.GENERATION_ROUTE for b in bindings):
+    if "generation" in kinds:
         _generation_freshness(generation.store(settings.data_dir) if store else None)
     st.subheader("Limitations")
     st.markdown(md_dollars("\n".join(f"- {item}" for item in meta["limitations"])))

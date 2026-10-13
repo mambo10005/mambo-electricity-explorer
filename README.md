@@ -110,6 +110,22 @@ category; lesson 13, *Reading the actual generation mix*, explains it. The datas
 disabled in the default refresh plan until you enable it (ADR 0014,
 `docs/datasets/eia930-fuel-type-data.md`).
 
+### ERCOT day-ahead price at the North Hub (no key needed)
+
+```powershell
+.venvs/py314/Scripts/mambo sources --source ercot-dam-spp                # reviewed contract (offline)
+.venvs/py314/Scripts/mambo collect --source ercot-dam-spp --dry-run      # scope and budget; sends nothing
+.venvs/py314/Scripts/mambo collect --source ercot-dam-spp --latest 2     # 2 most recent DAM runs
+```
+
+ERCOT NP4-190-CD "DAM Settlement Point Prices", stored for one settlement point, `HB_NORTH`
+(North 345 kV Hub), in `<MAMBO_DATA_DIR>/ercot-np4-190-cd/`. Each download holds every
+settlement point; only the hub is kept. Prices are $/MWh (per ERCOT's Protocols), signed as
+published, labeled with ERCOT's DeliveryDate/HourEnding/DSTFlag (no UTC), and never called
+final. **Explore** shows the day; lesson 14, *Reading an actual day-ahead electricity
+price*, explains it. Opt-in in the refresh plan (ADR 0016,
+`docs/datasets/ercot-np4-190-cd.md`).
+
 ### Refresh both sources and check health
 
 ```powershell
@@ -245,6 +261,7 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Source register](docs/source-register.md) | Data source access and licensing review |
 | [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
 | [ERCOT NP6-345-CD contract](docs/datasets/ercot-np6-345-cd.md) | Direct ERCOT report: schema, units, time and DST fields |
+| [ERCOT NP4-190-CD contract](docs/datasets/ercot-np4-190-cd.md) | Day-ahead hub price: report, location evidence, units, labels, finality |
 | [EIA-930 generation contract](docs/datasets/eia930-fuel-type-data.md) | Net generation by energy source: route, codes, sign conventions, totals |
 | [Timestamp display](docs/timestamp-display.md) | Inventory of every time value shown, its kind, and its display convention; browser regression steps |
 | [mambo-power capability register](docs/capability-register.md) | What is documented vs. inspected vs. verified vs. exposed |

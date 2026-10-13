@@ -383,3 +383,30 @@ energy source (`load_generation`; each observation's `metric` is the energy-sour
 - `status: unavailable` with no observations, mixed units, or duplicate (category, period).
 - References list every observation used; exclusions list absent rows and null values.
 
+## `dam_price_reading` v1 — Stage 19 (ADR 0016)
+
+Lesson 14 reads one DeliveryDate of stored ERCOT DAM Settlement Point Prices at `HB_NORTH`
+(`price_view.load_day`). No arithmetic beyond selection and counting:
+
+| Quantity | Rule |
+|---|---|
+| Highest hour | the valid price with the largest value (ties: later file row); label = HourEnding + DSTFlag as published |
+| Negative hours | count of valid prices below zero (signed as published) |
+| Missing | rows whose price is blank; never zero, never filled |
+| Revised | rows whose latest revision is above 1 |
+| Snapshot | sha256 of (dataset, location, DeliveryDate, [(label, revision, raw value)]) |
+
+### Future explicit import of actual prices into calculators (design only; not implemented)
+
+Actual prices are never injected automatically. A future import must require and record:
+- **market stage** (day-ahead vs real-time); a day-ahead price never stands in for a
+  real-time price;
+- **location** (settlement point and type) and **units** ($/MWh);
+- **interval compatibility:** the calculator's interval must match the source's
+  DeliveryDate/HourEnding/DSTFlag without assumed time zones;
+- **revision reference:** the exact revision and document id used;
+- **observation provenance:** run id, archive sha256, publication and retrieval times;
+- **a statement that finality was not determined.**
+
+No calculator may infer a contract fixed price (K) from an observed price.
+

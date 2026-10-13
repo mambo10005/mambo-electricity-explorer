@@ -102,6 +102,12 @@ non-trivial work.
     and never name the price-setting unit from the mix.
   - Disabled in the default refresh plan; its success never implies demand's, or
     the reverse.
+- Actual prices (ADR 0016): ERCOT NP4-190-CD at `HB_NORTH` only, own store.
+  - Keep DeliveryDate/HourEnding/DSTFlag raw; never map to UTC or borrow the load
+    report's conventions; never call a price final; missing is not zero.
+  - Never inject actual prices into calculators automatically, never use a day-ahead
+    price as real-time, never infer K, never join with EIA data.
+  - Respect the shared `hosts` request cap for ercot.com.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,
