@@ -22,10 +22,11 @@ reaching the app.
 | `sources` | `id`, `title`, `https` `url`, `accessed` date, for every source-derived statement |
 | `dataset_bindings` | `dataset`, `route`, `entity`, `metrics` for lessons that show observations |
 | `calculation_ids` | from `power_energy`, `series_summary`, `coverage`, `forecast_error`, `dc_power_flow`, `dc_opf` |
-| `data_panels` | from `power_energy_example`, `demand_series`, `forecast_comparison`, `coverage` |
+| `data_panels` | from `power_energy_example`, `demand_series`, `forecast_comparison`, `coverage`, `generation_mix` (needs a dataset binding to route `electricity/rto/fuel-type-data`) |
 | `exercises` | `exercise_id`, `kind` (`data`, `concept`, or `model`), `generator` (from `exercises.GENERATORS`, or `model_exercises.GENERATORS` for `model`), and `calculation_id` (one the lesson declares). Data exercises require a dataset binding. A model exercise's required runs (`model_exercises.REQUIRES`) must all be in `model_bindings`. |
 | `model_bindings` | *optional* (default `[]`): keys of `modeling/cases.LESSON_RUNS`. A power-flow run that takes G2 from another run needs that run bound too. |
 | `model_panels` | *optional* (default `[]`): from `pf_vs_opf`, `location_prices`, `unverified_marginal`; requires `model_bindings` |
+| exercises of kind `generation` | generators in `generation_exercises.GENERATORS`, calculation id `generation_mix`; need a dataset binding to the generation route. Answers come from the generation observations in the lesson's window; the snapshot changes with any revision, new category, or new window. |
 | `claims` | *optional* (default `[]`): record ids from `content/responsibilities.yaml` (ADR 0012). Each claim's source URL must be in `sources`. Exercises of kind `compliance` (generators in `compliance_exercises`, calculation id `responsibility_records`) may cite only records listed here. Claims are shown as a claim-to-source table. |
 | `calculators` | *optional* (default `[]`): `energy_settlement`, `basis_exposure`, `time_shape`. Exercises of kind `settlement`, `basis`, or `shape` (generators in `settlement_exercises`, `basis_exercises`, `shape_exercises`) require the matching calculator; their answers come from its current inputs. |
 | `glossary_terms` | terms defined in `content/glossary.yaml` |

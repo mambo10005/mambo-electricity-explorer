@@ -33,6 +33,7 @@ REQUIRED_DOCS = [
     "docs/decisions/0011-teaching-shape-exposure.md",
     "docs/decisions/0012-regulatory-responsibility-records.md",
     "docs/decisions/0013-bounded-local-refresh-and-health.md",
+    "docs/decisions/0014-generation-by-energy-source.md",
     "docs/testing-isolation.md",
     "docs/accessibility.md",
     "docs/review/human-review-checklist.md",

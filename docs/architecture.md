@@ -46,6 +46,9 @@ src/mambo_explorer/
   eia/client.py    Bounded API v2 client: timeouts, retries, budget, strict validation
   eia/redact.py    Credential redaction (raw, %-encoded, +-encoded, query, JSON echo)
   collect.py       Plan (bounded days + lookback), normalize, revisions, collect()
+  generation.py    Stage 16: same plan rules for EIA-930 net generation by energy source,
+                   own store namespace eia930-fuel-type, identity incl. energy_source (ADR 0014)
+  generation_explore.py, generation_exercises.py  signed chart/coverage/totals view; lesson 13
   storage.py       Parquet + SQLite catalog + DuckDB views; lock; validate/recover
   cli.py           `mambo sources|collect|validate|status|storage|refresh|health`
   refresh_config.py  validated, bounded refresh plan (content/refresh.yaml; ADR 0013)

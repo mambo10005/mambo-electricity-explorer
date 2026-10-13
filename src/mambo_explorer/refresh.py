@@ -27,6 +27,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from mambo_explorer import collect as eia_collect
+from mambo_explorer import generation
 from mambo_explorer.eia.redact import redact
 from mambo_explorer.ercot import collect as ercot_collect
 from mambo_explorer.ercot import dataset as ercot_ds
@@ -69,6 +70,7 @@ class SourcePlan:
     findings: list[Finding] = field(default_factory=list)
     eia_plan: eia_collect.Plan | None = None
     ercot_selection: ercot_collect.Selection | None = None
+    generation_plan: generation.GenerationPlan | None = None
 
     def describe(self) -> dict:
         out = {
@@ -82,6 +84,8 @@ class SourcePlan:
             out["collector_plan"] = self.eia_plan.describe()
         if self.ercot_selection:
             out["collector_plan"] = self.ercot_selection.describe()
+        if self.generation_plan:
+            out["collector_plan"] = self.generation_plan.describe()
         return out
 
 
@@ -145,10 +149,14 @@ def _common_findings(history: dict, interval_hours: int, now: datetime) -> list[
     return findings
 
 
-def plan_eia(config: RefreshConfig, store: Store, now: datetime) -> SourcePlan:
-    s = config.eia
+def plan_eia(config: RefreshConfig, store: Store, now: datetime, source: str = "eia") -> SourcePlan:
+    """Demand/forecast ("eia") or generation ("eia-generation"): the same UTC-day rules, each
+    from its own store's committed runs, so one dataset's success says nothing about the
+    other's."""
+    s = config.source(source)
+    label = "EIA generation" if source == "eia-generation" else "EIA"
     if not s.enabled:
-        return SourcePlan("eia", "skip", "disabled in the refresh configuration", 0)
+        return SourcePlan(source, "skip", "disabled in the refresh configuration", 0)
     today = now.astimezone(UTC).date()  # EIA periods are UTC labels; completed UTC days only
     history = run_history(store)
     findings = _common_findings(history, s.collection_interval_hours, now)
@@ -156,7 +164,8 @@ def plan_eia(config: RefreshConfig, store: Store, now: datetime) -> SourcePlan:
         start, lookback = today - timedelta(days=s.window_days), 0
         findings.append(
             Finding(
-                NEVER_COLLECTED, f"no successful EIA collection; requesting {s.window_days} days"
+                NEVER_COLLECTED,
+                f"no successful {label} collection; requesting {s.window_days} days",
             )
         )
     else:
@@ -198,16 +207,23 @@ def plan_eia(config: RefreshConfig, store: Store, now: datetime) -> SourcePlan:
             "requested again only if it falls inside this refresh's window",
         )
     )
+    kwargs = dict(
+        start=start, end=today, lookback_days=lookback, max_requests=s.request_budget, today=today
+    )
     try:
-        plan = eia_collect.plan_collection(
-            start=start,
-            end=today,
-            lookback_days=lookback,
-            max_requests=s.request_budget,
-            today=today,
-        )
+        if source == "eia-generation":
+            plan = generation.plan_generation(**kwargs)
+            return SourcePlan(
+                source,
+                "collect",
+                "bounded EIA generation collection",
+                s.request_budget,
+                findings,
+                generation_plan=plan,
+            )
+        plan = eia_collect.plan_collection(**kwargs)
     except eia_collect.PlanError as exc:
-        return SourcePlan("eia", "skip", f"plan rejected: {exc}", s.request_budget, findings)
+        return SourcePlan(source, "skip", f"plan rejected: {exc}", s.request_budget, findings)
     return SourcePlan(
         "eia", "collect", "bounded EIA collection", s.request_budget, findings, eia_plan=plan
     )
@@ -247,7 +263,8 @@ def plan_ercot(config: RefreshConfig, store: Store, now: datetime, local_today: 
                 Finding(
                     OUTSIDE_HISTORY,
                     f"about {lost} OperDay(s) after {last_day} are older than ERCOT's public list "
-                    f"(about {ercot_ds.PUBLIC_RETENTION_DAYS} days) and cannot be recovered here",
+                    f"(about {ercot_ds.PUBLIC_RETENTION_DAYS} days) and are not available "
+                    "through the public report listing this app uses",
                 )
             )
             new_days = ercot_ds.PUBLIC_RETENTION_DAYS
@@ -308,8 +325,8 @@ def plan_refresh(
 ) -> list[SourcePlan]:
     plans = []
     for source in sources:
-        if source == "eia":
-            plans.append(plan_eia(config, stores["eia"], now))
+        if source in ("eia", "eia-generation"):
+            plans.append(plan_eia(config, stores[source], now, source))
         else:
             plans.append(plan_ercot(config, stores["ercot"], now, local_today))
     return plans
@@ -335,6 +352,11 @@ def refresh_lock(data_dir: Path, now: datetime):
         yield
     finally:
         path.unlink(missing_ok=True)
+
+
+def _eia_budget(items: list[tuple[str, int]]) -> int:
+    """Combined requests the EIA API may receive (demand plus generation datasets)."""
+    return sum(budget for source, budget in items if source in ("eia", "eia-generation"))
 
 
 def overall_status(results: list[SourceResult]) -> str:
@@ -371,6 +393,8 @@ def execute(
             client = clients[plan.source](plan.request_budget)
             if plan.source == "eia":
                 summary = eia_collect.collect(plan.eia_plan, client, stores["eia"])
+            elif plan.source == "eia-generation":
+                summary = generation.collect(plan.generation_plan, client, stores[plan.source])
             else:
                 summary = ercot_collect.collect(plan.ercot_selection, client, stores["ercot"])
             results.append(
@@ -464,6 +488,9 @@ def refresh(
         ]
         record["overall"] = "dry-run"
         record["requests_budgeted"] = sum(p.request_budget for p in plans if p.action == "collect")
+        record["eia_api_requests_budgeted"] = _eia_budget(
+            [(p.source, p.request_budget) for p in plans if p.action == "collect"]
+        )
         return json.loads(redact(json.dumps(record, default=str), secrets))
     with refresh_lock(data_dir, started):
         results = execute(plans, stores=stores, clients=clients, secrets=secrets)
@@ -472,6 +499,9 @@ def refresh(
         record["requests_used"] = sum(r.requests or 0 for r in results)
         record["requests_budgeted"] = sum(
             r.request_budget for r in results if r.status in ("succeeded", "failed")
+        )
+        record["eia_api_requests_budgeted"] = _eia_budget(
+            [(r.source, r.request_budget) for r in results if r.status in ("succeeded", "failed")]
         )
         record["finished_at_utc"] = now().astimezone(UTC).isoformat()
         record["log"] = str(write_log(data_dir, config, record, started, secrets).name)

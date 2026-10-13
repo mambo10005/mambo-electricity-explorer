@@ -17,6 +17,7 @@ EXPECTED = [
     "shape-exposure",
     "who-sets-the-rules",
     "requirement-to-evidence",
+    "generation-mix",
 ]
 # Two tracks share the first lesson: observations (2-4) and market mechanics (5-7).
 PREREQUISITES = {
@@ -32,6 +33,7 @@ PREREQUISITES = {
     "shape-exposure": ["power-vs-energy", "basis-exposure"],
     "who-sets-the-rules": ["power-vs-energy"],
     "requirement-to-evidence": ["who-sets-the-rules"],
+    "generation-mix": ["reading-demand"],
 }
 # Lessons outside the observation track and their exact cited sources.
 OTHER_SOURCES = {
@@ -106,7 +108,7 @@ More text.
 """
 
 
-def test_twelve_lessons_load_in_order_with_valid_prerequisites():
+def test_thirteen_lessons_load_in_order_with_valid_prerequisites():
     lessons = load_lessons()
     assert [le.id for le in lessons] == EXPECTED
     assert {le.id: le.meta["prerequisites"] for le in lessons} == PREREQUISITES

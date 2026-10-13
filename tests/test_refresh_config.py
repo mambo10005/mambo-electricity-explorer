@@ -51,7 +51,7 @@ def test_credentials_are_refused_anywhere_in_the_plan(key):
 def test_unknown_or_missing_sources_are_rejected():
     data = yaml.safe_load(rc.default_text())
     data["sources"]["caiso"] = data["sources"]["eia"]
-    with pytest.raises(rc.RefreshConfigError, match="exactly"):
+    with pytest.raises(rc.RefreshConfigError, match="must define"):
         rc.validate(data)
 
 

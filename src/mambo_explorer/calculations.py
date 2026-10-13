@@ -372,3 +372,148 @@ def load_observations(
             [selection.entity, list(metrics), selection.start_period, selection.end_period],
         ).fetchall()
     return [Observation(*r) for r in rows]
+
+
+# --- generation by energy source (Stage 16; ADR 0014) --------------------------------------
+# Generation observations reuse Observation with `metric` = the energy-source code, so the
+# per-series functions above (series_summary, coverage, snapshot_id) apply per category.
+
+
+def load_generation(store, selection: Selection) -> list[Observation]:
+    """Latest revision of each (category, period) in the selection, from committed files."""
+    with store.query() as con:
+        rows = con.execute(
+            "SELECT entity, energy_source, period, value, value_raw, unit, quality_flags, "
+            "revision, run_id FROM latest WHERE entity = ? AND period BETWEEN ? AND ? "
+            "ORDER BY energy_source, period",
+            [selection.entity, selection.start_period, selection.end_period],
+        ).fetchall()
+    return [Observation(*r) for r in rows]
+
+
+def generation_mix(observations: list[Observation], selection: Selection) -> CalcResult:
+    """Signed category sums, per-category coverage, and per-hour sums with completeness.
+
+    Rules (documented in docs/calculations.md):
+    - A category's energy is the sum of its VALID values; absent or null hours add nothing
+      and are counted, never filled.
+    - An hour is "complete" when every category seen anywhere in the window has a valid
+      value in that hour. An hour sum is the sum of the categories reported in that hour;
+      it is never called total system generation (the source's SYS total is not collected).
+    - Shares are offered only over complete hours and only when no category is negative in
+      any complete hour (denominator: the sum of all categories over the complete hours).
+      Otherwise they are withheld with a reason.
+    """
+    calc, version = "generation_mix", "1.0.0"
+    scoped = [
+        o
+        for o in observations
+        if o.entity == selection.entity
+        and selection.start_period <= o.period <= selection.end_period
+    ]
+    if not scoped:
+        return _unavailable(calc, version, selection, "no generation observations in the window")
+    categories = sorted({o.metric for o in scoped})
+    units = {o.unit for o in scoped}
+    if len(units) != 1:
+        return _unavailable(calc, version, selection, f"mixed units {sorted(units)}")
+    expected = labels_between(selection.start_period, selection.end_period)
+    by_key = {}
+    for o in scoped:
+        if (o.metric, o.period) in by_key:
+            return _unavailable(
+                calc, version, selection, f"duplicate observation {(o.metric, o.period)}"
+            )
+        by_key[(o.metric, o.period)] = o
+
+    per_category = {}
+    for code in categories:
+        rows = [by_key[(code, p)] for p in expected if (code, p) in by_key]
+        valid = [o for o in rows if _valid(o)]
+        per_category[code] = {
+            "energy_sum": sum(o.value for o in valid) if valid else None,
+            "min": min((o.value for o in valid), default=None),
+            "max": max((o.value for o in valid), default=None),
+            "valid_values": len(valid),
+            "negative_hours": sum(o.value < 0 for o in valid),
+            "zero_hours": sum(o.value == 0 for o in valid),
+            "null_values": sum(1 for o in rows if not _valid(o)),
+            "absent_rows": len(expected) - len(rows),
+            "unreviewed": any("unreviewed_category" in o.quality_flags for o in rows),
+        }
+
+    hours = []
+    for p in expected:
+        present = [
+            by_key[(c, p)] for c in categories if (c, p) in by_key and _valid(by_key[(c, p)])
+        ]
+        hours.append(
+            {
+                "period": p,
+                "categories_present": len(present),
+                "complete": len(present) == len(categories),
+                "category_sum": sum(o.value for o in present) if present else None,
+                "has_negative": any(o.value < 0 for o in present),
+            }
+        )
+    complete = [h for h in hours if h["complete"]]
+    negative_in_complete = any(h["has_negative"] for h in complete)
+    window_sum = sum(h["category_sum"] for h in complete) if complete else None
+    if not complete:
+        shares, share_reason = None, "no hour has a valid value for every category"
+    elif negative_in_complete:
+        shares, share_reason = (
+            None,
+            (
+                "withheld: at least one category is negative (net storage) in a complete hour, "
+                "so a share of a signed sum would be misleading"
+            ),
+        )
+    elif not window_sum:
+        shares, share_reason = None, "withheld: the sum over complete hours is zero"
+    else:
+        totals = {c: sum(by_key[(c, h["period"])].value for h in complete) for c in categories}
+        shares = {c: totals[c] / window_sum for c in categories}
+        share_reason = (
+            f"share of the sum of all reported categories over the {len(complete)} complete "
+            "hour(s); not a share of total system generation"
+        )
+    sums = {c: v["energy_sum"] for c, v in per_category.items() if v["energy_sum"] is not None}
+    largest = max(sums, key=lambda c: (sums[c], c)) if sums else None
+    return CalcResult(
+        calc,
+        version,
+        "ok",
+        asdict(selection),
+        unit=next(iter(units)),
+        values={
+            "categories": categories,
+            "per_category": per_category,
+            "hours": hours,
+            "expected_labels": len(expected),
+            "complete_hours": len(complete),
+            "incomplete_hours": len(hours) - len(complete),
+            "absent_category_hours": sum(v["absent_rows"] for v in per_category.values()),
+            "null_category_hours": sum(v["null_values"] for v in per_category.values()),
+            "categories_with_negative_hours": [
+                c for c in categories if per_category[c]["negative_hours"]
+            ],
+            "window_sum_complete_hours": window_sum,
+            "largest_category_by_energy": largest,
+            "shares": shares,
+            "share_note": share_reason,
+        },
+        valid_count=sum(v["valid_values"] for v in per_category.values()),
+        exclusions=[
+            {"metric": c, "period": p, "reason": "absent row"}
+            for c in categories
+            for p in expected
+            if (c, p) not in by_key
+        ]
+        + [
+            {"metric": o.metric, "period": o.period, "reason": _invalid_reason(o)}
+            for o in scoped
+            if not _valid(o)
+        ],
+        references=[_ref(o) for o in scoped],
+    )

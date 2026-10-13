@@ -43,13 +43,14 @@ def _text(at: AppTest) -> str:
     return "\n".join(parts)
 
 
-def test_default_source_is_eia_and_selector_offers_both(data_dir):
+def test_default_source_is_eia_and_selector_offers_all_three(data_dir):
     at = AppTest.from_string(EXPLORE).run(timeout=30)
     assert not at.exception
     assert at.radio(key="explore_source").value == "eia"
     assert at.radio(key="explore_source").options == [
         "EIA-930 via EIA API (ERCO demand and day-ahead forecast)",
         "ERCOT direct: NP6-345-CD actual load by weather zone",
+        "EIA-930 via EIA API (ERCO net generation by energy source)",
     ]
 
 

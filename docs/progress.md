@@ -2,6 +2,43 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-12 — Stage 16: net generation by energy source and lesson 13 (#31)
+
+Stacked on Stage 15 (PR #30) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
+`data/` and progress unchanged (gate check).
+
+- **Dataset review** (ADR 0014; `docs/datasets/eia930-fuel-type-data.md`). Route
+  `electricity/rto/fuel-type-data` discovered from the live parent listing with the local
+  key (4 metadata requests): facets `respondent` and `fueltype`, `value` = "Net
+  Generation" in `megawatthours`, hourly UTC, `startPeriod` 2019-01-01T00. Codes from the
+  Form EIA-930 instructions (15) plus `UES` from the API facet. Storage sign rules and the
+  About page's conflicting pumped-storage guidance are recorded; ERCOT's convention is
+  disclosed as unstated. Local use cleared on the route's own terms; publication unreviewed.
+- **Connector** (`generation.py`): `EIAClient.fetch_series` generalizes the existing fetch;
+  store namespace `eia930-fuel-type` with `energy_source` in the identity; no category
+  filter (unknown codes kept and flagged); signs and units preserved; revisions with lineage.
+- **Refresh**: dataset `eia-generation`, disabled by default and optional in plan files;
+  separate budget; `eia_api_requests_budgeted` shows the combined EIA load; its health and
+  coverage come from its own store.
+- **Explore and lesson 13** (EXPLORE-04): signed stacked bars with category selection,
+  coverage per category, hour sums with completeness, shares withheld when negative or
+  incomplete, definitions (net generation vs capacity vs fuel vs marginal). Lesson 13
+  "Reading the actual generation mix" with five snapshot-bound exercises; 7 glossary terms.
+- **Wording fix**: older ERCOT OperDays are "not available through the access method this
+  app implements", not lost.
+- **Live (scratch storage, local key, never shown).** `sources --remote`: route, facet,
+  entity, and units confirmed, no unreviewed codes (3 requests). `collect --days 2
+  --lookback-days 0`: 1 request, 232 rows = 8 categories (BAT, COL, NG, NUC, OTH, SUN,
+  WAT, WND) × 29 hours (2026-10-11T00 .. 2026-10-12T04; EIA had published nothing later).
+  Every stored value matched the archived response (232/232); BAT negative in 16 hours
+  (min −7,907). Repeat: 1 request, 0 new, 0 revised, 232 unchanged. `validate` ok;
+  `health`: fresh, label 2026-10-12T04.
+- **Browser (Playwright CLI; scratch data; PID-tracked servers).** Populated and empty
+  Explore views, keyboard source selection, keyboard category selection (Backspace to
+  BAT only: axis −8,000 .. 10,000, 16 bars below zero), dark theme at 640 CSS px, light
+  at 375 px (no page overflow), lesson 13 exercise answered by keyboard. Fix found: the
+  chart axis showed local clock time under a UTC label (aware timestamps); now naive UTC.
+
 ## 2026-10-12 — Stage 15: bounded local refresh and System Health (#29)
 
 Stacked on Stage 14 (PR #28) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real

@@ -25,6 +25,19 @@ sources:
     max_catchup_days: 14        # most new days one refresh will request after a gap
     request_budget: 12          # requests per refresh, including retries
     freshness_threshold_hours: 48
+  eia-generation:
+    enabled: false            # off until deliberately enabled: it shares EIA's request pattern
+    title: EIA-930 hourly net generation by energy source (ERCO)
+    publication_cadence: >-
+      Hourly values by energy source reported by the balancing authority, collected with the
+      same daily files as demand. No per-value publication time; the same 3-day and 30-day
+      revision rules apply. See the source register.
+    collection_interval_hours: 24
+    window_days: 3
+    revision_lookback_days: 3
+    max_catchup_days: 14
+    request_budget: 12          # separate from the demand budget; both count against EIA's API
+    freshness_threshold_hours: 48
   ercot:
     enabled: true
     title: ERCOT NP6-345-CD actual system load by weather zone

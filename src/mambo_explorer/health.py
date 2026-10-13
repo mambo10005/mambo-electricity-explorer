@@ -134,12 +134,17 @@ def _freshness(age: timedelta | None, threshold_hours: int) -> str:
     return FRESH if age <= timedelta(hours=threshold_hours) else STALE
 
 
-def eia_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHealth:
-    s = config.eia
+def eia_health(
+    store: Store, config: RefreshConfig, now: datetime, source: str = "eia"
+) -> SourceHealth:
+    """Demand/forecast or generation (source "eia-generation"): each from its own store."""
+    s = config.source(source)
+    by_category = source == "eia-generation"
+    series_col = "energy_source" if by_category else "metric"
     history = refresh.run_history(store)
     problems, storage = _problems(store, history)
     base = dict(
-        source="eia",
+        source=source,
         title=s.title,
         last_attempt=_attempt(history["last_attempt"]),
         last_success=_attempt(history["last_success"]),
@@ -163,13 +168,14 @@ def eia_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHeal
                 "SELECT max(period), epoch_us(max(retrieved_at_utc)) FROM latest"
             ).fetchone()
             per_metric = con.execute(
-                "SELECT metric, min(period), max(period), count(*), "
-                "count(*) FILTER (WHERE value IS NULL) FROM latest GROUP BY metric ORDER BY metric"
+                f"SELECT {series_col}, min(period), max(period), count(*), "
+                "count(*) FILTER (WHERE value IS NULL), count(*) FILTER (WHERE value < 0) "
+                f"FROM latest GROUP BY {series_col} ORDER BY {series_col}"
             ).fetchall()
     except (duckdb.Error, OSError) as exc:
         return _unreadable(base, exc)
     coverage = {}
-    for metric, first, last, rows, nulls in per_metric:
+    for metric, first, last, rows, nulls, negatives in per_metric:
         span = (
             int((eia_ds.parse_period(last) - eia_ds.parse_period(first)).total_seconds() // 3600)
             + 1
@@ -182,7 +188,17 @@ def eia_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHeal
             "hours_absent": span - rows,
             "null_values": nulls,
         }
+        if by_category:
+            coverage[metric]["negative_values"] = negatives
     age = now - eia_ds.parse_period(latest_period) if latest_period else None
+    notes = _unchanged_note(history) + [
+        "Absent hours are counted, never filled. An absent hour is not proof of a missed job."
+    ]
+    if by_category:
+        notes.append(
+            "Coverage is per energy-source category. A category absent from an hour is not "
+            "zero, and the categories present do not add up to total system generation."
+        )
     return SourceHealth(
         collected=True,
         latest_label=f"period {latest_period} (UTC label)",
@@ -193,8 +209,7 @@ def eia_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHeal
             "label marks the start or end of the hour, so ages are uncertain by one hour"
         ),
         coverage=coverage,
-        notes=_unchanged_note(history)
-        + ["Absent hours are counted, never filled. An absent hour is not proof of a missed job."],
+        notes=notes,
         **base,
     )
 
@@ -263,7 +278,8 @@ def ercot_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHe
         notes=_unchanged_note(history)
         + [
             "Hours per OperDay vary on DST days, so hours are not compared with 24 × days.",
-            "ERCOT's public list keeps about 31 days; older gaps may not be recoverable.",
+            "ERCOT's public list keeps about 31 days; older OperDays are not available through "
+            "the access method this app implements.",
         ],
         **base,
     )
@@ -288,6 +304,8 @@ def source_health(
     stores: dict[str, Store], config: RefreshConfig, now: datetime, logs: list[dict] | None = None
 ) -> list[SourceHealth]:
     out = [eia_health(stores["eia"], config, now), ercot_health(stores["ercot"], config, now)]
+    if "eia-generation" in stores:
+        out.append(eia_health(stores["eia-generation"], config, now, "eia-generation"))
     for h in out:
         h.last_refresh = last_refresh(logs or [], h.source)
         if h.last_refresh and h.last_refresh["status"] == "failed":

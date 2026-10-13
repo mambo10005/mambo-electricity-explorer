@@ -93,6 +93,15 @@ non-trivial work.
     proposal never has one.
   - Never bypass a human-verification page; record the gap instead.
   - Never attribute a synthetic requirement to a real authority.
+- Generation by energy source is a separate dataset (ADR 0014).
+  - Own store namespace; identity includes `energy_source`; never touch demand rows.
+  - Keep every category the source returns (flag unreviewed codes); keep signs and
+    units; never zero-fill; never clip negatives.
+  - Never call a category sum total system generation, never equate generation with
+    demand, never infer interchange or losses, never show a pie of signed values,
+    and never name the price-setting unit from the mix.
+  - Disabled in the default refresh plan; its success never implies demand's, or
+    the reverse.
 - Refresh and health (ADR 0013).
   - `mambo refresh` only orchestrates the existing collectors: no second ingestion
     path, sequential, bounded by `content/refresh.yaml`.

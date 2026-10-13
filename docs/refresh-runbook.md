@@ -10,6 +10,7 @@ current as your last successful refresh and the sources' own publication schedul
 .venvs\py314\Scripts\mambo.exe refresh                        # enabled sources, one after another
 .venvs\py314\Scripts\mambo.exe refresh --source ercot         # explicit selection (repeatable)
 .venvs\py314\Scripts\mambo.exe refresh --config D:\mambo\plan.yaml
+.venvs\py314\Scripts\mambo.exe refresh --dry-run --source eia --source eia-generation  # combined EIA budget preview
 .venvs\py314\Scripts\mambo.exe health                         # read-only status as JSON
 .venvs\py314\Scripts\mambo.exe validate --source eia          # storage check (read-only by default)
 ```
@@ -42,6 +43,15 @@ The packaged plan is `src/mambo_explorer/content/refresh.yaml`. To change it, co
 
 Keys that look like credentials (`api_key`, `token`, `password`, …) are rejected.
 
+**Generation dataset (`eia-generation`, Stage 16).** A third section with the same
+settings as `eia` (window, lookback, catch-up cap, budget, threshold), **disabled by
+default**. A plan file without the section is valid and treats it as disabled. Enable it
+deliberately (`enabled: true`) or select it explicitly (`--source eia-generation`). Its
+budget is separate from the demand budget; both are EIA API requests, and the refresh
+output shows the combined figure as `eia_api_requests_budgeted` so you can see it before
+a run. Its collection success, coverage, and health come from its own store: a successful
+demand refresh never implies generation was refreshed.
+
 ## What a refresh does
 
 1. Takes the refresh lock `<data>/refresh/.refresh.lock`. If it already exists, the
@@ -55,7 +65,8 @@ Keys that look like credentials (`api_key`, `token`, `password`, …) are reject
    - **ERCOT.** Counts OperDays by calendar label (no time-zone conversion). It requests
      new documents plus `revision_lookback_documents`, capped at `max_catchup_documents`.
      Days older than ERCOT's public list (about 31 days) are reported as outside available
-     history and cannot be recovered here. Within the list, use
+     history: not available through the public report listing this app uses (ERCOT
+     may offer them another way). Within the list, use
      `mambo collect --source ercot --publish-date YYYY-MM-DD`.
 3. Runs the sources one at a time, each with its own budget, using the existing
    collectors. A failure in one is recorded and the next still runs. Earlier committed

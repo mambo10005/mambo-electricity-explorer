@@ -18,7 +18,9 @@ import yaml
 from mambo_explorer.collect import MAX_DAYS_PER_RUN
 from mambo_explorer.ercot.collect import MAX_DOCUMENTS_PER_RUN
 
-SOURCES = ("eia", "ercot")
+SOURCES = ("eia", "ercot", "eia-generation")
+# Datasets a plan may leave out; a missing section means "disabled".
+OPTIONAL_SOURCES = ("eia-generation",)
 ENV = "MAMBO_REFRESH_CONFIG"  # optional path to a local plan (outside the repository)
 # Keys that look like secrets are rejected wherever they appear.
 _SECRET_KEY = re.compile(r"(?i)(api[_-]?key|token|secret|password|credential)")
@@ -58,12 +60,17 @@ class ErcotSettings:
 class RefreshConfig:
     eia: EiaSettings
     ercot: ErcotSettings
+    generation: EiaSettings  # same shape as demand; disabled unless a plan enables it
     log_retention_days: int
     log_max_files: int
     origin: str  # "default" or the path that was loaded
 
     def source(self, name: str) -> EiaSettings | ErcotSettings:
-        return {"eia": self.eia, "ercot": self.ercot}[name]
+        return {"eia": self.eia, "ercot": self.ercot, "eia-generation": self.generation}[name]
+
+    def eia_api_budget(self, sources: list[str]) -> int:
+        """Requests the EIA API may receive from one refresh of `sources` (demand + generation)."""
+        return sum(self.source(s).request_budget for s in sources if s in ("eia", "eia-generation"))
 
     def enabled(self) -> list[str]:
         return [s for s in SOURCES if self.source(s).enabled]
@@ -94,19 +101,8 @@ def _check_keys(obj, path: str = "") -> None:
             _check_keys(value, f"{path}{key}.")
 
 
-def validate(data: dict, origin: str = "default") -> RefreshConfig:
-    if not isinstance(data, dict) or data.get("version") != 1:
-        raise RefreshConfigError("refresh configuration needs version: 1")
-    _check_keys(data)
-    sources = data.get("sources")
-    if not isinstance(sources, dict) or set(sources) != set(SOURCES):
-        raise RefreshConfigError(f"sources must define exactly {SOURCES}")
-    for name, section in sources.items():
-        if not isinstance(section, dict) or not isinstance(section.get("enabled"), bool):
-            raise RefreshConfigError(f"sources.{name}.enabled must be true or false")
-
-    e, w = sources["eia"], "sources.eia"
-    eia = EiaSettings(
+def _eia_settings(e: dict, w: str) -> EiaSettings:
+    settings = EiaSettings(
         enabled=e["enabled"],
         title=_text(e, "title", w),
         publication_cadence=_text(e, "publication_cadence", w),
@@ -117,12 +113,41 @@ def validate(data: dict, origin: str = "default") -> RefreshConfig:
         request_budget=_int(e, "request_budget", 1, 50, w),
         freshness_threshold_hours=_int(e, "freshness_threshold_hours", 1, 24 * 60, w),
     )
-    for days in (eia.window_days, eia.max_catchup_days):
-        if days + eia.revision_lookback_days > MAX_DAYS_PER_RUN:
+    for days in (settings.window_days, settings.max_catchup_days):
+        if days + settings.revision_lookback_days > MAX_DAYS_PER_RUN:
             raise RefreshConfigError(
-                f"{w}: a refresh of {days} days plus {eia.revision_lookback_days} lookback days "
-                f"exceeds the collector's per-run maximum of {MAX_DAYS_PER_RUN}"
+                f"{w}: a refresh of {days} days plus {settings.revision_lookback_days} lookback "
+                f"days exceeds the collector's per-run maximum of {MAX_DAYS_PER_RUN}"
             )
+    return settings
+
+
+def _disabled_generation() -> EiaSettings:
+    """A plan without the section: the packaged defaults, but disabled."""
+    packaged = yaml.safe_load(default_text())["sources"]["eia-generation"]
+    return _eia_settings({**packaged, "enabled": False}, "sources.eia-generation")
+
+
+def validate(data: dict, origin: str = "default") -> RefreshConfig:
+    if not isinstance(data, dict) or data.get("version") != 1:
+        raise RefreshConfigError("refresh configuration needs version: 1")
+    _check_keys(data)
+    sources = data.get("sources")
+    required = set(SOURCES) - set(OPTIONAL_SOURCES)
+    if not isinstance(sources, dict) or not required <= set(sources) <= set(SOURCES):
+        raise RefreshConfigError(
+            f"sources must define {sorted(required)} and may add {OPTIONAL_SOURCES}"
+        )
+    for name, section in sources.items():
+        if not isinstance(section, dict) or not isinstance(section.get("enabled"), bool):
+            raise RefreshConfigError(f"sources.{name}.enabled must be true or false")
+
+    eia = _eia_settings(sources["eia"], "sources.eia")
+    generation = (
+        _eia_settings(sources["eia-generation"], "sources.eia-generation")
+        if "eia-generation" in sources
+        else _disabled_generation()
+    )
 
     r, w = sources["ercot"], "sources.ercot"
     ercot = ErcotSettings(
@@ -148,6 +173,7 @@ def validate(data: dict, origin: str = "default") -> RefreshConfig:
     return RefreshConfig(
         eia=eia,
         ercot=ercot,
+        generation=generation,
         log_retention_days=_int(logs, "retention_days", 1, 365, "logs"),
         log_max_files=_int(logs, "max_files", 1, 10_000, "logs"),
         origin=origin,

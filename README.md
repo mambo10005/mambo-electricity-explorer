@@ -94,6 +94,22 @@ days public. The data is stored separately from EIA in
 Units and time zone are not stated by ERCOT, so they are shown as published. See
 `docs/datasets/ercot-np6-345-cd.md`.
 
+### EIA net generation by energy source (same key)
+
+```powershell
+.venvs/py314/Scripts/mambo sources --source eia-generation            # reviewed contract (offline)
+.venvs/py314/Scripts/mambo collect --source eia-generation --dry-run  # scope and budget; sends nothing
+.venvs/py314/Scripts/mambo collect --source eia-generation            # last 7 completed UTC days
+```
+
+Route `electricity/rto/fuel-type-data` for ERCO, stored in its own namespace
+(`<MAMBO_DATA_DIR>/eia930-fuel-type/`). Values are signed exactly as EIA publishes them
+(net storage is negative), every category the source returns is kept, and no category sum
+is called total system generation. **Explore** shows a signed chart with coverage by
+category; lesson 13, *Reading the actual generation mix*, explains it. The dataset is
+disabled in the default refresh plan until you enable it (ADR 0014,
+`docs/datasets/eia930-fuel-type-data.md`).
+
 ### Refresh both sources and check health
 
 ```powershell
@@ -229,6 +245,7 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Source register](docs/source-register.md) | Data source access and licensing review |
 | [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
 | [ERCOT NP6-345-CD contract](docs/datasets/ercot-np6-345-cd.md) | Direct ERCOT report: schema, units, time and DST fields |
+| [EIA-930 generation contract](docs/datasets/eia930-fuel-type-data.md) | Net generation by energy source: route, codes, sign conventions, totals |
 | [mambo-power capability register](docs/capability-register.md) | What is documented vs. inspected vs. verified vs. exposed |
 | [Refresh runbook](docs/refresh-runbook.md) | Refresh configuration, catch-up rules, recovery, optional scheduling |
 | [Backlog](docs/backlog.md) | Recorded, unscheduled tasks (e.g. ERCOT DST validation) |

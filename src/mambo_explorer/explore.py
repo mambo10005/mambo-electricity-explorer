@@ -19,6 +19,7 @@ STALE_AFTER = timedelta(hours=36)
 SOURCES = {
     "eia": "EIA-930 via EIA API (ERCO demand and day-ahead forecast)",
     "ercot": "ERCOT direct: NP6-345-CD actual load by weather zone",
+    "eia-generation": "EIA-930 via EIA API (ERCO net generation by energy source)",
 }
 
 SETUP_INSTRUCTIONS = """\
@@ -63,12 +64,17 @@ def render_explore() -> None:
         list(SOURCES),
         format_func=SOURCES.get,
         key="explore_source",
-        help="The two sources are shown separately and are never joined.",
+        help="The sources are shown separately and are never joined or compared.",
     )
     if source == "ercot":
         from mambo_explorer.ercot_explore import render_ercot
 
         render_ercot(settings)
+        return
+    if source == "eia-generation":
+        from mambo_explorer.generation_explore import render_generation
+
+        render_generation(settings)
         return
     _render_eia(settings)
 
