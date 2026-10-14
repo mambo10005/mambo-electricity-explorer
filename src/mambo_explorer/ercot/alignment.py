@@ -17,6 +17,8 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
+from mambo_explorer.ercot.m1_policy import M1 as M1_RECORD
+
 # --- statuses -----------------------------------------------------------------------------
 ALIGNED_COMPLETE = "aligned_complete"
 ALIGNED_INCOMPLETE = "aligned_incomplete"
@@ -38,6 +40,9 @@ STATUSES = (
     UNAVAILABLE_REVISION,
     INVALID_INPUT,
 )
+
+# Candidate status used only by ercot/assumed_alignment.py after its approval checks pass.
+ASSUMPTION_GOVERNED = "review-approved-assumption"
 
 # --- revision policies (section 5 of docs/interval-alignment.md) ----------------------------
 LATEST_RETRIEVED = "latest-retrieved"
@@ -361,7 +366,7 @@ CANDIDATES: tuple[Candidate, ...] = (
             "Settlement points other than HB_NORTH",
         ),
         "moderate (consistent actual files; no official label definition)",
-        expected_intervals=("1", "2", "3", "4"),
+        expected_intervals=M1_RECORD.expected_intervals,  # defined only in the M1 record
     ),
     Candidate(
         "M2",
@@ -678,7 +683,9 @@ def _evaluate(
 
     # 2. mapping
     usable = chosen_map is not None and (
-        asserted or (candidate_check and chosen_map.status == "partially-supported")
+        asserted
+        or (candidate_check and chosen_map.status == "partially-supported")
+        or chosen_map.status == ASSUMPTION_GOVERNED
     )
     if not usable:
         why = (
@@ -690,7 +697,9 @@ def _evaluate(
         )
         return result(UNSUPPORTED_SEMANTICS, reasons=(why,))
     ev = chosen_map.supporting
-    if not asserted:
+    if chosen_map.status == ASSUMPTION_GOVERNED:
+        base["limitations"] = LIMITATIONS
+    elif not asserted:
         base["limitations"] = (
             f"Candidate check only: {chosen_map.id} is {chosen_map.status}, not accepted. "
             "This status describes labels under an unverified rule; it is not an alignment.",

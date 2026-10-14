@@ -2,6 +2,37 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-13 — Stage 23: assumption-governed day-ahead/real-time alignment under M1 (#45)
+
+Branched from `feat/stage-20-ercot-real-time-prices` at e0a89ad: the owner merged Stage 22 (PR
+#44) into it. None of this is on `main`. Request caps unchanged. No live collection. Real `data/`
+and progress unchanged.
+
+- **Assumption record M1 1.0.0** (`ercot/m1_policy.py`, `docs/assumption-register.md`, ADR 0020):
+  rule, datasets, HB_NORTH hub ↔ HB_NORTH/HU scope (observed), expected intervals 1–4 (the only
+  place in the code), flags N/Y verbatim, schema and scope fingerprints, unresolved definitions,
+  limitations, re-review triggers. Its status has four separate parts:
+  - authorization: given;
+  - reported acceptance: not attributable;
+  - recorded approval: none;
+  - official status: unresolved.
+- **Approval workflow:** `mambo assumption show|status|approve|revoke`.
+  - Dry run unless `--execute`; every reviewer field required; credential-like text refused.
+  - Append-only records in the gitignored data directory, bound to version and scope.
+- **Opt-in alignment** (`ercot/assumed_alignment.py`):
+  - **Basis:** the authoritative-only default is unchanged (unsupported_semantics). M1 runs
+    only with an explicit selection, an active approval, an in-scope location, and a supported
+    policy.
+  - **Outcomes:** approval missing, revoked, superseded, incompatible, or invalid;
+    unsupported_scope; conflicting_revisions; complete or incomplete under the assumption.
+- **Snapshots:** selected revisions plus an input fingerprint. A snapshot goes stale on inputs,
+  policy, assumption, approval, or validation-version changes, and is superseded by a later one.
+  Nothing is deleted.
+- **UI:** basis selector (session only), persistent banner, approval panel, interval viewer,
+  snapshots; limitations always visible (EXPLORE-09).
+- **Guards:** the four-interval guard is narrowed to the M1 record; no Finance import of
+  alignment or real-time prices; the approvals module converts no labels.
+
 ## 2026-10-13 — Stage 22: evidence-based day-ahead / real-time interval alignment (#43)
 
 Branched from `feat/stage-20-ercot-real-time-prices` at dbaab9d: the owner merged Stage 21 (PR

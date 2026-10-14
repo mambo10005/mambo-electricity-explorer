@@ -113,6 +113,11 @@ src/mambo_explorer/
   ercot/alignment.py   Stage 22: interval-alignment evidence, candidates, revision and
                        completeness policies, align()/check_candidate() (labels only; ADR 0019)
   alignment_view.py    read-only diagnostic (Explore); reads labels and price presence only
+  ercot/m1_policy.py   Stage 23: versioned assumption record M1 (rule, scope, fingerprints,
+                       unresolved definitions); the only home of the four-interval expectation
+  ercot/approvals.py   local append-only approval records (<data>/assumptions/approvals.jsonl)
+  ercot/assumed_alignment.py  opt-in alignment by basis (authoritative-only | review-approved
+                       assumption), outcomes, snapshots with staleness (ADR 0020)
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)
 ```
 
