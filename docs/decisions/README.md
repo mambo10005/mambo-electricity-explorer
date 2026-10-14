@@ -25,3 +25,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | [0018](0018-real-time-coverage-and-backfill.md) | Coverage-aware real-time price collection and bounded catch-up | Accepted |
 | [0019](0019-interval-alignment-evidence.md) | Evidence-based alignment of ERCOT day-ahead hours and real-time intervals (no mapping accepted) | Accepted |
 | [0020](0020-assumption-governed-alignment.md) | Assumption-governed day-ahead/real-time interval alignment (M1, opt-in, approval-gated) | Accepted |
+| [0021](0021-governed-hourly-rt-aggregation.md) | Governed hourly real-time price aggregation (investigation; no method active) | Accepted |

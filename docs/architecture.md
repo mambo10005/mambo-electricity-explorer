@@ -116,6 +116,11 @@ src/mambo_explorer/
   ercot/m1_policy.py   Stage 23: versioned assumption record M1 (rule, scope, fingerprints,
                        unresolved definitions); the only home of the four-interval expectation
   ercot/approvals.py   local append-only approval records (<data>/assumptions/approvals.jsonl)
+  ercot/aggregation_policy.py  Stage 24: versioned aggregation records AGG-A (arithmetic) and
+                       AGG-B (duration-weighted, DUR-15), prohibited uses (ADR 0021)
+  ercot/aggregation.py  candidate formulas (Decimal), governed aggregate() with blockers,
+                       aggregation snapshots; never reads day-ahead prices
+  aggregation_view.py  "Aggregation investigation" section of the alignment diagnostic
   ercot/assumed_alignment.py  opt-in alignment by basis (authoritative-only | review-approved
                        assumption), outcomes, snapshots with staleness (ADR 0020)
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)

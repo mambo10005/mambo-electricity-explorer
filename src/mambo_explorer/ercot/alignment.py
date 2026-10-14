@@ -276,6 +276,39 @@ EVIDENCE: tuple[Evidence, ...] = (
         "Retail load-profiling context, not the price reports.",
     ),
     Evidence(
+        "OFF-11",
+        "official",
+        "ERCOT Nodal Protocols Sections 6 and 3: Real-Time Settlement Point Price calculation",
+        PROTOCOLS,
+        "§6.6.1.1 (Resource Node) and §3.5.2.1(4) (North 345 kV Hub), variable tables",
+        "Section 6 August 28, 2026; Section 3 August 1, 2026",
+        None,
+        None,
+        RETRIEVED,
+        'The Real-Time SPP is "the time-weighted average" of SCED prices within the '
+        '15-minute Settlement Interval: each SCED interval y is weighted by TLMP y, "the '
+        "duration of the portion of the SCED interval y within the 15-minute Settlement "
+        'Interval" (seconds); the hub price is floored at -$251/MWh after the adder.',
+        "Defines the 15-minute price, not any hourly summary of it.",
+    ),
+    Evidence(
+        "OFF-12",
+        "official",
+        "ERCOT Nodal Protocols Section 16: Forward Adjustment Factors (credit)",
+        PROTOCOLS,
+        "§16.11.4.3.3(1)(d) Historic Real-Time Settled Average Price (HRSAP)",
+        "Section 16, version dated August 1, 2026",
+        None,
+        None,
+        RETRIEVED,
+        "HRSAP = (1/nhrh) × Σ over historic hours hrh of Σ i=1..4 RTSPP(hrh, i, rhub) / 4, where i "
+        'is "a 15-minute interval that is part of an Operating Hour" and rhub is the ERCOT '
+        "North Hub: an official formula averaging the four 15-minute real-time SPPs of each "
+        "Operating Hour with equal weight.",
+        "A credit-exposure (forward adjustment) calculation, not a settlement price and not a "
+        "published hourly price; it does not define the report labels.",
+    ),
+    Evidence(
         "GAP-1",
         "inaccessible",
         "ERCOT list notice W-A092311-05 (2011), reportedly on DST flags",

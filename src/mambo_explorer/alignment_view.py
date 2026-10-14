@@ -16,6 +16,7 @@ from mambo_explorer.ercot import assumed_alignment as aa
 from mambo_explorer.ercot import prices as px
 from mambo_explorer.ercot import rt_prices as rt
 from mambo_explorer.ercot.m1_policy import current
+from mambo_explorer.opf_lab import md_dollars
 
 CANDIDATE = "M1"
 NO_COMPARISON = (
@@ -181,6 +182,7 @@ def render_alignment(settings) -> None:
         render_assumed(res)
         render_approval(record, approval)
         render_snapshots(settings.data_dir, res, dam, rtl, hour, approval)
+        _aggregation(settings.data_dir, res, dam, rtl, hour, approval)
         _evidence()
         return
     res = al.align(hour, chosen, revision_policy=policy, dam_revisions=revisions)
@@ -200,7 +202,29 @@ def render_alignment(settings) -> None:
             ),
             heading="Candidate status",
         )
+    _aggregation(
+        settings.data_dir,
+        aa.align_with_basis(
+            aa.AUTHORITATIVE, hour, chosen, revision_policy=policy, dam_revisions=revisions
+        ),
+        dam,
+        rtl,
+        hour,
+        approval,
+    )
     _evidence()
+
+
+def _aggregation(data_dir, res, dam, rtl, hour, approval) -> None:
+    """Stage 24 aggregation investigation (labels in, governed summary or withheld out)."""
+    from mambo_explorer import aggregation_view as agv
+
+    stored_dam, stored_rt = aa.hour_inputs(dam, rtl, hour)
+    ctx = aa.context(
+        res.alignment_basis, res.dam_identity, res.revision_policy, stored_dam, stored_rt, approval
+    )
+    agv.render_investigation(data_dir, approval)
+    agv.render_actual(data_dir, res, ctx, approval)
 
 
 BASIS_LABELS = {
@@ -536,10 +560,13 @@ def _evidence() -> None:
         items = [e for e in al.EVIDENCE if e.kind == kind]
         st.subheader(title)
         st.markdown(
-            "\n".join(
-                f"- **{e.id}**: [{e.title}]({e.location}), {e.section}; {e.version}; "
-                f"retrieved {e.retrieved}. {e.proposition} *Remaining ambiguity:* {e.ambiguity}"
-                for e in items
+            md_dollars(
+                "\n".join(
+                    f"- **{e.id}**: [{e.title}]({e.location}), {e.section}; {e.version}; "
+                    f"retrieved {e.retrieved}. {e.proposition} *Remaining ambiguity:* "
+                    f"{e.ambiguity}"
+                    for e in items
+                )
             )
         )
     st.markdown(

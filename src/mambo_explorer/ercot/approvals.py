@@ -7,6 +7,11 @@ reference, and approval date were actually supplied; nothing is filled in automa
 the person running the command is never assumed to be the reviewer.
 
 Statuses (`status()`): missing, approved, revoked, superseded, incompatible, invalid.
+
+Stage 24 (ADR 0021) adds aggregation records: their approvals must also carry the record's
+limitations fingerprint (`accepted_limitations`). A revoked approval is restored only by a
+new attributable approval that names it (`restores`). An approval marked `synthetic` (tests
+and scratch checks) counts only in a data directory marked synthetic (`SYNTHETIC_MARKER`).
 """
 
 from __future__ import annotations
@@ -21,6 +26,7 @@ from pathlib import Path
 from mambo_explorer.ercot.m1_policy import AssumptionRecord
 
 DIRNAME = "assumptions"
+SYNTHETIC_MARKER = "SYNTHETIC-ENVIRONMENT"  # a file whose presence marks a scratch data dir
 FILENAME = "approvals.jsonl"
 FIELDS = ("reviewer", "role", "evidence", "approved_on")
 _SECRETISH = re.compile(
@@ -55,6 +61,9 @@ class Event:
     reason: str | None = None
     recorded_at_utc: str = ""
     recorded_with: str = "mambo assumption (local CLI)"
+    accepted_limitations: str | None = None  # aggregation records: limitations fingerprint
+    restores: str | None = None  # a revoked approval this one reinstates
+    synthetic: bool | None = None  # test/scratch approvals; never honored in a real data dir
 
 
 @dataclass(frozen=True)
@@ -79,6 +88,11 @@ def recorded_now() -> str:
 
     Record metadata only: never used to interpret, convert, or order any ERCOT label."""
     return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+def synthetic_environment(data_dir: Path) -> bool:
+    """True only for a data directory explicitly marked as synthetic (scratch checks)."""
+    return (Path(data_dir) / SYNTHETIC_MARKER).is_file()
 
 
 def path(data_dir: Path) -> Path:
@@ -123,8 +137,17 @@ def new_approval(
     evidence: str,
     approved_on: str,
     now: datetime | None = None,
+    accepted_limitations: str | None = None,
+    restores: str | None = None,
+    synthetic: bool = False,
 ) -> Event:
     """Build (not write) an approval event; every attributable field must be supplied."""
+    needs = getattr(assumption, "limitations_fingerprint", None)
+    if needs and accepted_limitations != needs():
+        raise ApprovalError(
+            "accepted limitations must equal the record's limitations fingerprint "
+            f"({needs()}); read them with `show` first"
+        )
     for name, value in (("reviewer", reviewer), ("role", role), ("evidence", evidence)):
         if value is None:
             raise ApprovalError(f"{name} is required; it is never filled in automatically")
@@ -147,6 +170,9 @@ def new_approval(
         evidence=evidence.strip(),
         approved_on=day.isoformat(),
         recorded_at_utc=now.astimezone(UTC).isoformat(timespec="seconds"),
+        accepted_limitations=accepted_limitations,
+        restores=restores,
+        synthetic=True if synthetic else None,
     )
 
 
@@ -169,8 +195,13 @@ def new_revocation(
 
 def append(data_dir: Path, event: Event) -> Path:
     """Append one event (the only write). Earlier lines are never changed."""
-    if event.kind == "revocation" and event.revokes not in {e.record_id for e in events(data_dir)}:
+    known = events(data_dir)
+    if event.kind == "revocation" and event.revokes not in {e.record_id for e in known}:
         raise ApprovalError(f"no recorded approval {event.revokes!r} to revoke")
+    if event.restores:
+        revoked = {e.revokes for e in known if e.kind == "revocation"}
+        if event.restores not in revoked:
+            raise ApprovalError(f"{event.restores!r} is not a revoked approval to restore")
     for name in ("reviewer", "role", "evidence", "reason"):
         _check_text(name, getattr(event, name))
     p = path(data_dir)
@@ -216,6 +247,20 @@ def status(data_dir: Path, assumption: AssumptionRecord) -> Approval:
     missing = [f for f in FIELDS if not getattr(latest, f)]
     if missing:
         return result(INVALID, latest, f"approval {latest.record_id} lacks {', '.join(missing)}")
+    needs = getattr(assumption, "limitations_fingerprint", None)
+    if needs and latest.accepted_limitations != needs():
+        return result(
+            INCOMPATIBLE,
+            latest,
+            f"approval {latest.record_id} accepted other limitations; re-review is required",
+        )
+    if latest.synthetic and not synthetic_environment(data_dir):
+        return result(
+            INVALID,
+            latest,
+            f"approval {latest.record_id} is synthetic; synthetic approvals count only in a "
+            "data directory marked synthetic",
+        )
     return result(
         APPROVED,
         latest,

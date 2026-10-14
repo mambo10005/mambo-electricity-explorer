@@ -446,7 +446,23 @@ counting.
 3. an explicit, justified real-time aggregation definition;
 4. stated non-settlement and non-backtest limitations.
 
-The interval-alignment diagnostic computes no price figure. Candidate hourly summaries
+**Stage 24 (ADR 0021, `docs/aggregation-evidence.md`):** hourly real-time summaries are
+governed records. Neither is approved, so no production summary is shown.
+- **AGG-A**, arithmetic mean: (P1 + P2 + P3 + P4) / 4.
+- **AGG-B**, duration-weighted mean: Σ(Pi × Di) / ΣDi, with 15-minute durations for DSTFlag N
+  only.
+- **Units:** both are $/MWh price summaries, not energy-weighted prices. Energy-weighted prices
+  and settlement amounts ($) are research only.
+
+**Stage 25 prerequisites:**
+1. active M1 and aggregation approvals;
+2. complete M1 alignment and aggregation inputs;
+3. an explicit revision policy;
+4. the displayed non-settlement limitation;
+5. a separately defined and reviewed day-ahead-versus-real-time comparison formula.
+
+The interval-alignment diagnostic itself computes no price figure; only the governed
+aggregation section can. Candidate hourly summaries
 (arithmetic, duration-weighted, energy-weighted, settlement amount) are researched in
 `docs/interval-alignment.md` §8, and none is implemented.
 
