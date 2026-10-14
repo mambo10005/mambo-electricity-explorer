@@ -135,6 +135,11 @@ features:
     section: explore
     status: done
     ui: true
+  - id: EXPLORE-09
+    name: "Assumption-governed alignment under M1: versioned assumption record, local approval workflow, opt-in activation, completeness under M1, interval viewer, snapshots with staleness (labels only; approval pending)"
+    section: explore
+    status: done
+    ui: true
   - id: EXPLORE-08
     name: "Day-ahead vs real-time price comparison (DART) at HB_NORTH"
     section: explore

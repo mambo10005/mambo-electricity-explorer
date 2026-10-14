@@ -150,6 +150,11 @@ hour's labels relate to real-time interval labels, and it reads no prices. No ma
 accepted yet: ERCOT's official materials do not define the reports' labels. So it reports
 `unsupported_semantics`, plus a clearly labelled candidate check (ADR 0019,
 `docs/interval-alignment.md`). No DART spread or day-ahead/real-time comparison exists.
+Since Stage 23 the same panel can use **assumption M1**.
+- **What M1 is:** an operational assumption, not an ERCOT definition.
+- **Opt-in:** you must select it, and only after an approval has been recorded locally with
+  `mambo assumption approve … --execute` (ADR 0020, `docs/assumption-register.md`).
+- **Current state:** no approval is recorded, so it stays pending.
 
 ### Refresh both sources and check health
 

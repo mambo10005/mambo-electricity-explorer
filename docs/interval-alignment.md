@@ -215,3 +215,18 @@ Ways to unblock prerequisite 2 (owner's choice; none attempted):
 2. Have a named person review this record and accept M1 explicitly.
 3. Observe NP4-190-CD and NP6-905-CD documents of the 2026-11-01 long day while they are
    listed (backlog BL-8), as supporting evidence.
+
+## 10. Stage 23: M1 as a review-approved operational assumption (ADR 0020)
+
+- **Authorization:** the owner authorized using M1 as an explicitly documented operational
+  assumption, recorded in `docs/assumption-register.md` and `ercot/m1_policy.py` (version
+  1.0.0).
+- **Evidence status unchanged:**
+  - sections 1–9 stand;
+  - M1 stays *partially supported* in `CANDIDATES`;
+  - `align()` still returns `unsupported_semantics`;
+  - prerequisite 2 stays blocked by unavailable **official** evidence.
+- **Opt-in use:** `assumed_alignment.align_with_basis` with the assumption basis. It requires
+  an explicit user selection, an active recorded approval for the same version and scope, an
+  in-scope location, and a supported revision policy.
+- **Approval:** no attributable approval is recorded, so activation is pending.

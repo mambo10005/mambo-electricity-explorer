@@ -433,6 +433,19 @@ counting.
 - 4 is verified;
 - 6 and 7 are unresolved.
 
+**Stage 23 (ADR 0020):** M1 can be used as an opt-in, approval-gated operational assumption.
+- Under it, an hour is `complete_under_assumption` only when exactly one selected valid price
+  exists for each interval M1 expects (1–4) and for the day-ahead hour.
+- That is alignment completeness, not collection coverage, revision availability, finality, or
+  official semantics.
+- No attributable approval is recorded yet.
+
+**Stage 24 prerequisites:**
+1. an active scoped approval of M1;
+2. complete alignment under the selected revision policy;
+3. an explicit, justified real-time aggregation definition;
+4. stated non-settlement and non-backtest limitations.
+
 The interval-alignment diagnostic computes no price figure. Candidate hourly summaries
 (arithmetic, duration-weighted, energy-weighted, settlement amount) are researched in
 `docs/interval-alignment.md` §8, and none is implemented.

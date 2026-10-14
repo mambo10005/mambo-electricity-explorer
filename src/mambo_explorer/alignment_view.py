@@ -11,8 +11,11 @@ from __future__ import annotations
 import streamlit as st
 
 from mambo_explorer.ercot import alignment as al
+from mambo_explorer.ercot import approvals as ap
+from mambo_explorer.ercot import assumed_alignment as aa
 from mambo_explorer.ercot import prices as px
 from mambo_explorer.ercot import rt_prices as rt
+from mambo_explorer.ercot.m1_policy import current
 
 CANDIDATE = "M1"
 NO_COMPARISON = (
@@ -155,8 +158,34 @@ def render_alignment(settings) -> None:
         _evidence()
         return
     revisions = [o for o in dam if o.hour == hour]
+    record = current("M1")
+    approval = ap.status(settings.data_dir, record)
+    basis = st.radio(
+        "Alignment basis",
+        list(aa.BASES),
+        format_func=BASIS_LABELS.get,
+        key="align_basis",  # session only: every new session starts authoritative-only
+        help="M1 is used only when you choose it here and a recorded approval is active.",
+    )
+    if basis == aa.ASSUMPTION:
+        res = aa.align_with_basis(
+            aa.ASSUMPTION,
+            hour,
+            chosen,
+            revision_policy=policy,
+            approval=approval,
+            dam_revisions=revisions,
+        )
+        if res.banner:
+            st.info(f"**{res.banner}**")
+        render_assumed(res)
+        render_approval(record, approval)
+        render_snapshots(settings.data_dir, res, dam, rtl, hour, approval)
+        _evidence()
+        return
     res = al.align(hour, chosen, revision_policy=policy, dam_revisions=revisions)
     render_result(res)
+    render_approval(record, approval)
     st.header("Candidate check (not an accepted alignment)")
     st.warning(
         f"Candidate **{CANDIDATE}** is {al.candidate(CANDIDATE).status}, not accepted. The check "
@@ -172,6 +201,213 @@ def render_alignment(settings) -> None:
             heading="Candidate status",
         )
     _evidence()
+
+
+BASIS_LABELS = {
+    aa.AUTHORITATIVE: "Authoritative definitions only (default)",
+    aa.ASSUMPTION: "Use review-approved assumption M1",
+}
+ASSUMED_TEXT = {
+    aa.COMPLETE_UNDER: "All four intervals that M1 expects are present once, each with a "
+    "published price, under the chosen revision policy.",
+    aa.INCOMPLETE_UNDER: "Intervals that M1 expects are missing, outside the expected set, or "
+    "carry a blank price. Nothing is filled or averaged.",
+    aa.CONFLICTING_REVISIONS: "Two observations of one interval share a revision number; the "
+    "revision policy cannot choose between them, so the hour is not complete.",
+    aa.APPROVAL_MISSING: "No approval of M1 is recorded, so M1 is not used.",
+    aa.APPROVAL_REVOKED: "The recorded approval of M1 was revoked, so M1 is not used.",
+    aa.APPROVAL_SUPERSEDED: "The M1 record was superseded, so M1 is not used.",
+    aa.APPROVAL_INCOMPATIBLE: "The recorded approval is for another version, scope, or schema; "
+    "re-review is required before M1 is used.",
+    aa.APPROVAL_INVALID: "The approval record is incomplete or unreadable, so M1 is not used.",
+    aa.UNSUPPORTED_SCOPE: "This settlement point is outside M1's approved scope.",
+}
+
+
+def render_assumed(res: aa.AssumedResult) -> None:
+    st.subheader("Alignment under the selected basis")
+    text = ASSUMED_TEXT.get(res.alignment_status) or STATUS_TEXT.get(res.alignment_status, "")
+    show = st.success if res.completeness_status == aa.COMPLETE else st.warning
+    show(f"**{res.alignment_status}** — {text}")
+    if res.reasons:
+        st.markdown("\n".join(f"- {r}" for r in res.reasons))
+    st.table(
+        [
+            {"Item": "Alignment basis", "Value": BASIS_LABELS[res.alignment_basis]},
+            {
+                "Item": "Assumption",
+                "Value": f"{res.assumption_id} {res.assumption_version}"
+                if res.assumption_id
+                else "none",
+            },
+            {
+                "Item": "Approval",
+                "Value": f"{res.approval_status} ({res.approval_reference or '—'})",
+            },
+            {"Item": "Official label semantics", "Value": res.authoritative_semantics_status},
+            {"Item": "Completeness", "Value": res.completeness_status},
+            {"Item": "Revision policy", "Value": res.revision_policy},
+            {
+                "Item": "Expected intervals (part of M1)",
+                "Value": ", ".join(res.expected_intervals) or "not evaluated",
+            },
+            {"Item": "Observed intervals", "Value": ", ".join(res.observed_intervals) or "none"},
+            {"Item": "Missing intervals", "Value": ", ".join(res.missing_intervals) or "none"},
+            {"Item": "Duplicate intervals", "Value": "; ".join(res.duplicate_intervals) or "none"},
+            {"Item": "DST flags", "Value": _dst_text(res.dst)},
+        ],
+        hide_index=True,
+    )
+    st.subheader("Day-ahead identity")
+    rev = res.dam_revision or {}
+    st.table(
+        [{"Item": k, "Value": str(v)} for k, v in res.dam_identity.items()]
+        + [
+            {"Item": "Revision", "Value": str(rev.get("revision", "—"))},
+            {"Item": "Document", "Value": str(rev.get("doc_id", "—"))},
+            {"Item": "Published by ERCOT", "Value": str(rev.get("published", "—"))},
+        ],
+        hide_index=True,
+    )
+    if res.expected_intervals:
+        st.subheader("Interval viewer")
+        by_label = {m["DeliveryInterval"]: m for m in res.matched}
+        st.table(
+            [
+                {
+                    "Interval": i,
+                    "Found": "yes" if i in by_label else "no",
+                    "Revision": str(by_label[i]["revision"]) if i in by_label else "—",
+                    "Document": by_label[i]["doc_id"] if i in by_label else "—",
+                }
+                for i in res.expected_intervals
+            ],
+            hide_index=True,
+        )
+        if res.matched:
+            pick = st.selectbox(
+                "Show one matched real-time interval",
+                [m["DeliveryInterval"] for m in res.matched],
+                format_func=lambda i: f"DeliveryInterval {i}",
+                key="align_interval_view",
+            )
+            st.table(
+                [{"Item": k, "Value": str(v)} for k, v in by_label[pick].items()],
+                hide_index=True,
+            )
+    if res.revision_conflicts:
+        st.subheader("Revisions chosen by the policy")
+        st.table(
+            [
+                {
+                    "Interval": c["interval"],
+                    "Stored revisions": ", ".join(map(str, c["revisions"])),
+                    "Selected": c["selected"],
+                }
+                for c in res.revision_conflicts
+            ],
+            hide_index=True,
+        )
+    if res.excluded:
+        st.subheader("Candidates not matched")
+        st.table(
+            [
+                {
+                    "Interval": f"H{x['DeliveryHour']} I{x['DeliveryInterval']} {x['DSTFlag']}",
+                    "Point": f"{x['SettlementPointName']}/{x['SettlementPointType']}",
+                    "Reason": x["reason"],
+                }
+                for x in res.excluded
+            ],
+            hide_index=True,
+        )
+    st.subheader("Limitations")
+    st.markdown("\n".join(f"- {t}" for t in res.limitations))
+
+
+def render_approval(record, approval: ap.Approval) -> None:
+    st.header(f"Assumption {record.id} {record.version} and its approval")
+    st.markdown(f"**Mapping rule (an assumption, not an ERCOT definition):** {record.rule}")
+    st.table(
+        [
+            {"Item": "Approval status", "Value": approval.status},
+            {"Item": "Approval record", "Value": approval.reference or "none"},
+            {"Item": "Detail", "Value": approval.detail},
+            {"Item": "Official label semantics", "Value": record.official_status},
+            {
+                "Item": "Scope",
+                "Value": "; ".join(
+                    f"{s.day_ahead_point} ({s.day_ahead_location_type}) ↔ {s.real_time_point}/"
+                    f"{s.real_time_type}"
+                    for s in record.locations
+                )
+                + f" in {' and '.join(record.datasets)}",
+            },
+            {"Item": "Scope fingerprint", "Value": record.scope_fingerprint()},
+            {"Item": "Schema fingerprint", "Value": record.schema_fingerprint()},
+        ],
+        hide_index=True,
+    )
+    st.markdown(
+        "**What has and has not happened:**\n"
+        f"- *Authorization to implement:* {record.authorization}\n"
+        f"- *Reported reviewer acceptance:* {record.reported_acceptance}\n"
+        "- *Recorded, attributable approval:* "
+        + (
+            "recorded (see the table)."
+            if approval.status == ap.APPROVED
+            else "none active; M1 cannot be used until one is recorded."
+        )
+        + "\n- *Official ERCOT verification:* none; the label definitions remain unresolved."
+    )
+    st.markdown(
+        "**Unresolved official definitions:**\n"
+        + "\n".join(f"- {u}" for u in record.unresolved_definitions)
+    )
+    st.markdown("**Scope evidence:** " + " ".join(s.evidence for s in record.locations))
+    st.markdown(
+        "**Re-review triggers:**\n" + "\n".join(f"- {u}" for u in record.re_review_triggers)
+    )
+    st.caption(
+        "Approvals are recorded locally with `mambo assumption approve --reviewer … --role … "
+        "--evidence … --approved-on YYYY-MM-DD --execute` (a dry run without --execute) and "
+        "revoked with `mambo assumption revoke --record … --reason … --execute`. They live in "
+        "the data directory, are never committed, and are never filled in automatically."
+    )
+
+
+def render_snapshots(data_dir, res, dam, rtl, hour, approval) -> None:
+    st.header("Diagnostic snapshots")
+    stored_dam, stored_rt = aa.hour_inputs(dam, rtl, hour)
+    ctx = aa.context(
+        res.alignment_basis, res.dam_identity, res.revision_policy, stored_dam, stored_rt, approval
+    )
+    if st.button("Record a snapshot of this result", key="align_snapshot"):
+        aa.record_snapshot(data_dir, aa.snapshot(res, ctx, ap.recorded_now()))
+    snaps = [s for s in aa.snapshots(data_dir) if s["context"]["dam_identity"] == res.dam_identity]
+    if not snaps:
+        st.markdown("No snapshot is recorded for this hour.")
+        return
+    states = aa.snapshot_states(snaps, {aa.snapshot_key(ctx): ctx})
+    st.table(
+        [
+            {
+                "Snapshot": s["snapshot_id"],
+                "Recorded (UTC)": s["recorded_at_utc"],
+                "Basis / policy": f"{s['context']['basis']} / {s['context']['revision_policy']}",
+                "Status then": s["alignment_status"],
+                "State now": state,
+                "Why": "; ".join(why) or "—",
+            }
+            for s, state, why in states
+        ],
+        hide_index=True,
+    )
+    st.caption(
+        "Snapshots are never deleted. A snapshot is stale when its inputs, revision policy, "
+        "assumption version or scope, approval, or validation version no longer match, and "
+        "superseded when a later snapshot exists for the same hour, basis, and policy."
+    )
 
 
 def render_result(res: al.AlignmentResult, heading: str = "Alignment status") -> None:

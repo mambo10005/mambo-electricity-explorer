@@ -122,6 +122,13 @@ non-trivial work.
     - Never hardcode four intervals outside a candidate's `expected_intervals`.
     - Never compute a spread or an hourly real-time price.
     - Never call a revision final.
+  - Assumption M1 (ADR 0020): used only through `assumed_alignment.align_with_basis`.
+    - Requires an explicit user selection, an active recorded approval for the same version
+      and scope (`ercot/approvals.py`), and a supported revision policy.
+    - Never activate it at startup.
+    - Never invent or infer a reviewer, date, or approval, and never commit approval records.
+    - Never mark M1 accepted in `alignment.CANDIDATES`, or the official semantics verified.
+    - The four-interval expectation lives only in `m1_policy.M1`.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,

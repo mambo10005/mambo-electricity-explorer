@@ -24,6 +24,7 @@ from mambo_explorer.ercot import alignment as al
 from mambo_explorer.ercot import prices as px
 from mambo_explorer.ercot import rt_prices as rt
 from mambo_explorer.ercot.client import ErcotClient
+from mambo_explorer.ercot.m1_policy import M1 as M1_RECORD
 
 SRC = Path(__file__).resolve().parents[1] / "src" / "mambo_explorer"
 EXPLORE = "from mambo_explorer.pages import render_page\nrender_page('explore')\n"
@@ -228,7 +229,12 @@ def test_result_carries_no_price_value():
         assert "value" not in {f.name for f in dataclasses.fields(cls)}
 
 
-ALIGN_MODULES = ("ercot/alignment.py", "alignment_view.py")
+ALIGN_MODULES = (
+    "ercot/alignment.py",
+    "alignment_view.py",
+    "ercot/assumed_alignment.py",
+    "ercot/m1_policy.py",
+)
 
 
 def _code_without_docstrings(path: Path) -> ast.Module:
@@ -257,20 +263,55 @@ def test_guard_alignment_modules_derive_no_clock_time_or_utc():
         assert not names & {"astimezone", "ZoneInfo", "timedelta", "datetime", "UTC"}, rel
 
 
+FOUR_GUARDED = ALIGN_MODULES + (
+    "ercot/assumed_alignment.py",
+    "ercot/approvals.py",
+    "ercot/m1_policy.py",
+)
+
+
+def _allowed_four(tree, rel):
+    """Constant nodes allowed to say '4': only the versioned M1 record's expected_intervals."""
+    if rel != "ercot/m1_policy.py":
+        return set()
+    allowed = set()
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and getattr(node.func, "id", None) == "AssumptionRecord"
+            and any(
+                k.arg == "id" and getattr(k.value, "value", None) == "M1" for k in node.keywords
+            )
+        ):
+            for k in node.keywords:
+                if k.arg == "expected_intervals":
+                    allowed |= {id(n) for n in ast.walk(k.value)}
+    return allowed
+
+
 def test_guard_no_hardcoded_four_interval_rule():
-    """The only source of '4 intervals' is a candidate's evidence-backed expected_intervals."""
-    for rel in ALIGN_MODULES:
+    """Stage 23 narrowing: '4 intervals' may appear only in the versioned M1 assumption record
+    (m1_policy.M1.expected_intervals); every other alignment module derives it from there."""
+    for rel in FOUR_GUARDED:
         tree = _code_without_docstrings(SRC / rel)
-        allowed = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.keyword) and node.arg == "expected_intervals":
-                allowed |= {id(n) for n in ast.walk(node.value)}
+        allowed = _allowed_four(tree, rel)
         for node in ast.walk(tree):
             if isinstance(node, ast.Constant) and id(node) not in allowed:
                 assert node.value not in (4, 4.0, 0.25, "4"), (rel, node.lineno)
     m1c = al.candidate("M1")
-    assert m1c.expected_intervals == ("1", "2", "3", "4")
+    assert m1c.expected_intervals == M1_RECORD.expected_intervals == ("1", "2", "3", "4")
     assert {"OFF-2", "OFF-3"} <= set(m1c.supporting)  # 15-minute intervals, a quarter of an hour
+
+
+def test_guard_rejects_a_four_outside_the_m1_record():
+    bad = ast.parse(
+        'X = ("1", "2", "3", "4")'
+        + chr(10)
+        + 'Y = AssumptionRecord(id="M2", expected_intervals=("4",))'
+    )
+    allowed = _allowed_four(bad, "ercot/m1_policy.py")
+    consts = [n for n in ast.walk(bad) if isinstance(n, ast.Constant) and n.value == "4"]
+    assert consts and not any(id(n) in allowed for n in consts)
 
 
 def test_existing_collectors_keep_their_identities():

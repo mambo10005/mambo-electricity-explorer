@@ -12,6 +12,9 @@ Commands:
     health     read-only collection, freshness, and storage status
     learn-reset  optional backup-and-reset of local learning progress (dry run unless
                --execute; asks for typed confirmation; never shows contents)
+    assumption show|status|approve|revoke  the versioned M1 alignment assumption and its
+               local approval records (approve/revoke are dry runs unless --execute; every
+               reviewer field must be supplied, nothing is filled in)
 
 --source defaults to eia. ERCOT (NP6-345-CD) uses ERCOT's public download, needs no
 credential, and never uses EIA_API_KEY. Nothing is deleted by default.
@@ -350,6 +353,60 @@ def cmd_health(args, settings) -> int:
     return 0
 
 
+def cmd_assumption(args, settings) -> int:
+    from dataclasses import asdict
+
+    from mambo_explorer.ercot import approvals as ap
+    from mambo_explorer.ercot.m1_policy import current
+
+    record = current(args.assumption_id)
+    if args.action == "show":
+        _print(
+            {
+                **{k: v for k, v in asdict(record).items() if k != "schema"},
+                "schema_fingerprint": record.schema_fingerprint(),
+                "scope_fingerprint": record.scope_fingerprint(),
+            }
+        )
+        return 0
+    try:
+        if args.action == "status":
+            state = ap.status(settings.data_dir, record)
+            _print(
+                {
+                    "assumption": f"{record.id} {record.version}",
+                    "approval_status": state.status,
+                    "approval_reference": state.reference,
+                    "detail": state.detail,
+                    "superseded_records": ap.superseded_records(settings.data_dir, record),
+                    "official_semantics": record.official_status,
+                    "records_file": str(ap.path(settings.data_dir)),
+                }
+            )
+            return 0
+        if args.action == "approve":
+            event = ap.new_approval(
+                record,
+                reviewer=args.reviewer,
+                role=args.role,
+                evidence=args.evidence,
+                approved_on=args.approved_on,
+            )
+        else:
+            if not args.record or not args.reason:
+                raise ap.ApprovalError("revoke needs --record and --reason")
+            event = ap.new_revocation(record, args.record, args.reason)
+        _print(asdict(event))
+        if not args.execute:
+            print("Dry run: nothing was recorded. Re-run with --execute to append this record.")
+            return 0
+        print(f"Appended to {ap.append(settings.data_dir, event)}")
+        return 0
+    except ap.ApprovalError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
 def _date(text: str) -> date:
     return date.fromisoformat(text)
 
@@ -464,6 +521,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--backup-dir", help="where to write the backup (default: outside the repository)"
     )
     p.set_defaults(func=cmd_learn_reset)
+
+    p = sub.add_parser(
+        "assumption",
+        help="the versioned M1 alignment assumption and its local approval records",
+    )
+    p.add_argument("action", choices=("show", "status", "approve", "revoke"))
+    p.add_argument("--assumption-id", default="M1")
+    p.add_argument("--reviewer", help="approve: the reviewer's name, as they supplied it")
+    p.add_argument("--role", help="approve: the reviewer's role")
+    p.add_argument("--evidence", help="approve: where the approval is documented (a reference)")
+    p.add_argument("--approved-on", help="approve: the actual approval date (YYYY-MM-DD)")
+    p.add_argument("--record", help="revoke: the approval record id to revoke")
+    p.add_argument("--reason", help="revoke: why")
+    p.add_argument("--execute", action="store_true", help="append the record (default: dry run)")
+    p.set_defaults(func=cmd_assumption)
     return parser
 
 
