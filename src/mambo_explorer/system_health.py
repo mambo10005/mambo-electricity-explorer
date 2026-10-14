@@ -63,6 +63,12 @@ def _source(h: health.SourceHealth) -> None:
         ],
         hide_index=True,
     )
+    if h.completeness:
+        prefix = "Fresh does not mean complete. " if h.freshness == health.FRESH else ""
+        st.info(f"**Completeness:** {prefix}{h.completeness}")
+    if h.collection:
+        st.markdown("**Collection coverage** (published documents, from the local inventory)")
+        st.table([{"Item": k, "Value": v} for k, v in h.collection.items()], hide_index=True)
     if h.problems:
         st.error("Errors and partial failures:\n" + "\n".join(f"- {p}" for p in h.problems))
     else:

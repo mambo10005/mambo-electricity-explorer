@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import date
 from importlib.resources import files
 from pathlib import Path
 
@@ -64,6 +65,11 @@ class ErcotSettings:
     max_catchup_documents: int
     request_budget: int
     freshness_threshold_hours: int
+    # Real-time prices only (Stage 21): "snapshot" (newest documents) or "coverage" (oldest
+    # uncollected documents whose PublishDate label is in [coverage_from, coverage_to]).
+    mode: str = "snapshot"
+    coverage_from: date | None = None
+    coverage_to: date | None = None  # None: through the newest listed document
 
 
 @dataclass(frozen=True)
@@ -178,7 +184,7 @@ def validate(data: dict, origin: str = "default") -> RefreshConfig:
         else _disabled_prices()
     )
     rt_prices = (
-        _ercot_settings(sources["ercot-rt-spp"], "sources.ercot-rt-spp", RT_DOCS_PER_RUN)
+        _rt_settings(sources["ercot-rt-spp"], "sources.ercot-rt-spp")
         if "ercot-rt-spp" in sources
         else _disabled_rt_prices()
     )
@@ -240,10 +246,53 @@ def _ercot_settings(r: dict, w: str, max_docs: int) -> ErcotSettings:
     return settings
 
 
+def _date(section: dict, key: str, where: str) -> date | None:
+    value = section.get(key)
+    if value is None:
+        return None
+    if isinstance(value, date):
+        return value
+    try:
+        return date.fromisoformat(str(value))
+    except ValueError:
+        raise RefreshConfigError(f"{where}.{key} must be a date (YYYY-MM-DD) or null") from None
+
+
+def _rt_settings(r: dict, w: str) -> ErcotSettings:
+    """Real-time prices: the ERCOT shape plus a collection mode and a PublishDate range.
+
+    `revision_lookback_documents` is the revision-recheck allocation (already-collected
+    documents downloaded again each refresh); it is budgeted on top of `max_catchup_documents`.
+    """
+    settings = _ercot_settings(r, w, RT_DOCS_PER_RUN)
+    mode = r.get("mode", "snapshot")
+    if mode not in ("snapshot", "coverage"):
+        raise RefreshConfigError(f"{w}.mode must be snapshot or coverage")
+    start, end = _date(r, "coverage_from", w), _date(r, "coverage_to", w)
+    if mode == "coverage" and start is None:
+        raise RefreshConfigError(f"{w}.coverage_from is required in coverage mode")
+    if mode == "snapshot" and (start or end):
+        raise RefreshConfigError(f"{w}: coverage_from/coverage_to need mode: coverage")
+    if start and end and end < start:
+        raise RefreshConfigError(f"{w}.coverage_to is before coverage_from")
+    planned = settings.max_catchup_documents + settings.revision_lookback_documents
+    if planned > RT_DOCS_PER_RUN:
+        raise RefreshConfigError(
+            f"{w}: max_catchup_documents plus revision_lookback_documents exceeds "
+            f"{RT_DOCS_PER_RUN} documents per run"
+        )
+    if settings.request_budget < 1 + planned:
+        raise RefreshConfigError(
+            f"{w}.request_budget must cover 1 list request plus {planned} downloads "
+            "(catch-up plus revision rechecks)"
+        )
+    return replace(settings, mode=mode, coverage_from=start, coverage_to=end)
+
+
 def _disabled_rt_prices() -> ErcotSettings:
     """A plan without the section: the packaged defaults, but disabled."""
     packaged = yaml.safe_load(default_text())["sources"]["ercot-rt-spp"]
-    return _ercot_settings({**packaged, "enabled": False}, "sources.ercot-rt-spp", RT_DOCS_PER_RUN)
+    return _rt_settings({**packaged, "enabled": False}, "sources.ercot-rt-spp")
 
 
 def _disabled_prices() -> ErcotSettings:

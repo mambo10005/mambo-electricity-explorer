@@ -101,9 +101,22 @@ class Document:
 
 @dataclass
 class Stats:
+    """Every HTTP attempt counts as a request, including retries; `by_kind` splits the same
+    attempts into listings and document downloads, so the parts always add up to `requests`."""
+
     requests: int = 0
     retries: int = 0
     failures: list[str] = field(default_factory=list)
+    by_kind: dict[str, int] = field(default_factory=dict)
+
+    def breakdown(self) -> dict:
+        return {
+            "list": self.by_kind.get("list", 0),
+            "download": self.by_kind.get("download", 0),
+            "other": self.requests - self.by_kind.get("list", 0) - self.by_kind.get("download", 0),
+            "retries_included": self.retries,
+            "total": self.requests,
+        }
 
 
 class ErcotClient:
@@ -127,13 +140,14 @@ class ErcotClient:
         self._sleep = sleep
         self.stats = Stats()
 
-    def _get(self, url: str, what: str) -> tuple[str, bytes]:
+    def _get(self, url: str, what: str, kind: str = "other") -> tuple[str, bytes]:
         for attempt in range(self.max_retries + 1):
             if self.stats.requests >= self.max_requests:
                 raise BudgetExceeded(f"request budget of {self.max_requests} exhausted")
             if self.stats.requests:
                 self._sleep(self.pause_seconds)  # be gentle with ERCOT (Terms of Use §6)
             self.stats.requests += 1
+            self.stats.by_kind[kind] = self.stats.by_kind.get(kind, 0) + 1
             try:
                 status, content_type, body = self._transport(url, self.timeout)
             except (OSError, urllib.error.URLError) as exc:
@@ -161,7 +175,7 @@ class ErcotClient:
     def list_documents(self, report: Report = LOAD_REPORT) -> list[Document]:
         """Public CSV documents for `report`, oldest first (validated)."""
         url = LIST_URL_TEMPLATE.format(id=report.report_type_id)
-        content_type, body = self._get(url, f"the {report.label} document list")
+        content_type, body = self._get(url, f"the {report.label} document list", "list")
         if len(body) > MAX_LIST_BYTES:
             raise ResponseError("document list exceeds size limit")
         if "html" in content_type.lower():
@@ -212,7 +226,9 @@ class ErcotClient:
                 f"document {document.doc_id} declares {document.content_size} bytes"
             )
         content_type, body = self._get(
-            ds.DOWNLOAD_URL.format(doc_id=document.doc_id), f"document {document.doc_id}"
+            ds.DOWNLOAD_URL.format(doc_id=document.doc_id),
+            f"document {document.doc_id}",
+            "download",
         )
         if "html" in content_type.lower() or not body.startswith(b"PK\x03\x04"):
             raise ResponseError(f"document {document.doc_id} is not a ZIP ({content_type!r})")

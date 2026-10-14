@@ -111,6 +111,10 @@ non-trivial work.
   - Real-time (ADR 0017): NP6-905-CD SPP (not LMP) at `HB_NORTH`/`HU`; keep
     DeliveryDate/Hour/Interval/DSTFlag raw; never assume 96 intervals; never compare
     with day-ahead until the prerequisites in `docs/calculations.md` are met.
+  - Coverage (ADR 0018): "collected" comes from committed observations, never the
+    inventory alone. Never claim complete history or a complete day from 96 intervals.
+    Fresh is not complete. Backfill stays bounded under the unchanged shared cap; never
+    loop until history is downloaded. A document leaving the list is not proof it is lost.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,

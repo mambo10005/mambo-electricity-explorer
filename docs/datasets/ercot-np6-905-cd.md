@@ -67,8 +67,28 @@ The day-ahead report's conventions (hour-only labels) are **not** borrowed.
 
 ## Selection and scope
 
-- The newest N CSV documents not already stored, at most 16 per run.
-  `--include-stored` re-downloads the newest N to check revisions and idempotence.
+- **Snapshot mode** (default): the newest N CSV documents not yet collected, at most 16 per
+  run. `--include-stored` re-downloads the newest N to check revisions and idempotence.
+- **Coverage mode** (Stage 21, ADR 0018): `--coverage-from D [--coverage-to D]` selects
+  documents by their **PublishDate label** (the first ten characters of ERCOT's PublishDate
+  as written, e.g. `2026-10-06` from `2026-10-06T00:02:01-05:00`; nothing converted) and
+  takes the **oldest** uncollected ones first. A PublishDate is not a DeliveryDate: the
+  H24 I4 interval of one day is published after midnight, under the next day's label.
+- **Revision recheck:** `--recheck K` (0–4) re-downloads K collected documents, least
+  recently downloaded first; superseded documents are never rechecked. Without it, reposts
+  of collected documents are not monitored.
+- **Inventory:** `inventory.sqlite` in this store's namespace records every DocID seen in a
+  listing, with first/last listing time, whether the latest listing shows it, and the last
+  outcome.
+  - **Statuses:** discovered, collected (derived from committed observations), failed,
+    deferred, interval-row-absent (valid document without the HB_NORTH/HU row; archive
+    kept), and superseded (a later document re-posted the interval with another value).
+  - **Not listed:** a flag for documents the latest listing no longer shows. That is not
+    proof that any authorized archive lost them.
+- **Failures:**
+  - A 404, non-ZIP, or malformed document fails alone.
+  - Reaching the budget, or an access refusal, stops the run, commits what was
+    downloaded, and defers the rest.
 - **Reported each run:**
   - listed documents and the oldest/newest listed publish time (available history);
   - documents already stored;
@@ -91,3 +111,30 @@ The day-ahead report's conventions (hour-only labels) are **not** borrowed.
   - Listing: 676 documents, 672 published but not requested.
 - **Repeat with `--include-stored`:** 5 requests; 0 new, 0 revised, 4 unchanged.
   `validate` ok.
+
+## Live coverage verification (Stage 21, 2026-10-13, scratch storage, no credential)
+
+- **Run 1:** `collect --source ercot-rt-spp --coverage-from 2026-10-06 --coverage-to
+  2026-10-07` (dry run first: no requests).
+  - **Requests:** 17 (1 list + 16 downloads, 0 retries).
+  - **Listing:** 744 documents, 2026-10-06T00:02:01-05:00 to 2026-10-13T17:32:01-05:00; 192
+    in the range.
+  - **Collected:** the 16 OLDEST, from 10/05/2026 H24 I4 (published 2026-10-06T00:02:01,
+    under the next day's PublishDate label) to 10/06/2026 H4 I3. 18,272 rows downloaded,
+    16 stored.
+  - **Left:** 176 deferred.
+- **Run 2 (resume):** the same range with `--latest 15 --recheck 1`.
+  - **Requests:** 17 (1 list + 16 downloads, 0 retries).
+  - **Collected:** 15 new, continuing at 10/06/2026 H4 I4.
+  - **Recheck:** the oldest document came back unchanged.
+  - **Listing:** 0 new or dropped documents since run 1. 161 remaining in the range.
+- **Result:**
+  - 31 observations, 31 distinct identities, all revision 1 (no duplicates);
+  - **31/31 values match the archived ZIPs**;
+  - `validate` ok;
+  - DeliveryDate 10/05: 1 interval; 10/06: 30. 2 hours have fewer than four intervals.
+- **System Health on this store:**
+  - freshness "stale", because the newest stored interval is from 10-06;
+  - completeness "Not complete";
+  - the part of a 10-01 to 10-07 range before 10-06 is reported unavailable through this
+    access method.

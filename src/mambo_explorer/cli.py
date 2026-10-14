@@ -146,22 +146,56 @@ def cmd_sources(args, settings) -> int:
     return 0
 
 
+def _collect_rt(args, settings) -> int:
+    """Real-time prices: snapshot (--latest) or bounded coverage/backfill (--coverage-from)."""
+    from mambo_explorer import refresh_config
+
+    if args.publish_date:
+        raise ercot_rt.SelectionError(
+            "--publish-date is not supported for ercot-rt-spp; use --coverage-from/--coverage-to"
+        )
+    coverage = args.coverage_from is not None
+    if args.coverage_to is not None and not coverage:
+        raise ercot_rt.SelectionError("--coverage-to needs --coverage-from")
+    selection = ercot_rt.Selection(
+        latest=args.latest
+        or (
+            ercot_rt.MAX_DOCUMENTS_PER_RUN - (args.recheck or 0)
+            if coverage
+            else ercot_rt.DEFAULT_LATEST
+        ),
+        include_stored=args.include_stored,
+        mode=ercot_rt.COVERAGE if coverage else ercot_rt.SNAPSHOT,
+        publish_from=args.coverage_from,
+        publish_to=args.coverage_to,
+        recheck=args.recheck or 0,
+    )
+    cap = refresh_config.load().host_budget("ercot.com")
+    if cap is not None and selection.request_budget > cap:
+        raise ercot_rt.SelectionError(
+            f"this run would budget {selection.request_budget} requests, above the shared "
+            f"ercot.com cap of {cap}; request fewer documents or rechecks"
+        )
+    target = ercot_rt.store(settings.data_dir)
+    print("Collection plan:")
+    _print({**selection.describe(), "preview": ercot_rt.preview(selection, target)})
+    if args.dry_run:
+        print("\nDry run: no requests sent, nothing written.")
+        return 0
+    summary = ercot_rt.collect(
+        selection, ErcotClient(max_requests=selection.request_budget), target
+    )
+    print("\nCollection committed:")
+    _print(summary)
+    if summary["documents_failed"] or summary["stopped_early"]:
+        print("\nPartial: some documents failed or were deferred; run again to resume.")
+        return 3
+    return 0
+
+
 def cmd_collect(args, settings) -> int:
     if args.source == "ercot-rt-spp":
-        if args.publish_date:
-            raise ercot_rt.SelectionError("--publish-date is not supported for ercot-rt-spp")
-        selection = ercot_rt.Selection(
-            latest=args.latest or ercot_rt.DEFAULT_LATEST, include_stored=args.include_stored
-        )
-        print("Collection plan:")
-        _print(selection.describe())
-        if args.dry_run:
-            print("\nDry run: no requests sent, nothing written.")
-            return 0
-        summary = ercot_rt.collect(selection, ErcotClient(), ercot_rt.store(settings.data_dir))
-        print("\nCollection committed:")
-        _print(summary)
-        return 0
+        return _collect_rt(args, settings)
     if args.source == "ercot-dam-spp":
         selection = ercot_prices.Selection(
             latest=None if args.publish_date else (args.latest or ercot_prices.DEFAULT_LATEST),
@@ -372,6 +406,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--include-stored",
         action="store_true",
         help="ercot-rt-spp: re-download already-stored intervals (revision check)",
+    )
+    ercot_group.add_argument(
+        "--coverage-from",
+        type=_date,
+        help="ercot-rt-spp coverage/backfill mode: first PublishDate label (YYYY-MM-DD, as "
+        "ERCOT writes it); takes the OLDEST uncollected listed documents first",
+    )
+    ercot_group.add_argument(
+        "--coverage-to",
+        type=_date,
+        help="ercot-rt-spp coverage mode: last PublishDate label (default: newest listed)",
+    )
+    ercot_group.add_argument(
+        "--recheck",
+        type=int,
+        help=f"ercot-rt-spp: already-collected documents to download again for reposts "
+        f"(0..{ercot_rt.MAX_RECHECK_PER_RUN}; default 0)",
     )
     p.epilog = (
         f"EIA: at most {MAX_DAYS_PER_RUN} days per run including lookback. "

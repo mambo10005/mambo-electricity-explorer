@@ -36,6 +36,7 @@ DONE_FEATURES = {
     "COMP-03",
     "HEALTH-01",
     "OPS-01",
+    "OPS-02",
     "CALC-01",
     "STORE-01",
     "STORE-02",

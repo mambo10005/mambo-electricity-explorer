@@ -35,6 +35,7 @@ do not unlock charts on Sources or System Health.
 | STORE-01 | DuckDB/Parquet observation store | system-health | done | Stage 3: append-only revisions, latest view (ADR 0004) |
 | STORE-02 | SQLite metadata store | system-health | done | Stage 3: run catalog, recoverable commit (ADR 0004) |
 | HEALTH-01 | Collection, freshness, and storage status | system-health | done | Stage 15: System Health page (read-only; never collects) and `mambo health`; ADR 0013. U-6 |
+| OPS-02 | Coverage-aware real-time price collection: document inventory, snapshot and coverage modes, bounded backfill, revision recheck, freshness vs completeness | system-health | done | Stage 21: ADR 0018; shared ercot.com cap unchanged (18); never claims complete history |
 | OPS-01 | Bounded local refresh of existing collectors (plan, budgets, catch-up, logs) and optional Windows task scripts | system-health | done | Stage 15: `mambo refresh`, `content/refresh.yaml`, `scripts/refresh-task.ps1` (preview by default; no task registered) |
 | EXPLORE-01 | Observation explorer across regions | explore | planned | U-7 |
 | EXPLORE-02 | ERCOT actual demand vs. published day-ahead forecast | explore | done | Stage 3; browser-checked with synthetic and live data |
