@@ -115,6 +115,13 @@ non-trivial work.
     inventory alone. Never claim complete history or a complete day from 96 intervals.
     Fresh is not complete. Backfill stays bounded under the unchanged shared cap; never
     loop until history is downloaded. A document leaving the list is not proof it is lost.
+  - Interval alignment (ADR 0019): no day-ahead/real-time mapping is accepted.
+    - `align()` returns `unsupported_semantics` until a candidate in
+      `ercot/alignment.py` is accepted, on official evidence or by a named reviewer.
+    - Never infer label semantics from field names, example files, or price similarity.
+    - Never hardcode four intervals outside a candidate's `expected_intervals`.
+    - Never compute a spread or an hourly real-time price.
+    - Never call a revision final.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,

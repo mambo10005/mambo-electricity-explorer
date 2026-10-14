@@ -130,6 +130,15 @@ features:
     section: explore
     status: done
     ui: true
+  - id: EXPLORE-07
+    name: "Interval-alignment diagnostic: day-ahead hour vs real-time interval labels, revision policies, DST and completeness states, evidence record (labels only; no mapping accepted)"
+    section: explore
+    status: done
+    ui: true
+  - id: EXPLORE-08
+    name: "Day-ahead vs real-time price comparison (DART) at HB_NORTH"
+    section: explore
+    status: planned
   - id: EXPLORE-01
     name: "Observation explorer across regions"
     section: explore

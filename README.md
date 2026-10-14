@@ -145,6 +145,12 @@ About 96 documents are published a day and the list keeps about 7 days. The coll
 not keep complete history; coverage mode and bounded backfill work through a range one run
 at a time (ADR 0018, `docs/refresh-runbook.md`).
 
+Explore also has a read-only **interval-alignment diagnostic**. It shows how a day-ahead
+hour's labels relate to real-time interval labels, and it reads no prices. No mapping is
+accepted yet: ERCOT's official materials do not define the reports' labels. So it reports
+`unsupported_semantics`, plus a clearly labelled candidate check (ADR 0019,
+`docs/interval-alignment.md`). No DART spread or day-ahead/real-time comparison exists.
+
 ### Refresh both sources and check health
 
 ```powershell

@@ -426,6 +426,17 @@ counting.
 
 ### Day-ahead / real-time comparison: prerequisites (design only; nothing implemented)
 
+**Stage 22 status (ADR 0019, `docs/interval-alignment.md` §9):**
+- prerequisite 2 (interval compatibility) is **blocked by unavailable evidence**: no
+  official label definition, so no mapping is accepted;
+- 1, 3, and 5 are partially verified;
+- 4 is verified;
+- 6 and 7 are unresolved.
+
+The interval-alignment diagnostic computes no price figure. Candidate hourly summaries
+(arithmetic, duration-weighted, energy-weighted, settlement amount) are researched in
+`docs/interval-alignment.md` §8, and none is implemented.
+
 A future comparison of the day-ahead hourly price (NP4-190-CD) with real-time 15-minute
 prices (NP6-905-CD) must establish all of the following first:
 

@@ -4,7 +4,7 @@ Status key: `planned` · `in-progress` · `done` · `dropped`
 
 The source of truth is `src/mambo_explorer/content/features.yaml`.
 `tests/test_feature_status.py` fails if this table and that file disagree on
-IDs or statuses. Only EXPLORE-02, EXPLORE-03, EXPLORE-04, EXPLORE-05, EXPLORE-06, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, COMP-02, and HEALTH-01 are pages (`ui: true`
+IDs or statuses. Only EXPLORE-02, EXPLORE-03, EXPLORE-04, EXPLORE-05, EXPLORE-06, EXPLORE-07, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, COMP-02, and HEALTH-01 are pages (`ui: true`
 in the YAML), so Explore, Learn, Model Labs, Finance, Compliance, and System Health are the only sections allowed to show data elements. Compliance shows none: its tables are source records, not data. Done backend features (DATA-01, STORE-01/02)
 do not unlock charts on Sources or System Health.
 
@@ -40,6 +40,8 @@ do not unlock charts on Sources or System Health.
 | EXPLORE-01 | Observation explorer across regions | explore | planned | U-7 |
 | EXPLORE-02 | ERCOT actual demand vs. published day-ahead forecast | explore | done | Stage 3; browser-checked with synthetic and live data |
 | EXPLORE-03 | ERCOT direct actual load by weather zone (separate from EIA) | explore | done | Stage 5; no EIA join |
+| EXPLORE-07 | Interval-alignment diagnostic: day-ahead hour vs real-time interval labels, revision policies, DST and completeness states, evidence record (labels only; no mapping accepted) | explore | done | Stage 22; returns unsupported_semantics by default; candidate M1 partially supported, not accepted; no prices read |
+| EXPLORE-08 | Day-ahead vs real-time price comparison (DART) at HB_NORTH | explore | planned | Stage 23 prerequisites in docs/interval-alignment.md; blocked: no official label definition |
 | EXPLORE-06 | Real-time price view at HB_NORTH: source-label chart, interval viewer, table, coverage, provenance, and lesson 15 | explore | done | Stage 20; ERCOT interval labels, no UTC; no day-ahead comparison; finality not determined |
 | EXPLORE-05 | Day-ahead price view at HB_NORTH: source-label chart, table, coverage, publication and revision provenance, and lesson 14 | explore | done | Stage 19; ERCOT labels, no UTC; finality not determined; no join with EIA |
 | EXPLORE-04 | Net generation by energy source: signed chart, category coverage, totals with completeness rules, and lesson 13 | explore | done | Stage 16; no pie chart, no system total, shares withheld when misleading; lesson agent-authored, unreviewed |

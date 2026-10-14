@@ -23,3 +23,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | [0016](0016-ercot-day-ahead-hub-price.md) | First actual price series: ERCOT DAM Settlement Point Price at HB_NORTH | Accepted |
 | [0017](0017-ercot-real-time-hub-price.md) | ERCOT real-time Settlement Point Price at HB_NORTH (15-minute intervals) | Accepted |
 | [0018](0018-real-time-coverage-and-backfill.md) | Coverage-aware real-time price collection and bounded catch-up | Accepted |
+| [0019](0019-interval-alignment-evidence.md) | Evidence-based alignment of ERCOT day-ahead hours and real-time intervals (no mapping accepted) | Accepted |

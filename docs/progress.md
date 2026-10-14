@@ -2,6 +2,31 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-13 — Stage 22: evidence-based day-ahead / real-time interval alignment (#43)
+
+Branched from `feat/stage-20-ercot-real-time-prices` at dbaab9d: the owner merged Stage 21 (PR
+#42) into it. None of this is on `main`. Shared ercot.com cap unchanged (18). Real `data/` and
+progress unchanged.
+
+- **Decision: no mapping accepted** (ADR 0019, `docs/interval-alignment.md`).
+  - **Official:** Protocols tie each 15-minute interval to one day-ahead hour (§6.6.3.3).
+    No ERCOT material defines HourEnding, DeliveryHour, DeliveryInterval, or DSTFlag.
+  - **Actual files:** NP4-180-ER and NP6-785-ER, 648 days including three DST days, are
+    fully consistent with candidate M1.
+  - **Candidates:** M1 partially supported; M2 rejected.
+- **Service** (`ercot/alignment.py`):
+  - nine statuses; `align()` returns `unsupported_semantics`;
+  - `check_candidate()` is labelled not asserted;
+  - revision policies: latest-retrieved and first-retrieved available; known-before-cutoff
+    and final unavailable;
+  - strict hour completeness.
+- **Diagnostic:** Explore source "interval labels", labels and price presence only, with the
+  evidence record (EXPLORE-07). EXPLORE-08 (DART/comparison) is planned and blocked.
+- **Guards:** no spread, no SQL price aggregate, no clock time or UTC in the alignment
+  modules, no literal four-interval rule.
+- **Live (scratch):** 9 ercot.com requests (2 listings, 4 annual files, 1 list + 2 day-ahead
+  documents).
+
 ## 2026-10-13 — Stage 21: coverage-aware real-time collection and bounded catch-up (#41)
 
 Stacked on Stage 20 (PR #40) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and

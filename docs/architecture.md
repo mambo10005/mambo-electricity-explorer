@@ -110,6 +110,9 @@ src/mambo_explorer/
   ercot/rt_inventory.py  Stage 21: published-document inventory for NP6-905-CD (own
                        SQLite file in the same namespace; collected derived from the store)
   rt_price_view.py, rt_price_exercises.py  interval chart/viewer/table, lesson 15
+  ercot/alignment.py   Stage 22: interval-alignment evidence, candidates, revision and
+                       completeness policies, align()/check_candidate() (labels only; ADR 0019)
+  alignment_view.py    read-only diagnostic (Explore); reads labels and price presence only
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)
 ```
 
