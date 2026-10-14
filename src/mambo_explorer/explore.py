@@ -23,6 +23,8 @@ SOURCES = {
     "eia-generation": "EIA-930 via EIA API (ERCO net generation by energy source)",
     "ercot-dam-spp": "ERCOT direct: NP4-190-CD day-ahead settlement point price (HB_NORTH)",
     "ercot-rt-spp": "ERCOT direct: NP6-905-CD real-time settlement point price (HB_NORTH)",
+    "ercot-alignment": "Diagnostic: ERCOT day-ahead hour and real-time interval labels "
+    "(no prices, no comparison)",
 }
 
 SETUP_INSTRUCTIONS = """\
@@ -67,7 +69,8 @@ def render_explore() -> None:
         list(SOURCES),
         format_func=SOURCES.get,
         key="explore_source",
-        help="The sources are shown separately and are never joined or compared.",
+        help="The sources are shown separately and are never joined or compared. The "
+        "alignment diagnostic reads labels only, never prices.",
     )
     if source == "ercot":
         from mambo_explorer.ercot_explore import render_ercot
@@ -88,6 +91,11 @@ def render_explore() -> None:
         from mambo_explorer.rt_price_view import render_rt_prices
 
         render_rt_prices(settings)
+        return
+    if source == "ercot-alignment":
+        from mambo_explorer.alignment_view import render_alignment
+
+        render_alignment(settings)
         return
     _render_eia(settings)
 

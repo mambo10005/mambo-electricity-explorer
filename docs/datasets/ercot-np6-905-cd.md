@@ -138,3 +138,18 @@ The day-ahead report's conventions (hour-only labels) are **not** borrowed.
   - completeness "Not complete";
   - the part of a 10-01 to 10-07 range before 10-06 is reported unavailable through this
     access method.
+
+## Interval alignment with the NP4-190-CD day-ahead report (Stage 22, ADR 0019)
+
+- **Status:** no mapping to NP4-190-CD day-ahead labels is accepted. Evidence record:
+  `docs/interval-alignment.md`.
+- **Official materials:**
+  - They define the settlement concept: each 15-minute real-time Settlement Interval belongs
+    to one day-ahead hour (Protocols §6.6.3.3).
+  - They do not define this report's DeliveryDate/DeliveryHour/DeliveryInterval/DSTFlag labels. The Current Day Reports XSD documents
+    `DSTFlag` only as "DST Flag", and the product page lists no user guide.
+- **Historical compilation** (NP6-785-ER, 2025–2026, scratch only): every (hour, flag) has DeliveryInterval 1–4; spring days have 92 intervals with DeliveryHour 3 absent; the fall day has 100 with hour 2 as N and Y. The 31 Stage 21 NP6-905-CD intervals match it (three differ only in trailing zeros).
+- **Identity:** this report's stored identity is unchanged, and `DSTFlag` is kept as
+  published.
+- **Diagnostic:** Explore → interval-alignment diagnostic reads its labels and whether each
+  price is present, never the value.

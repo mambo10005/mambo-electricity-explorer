@@ -87,3 +87,18 @@ verified.
   - All 48 stored values match the archived ZIPs.
   - 10/12: min 16.84, max 70.22. 10/13: min 22.77, max 92.61. No negatives; all DSTFlag `N`.
 - **Repeat:** 3 requests; 0 new, 0 revised, 48 unchanged. `validate` ok.
+
+## Interval alignment with the NP6-905-CD real-time report (Stage 22, ADR 0019)
+
+- **Status:** no mapping to NP6-905-CD real-time labels is accepted. Evidence record:
+  `docs/interval-alignment.md`.
+- **Official materials:**
+  - They define the settlement concept: each 15-minute real-time Settlement Interval belongs
+    to one day-ahead hour (Protocols §6.6.3.3).
+  - They do not define this report's DeliveryDate/HourEnding/DSTFlag labels. The Current Day Reports XSD documents
+    `DSTFlag` only as "DST Flag", and the product page lists no user guide.
+- **Historical compilation** (NP4-180-ER, 2025–2026, scratch only): spring days have 23 hours with `03:00` absent; the fall day has 25 with `02:00 N` and `02:00 Y`; hour 24 stays under its DeliveryDate. The flag column there is named "Repeated Hour Flag". 48 NP4-190-CD hours (10/06–10/07/2026) match it exactly.
+- **Identity:** this report's stored identity is unchanged, and `DSTFlag` is kept as
+  published.
+- **Diagnostic:** Explore → interval-alignment diagnostic reads its labels and whether each
+  price is present, never the value.

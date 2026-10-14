@@ -403,3 +403,13 @@ A future reconciliation would need all of the following:
 4. an ERCOT definition of TOTAL to compare with EIA-930 demand
 
 Until then the sources are shown separately and never compared numerically.
+
+### ERCOT — NP4-180-ER / NP6-785-ER historical hub and load-zone SPPs (investigation only) — 2026-10-13
+
+- **Use:** read for the Stage 22 interval-alignment investigation (ADR 0019). They are **not
+  collected** by the app, and no file is committed.
+- **Product pages:** public, report types 13060 and 13061, weekly, zip/xlsx, "User Guide N/A".
+- **Downloaded to scratch:** the 2025 and 2026 workbooks of each (4 documents, after 2 listing
+  requests). HB_NORTH labels only were extracted locally.
+- **Terms:** same basis as the other ERCOT public reports (no account, paced).
+- **Not reviewed:** public redistribution (PUB-01) and collection as a dataset.
