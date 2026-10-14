@@ -132,6 +132,8 @@ price*, explains it. Opt-in in the refresh plan (ADR 0016,
 .venvs/py314/Scripts/mambo sources --source ercot-rt-spp               # reviewed contract (offline)
 .venvs/py314/Scripts/mambo collect --source ercot-rt-spp --dry-run     # scope and budget; sends nothing
 .venvs/py314/Scripts/mambo collect --source ercot-rt-spp --latest 4    # newest 4 intervals not stored
+# bounded backfill: the 16 oldest uncollected documents with these PublishDates (rerun to resume)
+.venvs/py314/Scripts/mambo collect --source ercot-rt-spp --coverage-from 2026-10-07 --coverage-to 2026-10-07 --dry-run
 ```
 
 ERCOT NP6-905-CD real-time Settlement Point Prices (produced from SCED LMPs every 15
@@ -139,6 +141,9 @@ minutes, including ERCOT's reliability deployment price adder, floored at −$25
 for `HB_NORTH` only in `<MAMBO_DATA_DIR>/ercot-np6-905-cd/`. Each interval keeps ERCOT's
 DeliveryDate/DeliveryHour/DeliveryInterval/DSTFlag (no UTC). Lesson 15 explains it. Opt-in,
 under the shared ercot.com request cap (ADR 0017, `docs/datasets/ercot-np6-905-cd.md`).
+About 96 documents are published a day and the list keeps about 7 days. The collector does
+not keep complete history; coverage mode and bounded backfill work through a range one run
+at a time (ADR 0018, `docs/refresh-runbook.md`).
 
 ### Refresh both sources and check health
 

@@ -32,6 +32,7 @@ from mambo_explorer.eia.redact import redact
 from mambo_explorer.ercot import collect as ercot_collect
 from mambo_explorer.ercot import dataset as ercot_ds
 from mambo_explorer.ercot import prices as ercot_prices
+from mambo_explorer.ercot import rt_inventory as ercot_rt_inventory
 from mambo_explorer.ercot import rt_prices as ercot_rt
 from mambo_explorer.refresh_config import RefreshConfig
 from mambo_explorer.storage import Store, atomic_write
@@ -75,6 +76,7 @@ class SourcePlan:
     generation_plan: generation.GenerationPlan | None = None
     price_selection: ercot_prices.Selection | None = None
     rt_selection: ercot_rt.Selection | None = None
+    capacity: dict | None = None
 
     def describe(self) -> dict:
         out = {
@@ -94,13 +96,15 @@ class SourcePlan:
             out["collector_plan"] = self.price_selection.describe()
         if self.rt_selection:
             out["collector_plan"] = self.rt_selection.describe()
+        if self.capacity:
+            out["capacity"] = self.capacity
         return out
 
 
 @dataclass
 class SourceResult:
     source: str
-    status: str  # succeeded | failed | skipped | planned (dry run)
+    status: str  # succeeded | partial | failed | skipped | planned (dry run)
     request_budget: int
     requests: int | None = None
     summary: dict | None = None
@@ -360,13 +364,75 @@ def plan_ercot(
     )
 
 
-def plan_ercot_rt(config: RefreshConfig, store: Store, now: datetime) -> SourcePlan:
+def rt_capacity(config: RefreshConfig, store: Store, sources: list[str]) -> dict:
+    """Can this plan keep pace with NP6-905-CD publication? (Stage 21 capacity audit.)
+
+    Nominal publication is one document per 15-minute interval (about 4 per hour); the count
+    on daylight-saving days is not assumed. Throughput assumes a refresh really runs every
+    `collection_interval_hours`; a computer that is off or asleep misses runs, and no run
+    collects more than its document bound.
+    """
+    s = config.rt_prices
+    per_day = 24 * 60 // ercot_rt.INTERVAL_MINUTES
+    docs = s.max_catchup_documents
+    throughput = docs * 24 // s.collection_interval_hours
+    listing = ercot_rt_inventory.Inventory(store).last_listing()
+    allocation = host_allocation(config, sources).get("ercot.com", {})
+    if allocation.get("rt_always_skipped"):
+        verdict = (
+            "cannot keep pace: with this plan real-time collection is skipped on every refresh "
+            "(shared ercot.com cap); the backlog only shrinks through explicit backfill runs"
+        )
+    elif throughput < per_day:
+        verdict = (
+            f"cannot keep pace: at most {throughput} of about {per_day} documents per day; "
+            f"about {per_day - throughput} per day become backlog and leave the public list "
+            f"after about {ercot_rt.PUBLIC_RETENTION_DAYS} days"
+        )
+    else:
+        verdict = (
+            f"keeps pace only if a refresh really runs every {s.collection_interval_hours} h "
+            f"(at most {throughput} documents per day for about {per_day} published); missed "
+            f"runs are caught up at most {docs} documents at a time"
+        )
+    return {
+        "publication": f"one document per {ercot_rt.INTERVAL_MINUTES}-minute interval: about "
+        f"4 per hour, about {per_day} per day (nominal; daylight-saving days not assumed)",
+        "observed_listing": (
+            {
+                "listed_at_utc": listing["listed_at_utc"],
+                "documents": listing["documents"],
+                "oldest": listing["oldest_publish_raw"],
+                "newest": listing["newest_publish_raw"],
+            }
+            if listing
+            else "no listing recorded yet"
+        ),
+        "list_horizon": f"about {ercot_rt.PUBLIC_RETENTION_DAYS} days (product page display "
+        "duration); older documents are not reachable through this access method",
+        "request_cost": "1 list request per run + 1 request per document; every retry is "
+        "another request (up to 2 per request) inside the same budget",
+        "max_documents_per_refresh": docs + s.revision_lookback_documents,
+        "request_budget": s.request_budget,
+        "configured_interval_hours": s.collection_interval_hours,
+        "throughput_per_day_if_every_refresh_runs": throughput,
+        "optional_daily_task": "the optional Windows task runs once a day (07:15 by default; "
+        f"not registered): at most {docs} of about {per_day} documents per day",
+        "shared_host": allocation,
+        "verdict": verdict,
+        "complete_history_claimed": False,
+    }
+
+
+def plan_ercot_rt(
+    config: RefreshConfig, store: Store, now: datetime, sources: list[str] | None = None
+) -> SourcePlan:
     """Real-time intervals: planned from the public list at collection time, not from a clock.
 
     ERCOT's interval labels carry no time zone, so the plan cannot say which intervals "should"
-    exist by now. The collector lists the published documents and takes the newest ones not yet
-    stored (capped); it reports documents published but not requested (catch-up limit), the
-    oldest listed document (available history), and "no newer document published yet".
+    exist by now. Snapshot mode takes the newest uncollected documents; coverage mode the oldest
+    uncollected ones in a PublishDate range. A separate revision-recheck allocation
+    (`revision_lookback_documents`) re-downloads already-collected documents.
     """
     s = config.rt_prices
     source = "ercot-rt-spp"
@@ -374,7 +440,8 @@ def plan_ercot_rt(config: RefreshConfig, store: Store, now: datetime) -> SourceP
         return SourcePlan(source, "skip", "disabled in the refresh configuration", 0)
     history = run_history(store)
     findings = _common_findings(history, s.collection_interval_hours, now)
-    if not history["committed"]:
+    coverage = s.mode == ercot_rt.COVERAGE
+    if not history["committed"] and not coverage:
         documents = s.window_documents
         findings.append(
             Finding(
@@ -385,14 +452,28 @@ def plan_ercot_rt(config: RefreshConfig, store: Store, now: datetime) -> SourceP
         )
     else:
         documents = s.max_catchup_documents
+        end = s.coverage_to or "the newest listed"
         findings.append(
             Finding(
                 BEYOND_CATCHUP,
-                f"up to {documents} newest unstored intervals are requested; the collector "
-                "reports any older published ones it leaves (catch-up limit) and whether "
-                "nothing newer is published yet",
+                f"coverage mode: up to {documents} OLDEST uncollected documents with "
+                f"PublishDate {s.coverage_from} through {end}; the rest are deferred to later "
+                "runs and reported"
+                if coverage
+                else f"snapshot mode: up to {documents} newest uncollected intervals are "
+                "requested; older published ones are deferred and reported",
             )
         )
+    recheck = s.revision_lookback_documents
+    findings.append(
+        Finding(
+            REVISION_LOOKBACK if recheck else "revisions-not-monitored",
+            f"{recheck} already-collected document(s) are downloaded again to look for reposts"
+            if recheck
+            else "no revision recheck is allocated: only unseen documents are fetched, so "
+            "reposts of collected documents are not monitored",
+        )
+    )
     findings.append(
         Finding(
             OUTSIDE_HISTORY,
@@ -402,17 +483,31 @@ def plan_ercot_rt(config: RefreshConfig, store: Store, now: datetime) -> SourceP
     )
     findings.append(Finding(MISSING_OBSERVATIONS, "absent intervals are reported, never filled"))
     findings.append(Finding("finality-not-determined", ercot_rt.FINALITY_TEXT))
-    if s.request_budget < 1 + documents:
+    capacity = rt_capacity(config, store, sources or [source])
+    findings.append(Finding("capacity", capacity["verdict"]))
+    if s.request_budget < 1 + documents + recheck:
         return SourcePlan(
-            source, "skip", "request budget below 1 list + downloads", s.request_budget, findings
+            source,
+            "skip",
+            "request budget below 1 list + downloads + rechecks",
+            s.request_budget,
+            findings,
+            capacity=capacity,
         )
     return SourcePlan(
         source,
         "collect",
-        "bounded ERCOT real-time price collection (HB_NORTH)",
+        f"bounded ERCOT real-time price collection (HB_NORTH, {s.mode} mode)",
         s.request_budget,
         findings,
-        rt_selection=ercot_rt.Selection(latest=documents),
+        rt_selection=ercot_rt.Selection(
+            latest=documents,
+            mode=s.mode,
+            publish_from=s.coverage_from,
+            publish_to=s.coverage_to,
+            recheck=recheck,
+        ),
+        capacity=capacity,
     )
 
 
@@ -428,10 +523,74 @@ def plan_refresh(
         if source in ("eia", "eia-generation"):
             plans.append(plan_eia(config, stores[source], now, source))
         elif source == "ercot-rt-spp":
-            plans.append(plan_ercot_rt(config, stores[source], now))
+            plans.append(plan_ercot_rt(config, stores[source], now, sources))
         else:
             plans.append(plan_ercot(config, stores[source], now, local_today, source))
     return apply_host_budgets(config, plans)
+
+
+def _always_collects(config: RefreshConfig, source: str) -> bool:
+    """Whether a dataset plans downloads on every refresh (so its budget is always reserved).
+
+    ERCOT load and day-ahead re-download `revision_lookback_documents` stored documents each
+    refresh, so with a lookback of 1 or more they always plan at least one download. EIA
+    always requests its window.
+    """
+    if source in ("ercot", "ercot-dam-spp"):
+        return config.source(source).revision_lookback_documents > 0
+    return source in ("eia", "eia-generation")
+
+
+def host_allocation(config: RefreshConfig, sources: list[str]) -> dict:
+    """Explicit per-host order and allocation for `sources`, in the order they are planned.
+
+    The order is the order given with `--source`, else the fixed order of
+    refresh_config.SOURCES. A dataset is skipped when the budgets already reserved by earlier
+    datasets on its host leave too little; nothing is reordered or raised automatically.
+    """
+    from mambo_explorer.refresh_config import HOSTS
+
+    out: dict[str, dict] = {}
+    for source in sources:
+        s = config.source(source)
+        if not s.enabled:
+            continue
+        host = HOSTS[source]
+        entry = out.setdefault(host, {"cap": config.host_budget(host), "order": [], "warnings": []})
+        cap = entry["cap"]
+        before_max = sum(o["budget"] for o in entry["order"] if o["fits_when_all_collect"])
+        before_always = sum(
+            o["budget"] for o in entry["order"] if o["always_collects"] and o["fits_always"]
+        )
+        fits_all = cap is None or before_max + s.request_budget <= cap
+        fits_always = cap is None or before_always + s.request_budget <= cap
+        entry["order"].append(
+            {
+                "source": source,
+                "budget": s.request_budget,
+                "always_collects": _always_collects(config, source),
+                "fits_when_all_collect": fits_all,
+                "fits_always": fits_always,
+            }
+        )
+        if not fits_always:
+            earlier = [o["source"] for o in entry["order"][:-1] if o["always_collects"]]
+            entry["warnings"].append(
+                f"{source} never runs with this plan: {', '.join(earlier)} plan downloads on "
+                f"every refresh and reserve {before_always} of {cap} {host} requests before it "
+                f"(it needs {s.request_budget}). Run it alone (`mambo refresh --config <plan> "
+                f"--source {source}`, enabled in that plan), use a plan that disables the "
+                "others (docs/examples/refresh-rt-catchup.yaml), or raise the cap yourself in "
+                "a local plan."
+            )
+            if source == "ercot-rt-spp":
+                entry["rt_always_skipped"] = True
+        elif not fits_all:
+            entry["warnings"].append(
+                f"{source} is skipped on refreshes where the datasets before it all plan "
+                f"downloads ({before_max} + {s.request_budget} > {cap})"
+            )
+    return out
 
 
 def apply_host_budgets(config: RefreshConfig, plans: list[SourcePlan]) -> list[SourcePlan]:
@@ -497,13 +656,15 @@ def _eia_budget(items: list[tuple[str, int]]) -> int:
 
 
 def overall_status(results: list[SourceResult]) -> str:
-    ran = [r for r in results if r.status in ("succeeded", "failed")]
+    ran = [r for r in results if r.status in ("succeeded", "partial", "failed")]
     if not ran:
         return "nothing-to-do"
     ok = sum(r.status == "succeeded" for r in ran)
     if ok == len(ran):
         return "complete"
-    return "partial" if ok else "failed"
+    if all(r.status == "failed" for r in ran):
+        return "failed"
+    return "partial"
 
 
 def exit_code(status: str) -> int:
@@ -528,6 +689,7 @@ def execute(
         client = None
         try:
             client = clients[plan.source](plan.request_budget)
+            status = "succeeded"
             if plan.source == "eia":
                 summary = eia_collect.collect(plan.eia_plan, client, stores["eia"])
             elif plan.source == "eia-generation":
@@ -536,12 +698,12 @@ def execute(
                 summary = ercot_prices.collect(plan.price_selection, client, stores[plan.source])
             elif plan.source == "ercot-rt-spp":
                 summary = ercot_rt.collect(plan.rt_selection, client, stores[plan.source])
+                if summary["documents_failed"] or summary["stopped_early"]:
+                    status = "partial"  # committed, but some documents failed or were deferred
             else:
                 summary = ercot_collect.collect(plan.ercot_selection, client, stores["ercot"])
             results.append(
-                SourceResult(
-                    plan.source, "succeeded", plan.request_budget, summary["requests"], summary
-                )
+                SourceResult(plan.source, status, plan.request_budget, summary["requests"], summary)
             )
         except Exception as exc:  # noqa: BLE001 - one source's failure must not stop the next
             used = getattr(getattr(client, "stats", None), "requests", None)
@@ -633,6 +795,10 @@ def refresh(
             [(p.source, p.request_budget) for p in plans if p.action == "collect"]
         )
         record["host_requests_budgeted"] = host_budget_summary(config, plans)
+        record["host_allocation"] = host_allocation(config, sources)
+        record["warnings"] = [
+            w for entry in record["host_allocation"].values() for w in entry["warnings"]
+        ]
         return json.loads(redact(json.dumps(record, default=str), secrets))
     with refresh_lock(data_dir, started):
         results = execute(plans, stores=stores, clients=clients, secrets=secrets)
@@ -640,10 +806,14 @@ def refresh(
         record["overall"] = overall_status(results)
         record["requests_used"] = sum(r.requests or 0 for r in results)
         record["requests_budgeted"] = sum(
-            r.request_budget for r in results if r.status in ("succeeded", "failed")
+            r.request_budget for r in results if r.status in ("succeeded", "partial", "failed")
         )
         record["eia_api_requests_budgeted"] = _eia_budget(
-            [(r.source, r.request_budget) for r in results if r.status in ("succeeded", "failed")]
+            [
+                (r.source, r.request_budget)
+                for r in results
+                if r.status in ("succeeded", "partial", "failed")
+            ]
         )
         record["host_requests_budgeted"] = host_budget_summary(config, plans)
         record["finished_at_utc"] = now().astimezone(UTC).isoformat()

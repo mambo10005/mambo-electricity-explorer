@@ -173,3 +173,12 @@ def test_system_health_shows_the_real_time_dataset(data_dir):
         "DeliveryDate 03/09/2026, DeliveryHour 2, DeliveryInterval 4"
     )
     assert "not compared with 96" in _texts(at)
+    # Stage 21: completeness and published-document coverage, apart from freshness
+    assert "Completeness:** Cannot be determined for a history" in _texts(at)
+    coverage = next(
+        dict(zip(t.value["Item"], t.value["Value"], strict=True))
+        for t in at.table
+        if list(t.value.columns) == ["Item", "Value"] and "Collection mode" in list(t.value["Item"])
+    )
+    assert coverage["Collected"] == "8" and coverage["Collection mode"] == "snapshot"
+    assert coverage["Revision recheck"].startswith("none allocated")

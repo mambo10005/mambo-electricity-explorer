@@ -2,6 +2,40 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-13 — Stage 21: coverage-aware real-time collection and bounded catch-up (#41)
+
+Stacked on Stage 20 (PR #40) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and
+progress unchanged (gate check). Shared ercot.com cap unchanged (18).
+
+- **Capacity audit** (runbook; `capacity` block in every real-time plan):
+  - about 96 documents a day, 7-day list, 1 list + 1 per document;
+  - 8 per refresh at most;
+  - the default plan cannot keep pace, and with load and day-ahead enabled real-time never
+    fits the cap;
+  - `complete_history_claimed: false`.
+- **Inventory** (`ercot/rt_inventory.py`, ADR 0018): every listed DocID with listing times
+  and outcomes. Statuses: discovered, collected (derived from observations), failed,
+  deferred, interval-row-absent, superseded, plus a not-listed flag.
+- **Modes:** snapshot (newest) and coverage (oldest first in a PublishDate range); a separate
+  revision-recheck allocation; dry runs show the mode, range, and a preview from the last
+  listing.
+- **Bounded backfill:**
+  - `collect --coverage-from/--coverage-to/--latest/--recheck` runs at most 16 documents in
+    18 requests;
+  - per-document failures are isolated;
+  - budget exhaustion commits and defers the rest; reruns resume without duplicates.
+- **Refresh:**
+  - `mode`/`coverage_from`/`coverage_to` settings;
+  - a `partial` status for document failures;
+  - explicit `host_allocation` and never-runs warnings;
+  - an example real-time-only catch-up plan within the cap.
+- **Requests:** the ERCOT client counts list, download, and retry attempts consistently.
+- **Health:** freshness, completeness, and published-document coverage are separate;
+  complete only for listed documents in a selected range; hours with fewer than 4 intervals
+  are counted.
+- **Live (scratch):** 2 bounded runs of 17 requests each, 31 intervals, 31/31 matching the
+  archive, no duplicates, 161 remaining in the range.
+
 ## 2026-10-12 — Stage 20: ERCOT real-time price at HB_NORTH and lesson 15 (#39)
 
 Stacked on Stage 19 (PR #38) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and

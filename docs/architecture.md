@@ -107,6 +107,8 @@ src/mambo_explorer/
   price_view.py, price_exercises.py  source-label price view, provenance, lesson 14
   ercot/rt_prices.py   Stage 20: NP6-905-CD real-time SPP, HB_NORTH only, one 15-minute
                        interval per document; store ercot-np6-905-cd (ADR 0017)
+  ercot/rt_inventory.py  Stage 21: published-document inventory for NP6-905-CD (own
+                       SQLite file in the same namespace; collected derived from the store)
   rt_price_view.py, rt_price_exercises.py  interval chart/viewer/table, lesson 15
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)
 ```

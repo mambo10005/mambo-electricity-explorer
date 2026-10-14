@@ -13,7 +13,7 @@ from rt_price_fixtures import FakeRt, csv_for, day_docs, interval_doc, zip_bytes
 from mambo_explorer import health, refresh, rt_price_exercises, rt_price_view
 from mambo_explorer.ercot import prices as dam
 from mambo_explorer.ercot import rt_prices as rt
-from mambo_explorer.ercot.client import AccessError, BudgetExceeded, ErcotClient
+from mambo_explorer.ercot.client import AccessError, ErcotClient
 from mambo_explorer.exercises import Unavailable
 
 D9 = date(2026, 3, 9)
@@ -206,9 +206,11 @@ def test_real_time_and_day_ahead_stores_are_isolated(tmp_path):
 
 
 def test_budget_access_and_recovery(tmp_path, monkeypatch):
-    with pytest.raises(BudgetExceeded):
-        collect(tmp_path, day_docs(D9), latest=8, budget=4)
-    assert [r["status"] for r in rt.store(tmp_path).runs()] == ["failed"]
+    # Stage 21: reaching the budget stops the run and commits what it downloaded.
+    stopped = collect(tmp_path, day_docs(D9), latest=8, budget=4)
+    assert stopped["status"].startswith("stopped early") and stopped["rows_new"] == 3
+    assert stopped["documents_deferred"] == 5 and stopped["request_breakdown"]["total"] == 4
+    assert [r["status"] for r in rt.store(tmp_path).runs()] == ["committed"]
     with pytest.raises(AccessError):
         rt.collect(
             rt.Selection(2),
@@ -233,8 +235,9 @@ def test_non_zip_and_selection_bounds(tmp_path):
     docs = {"1": ("2026-03-09T00:17:01-05:00", "SPPHLZNP6905_20260309_0015_csv", b"<html>")}
     from mambo_explorer.ercot.client import ResponseError
 
-    with pytest.raises(ResponseError, match="not a ZIP"):
-        collect(tmp_path, docs)
+    summary = collect(tmp_path, docs)  # Stage 21: one bad document fails alone
+    assert summary["documents_failed"] == 1 and "not a ZIP" in summary["documents"][0]["error"]
+    assert ResponseError.__name__ == "ResponseError"
     with pytest.raises(rt.SelectionError):
         rt.Selection(17)
     assert zip_bytes(csv_for(D9, 1, 1)).startswith(b"PK")

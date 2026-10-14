@@ -1,0 +1,99 @@
+# EXAMPLE local refresh plan (Stage 21, ADR 0018): a bounded real-time price catch-up run.
+#
+# Copy it OUTSIDE the repository, set coverage_from (and optionally coverage_to) to
+# PublishDate labels inside ERCOT's ~7-day public list, then:
+#   mambo refresh --config <copy> --dry-run     # mode, range, budgets, capacity; sends nothing
+#   mambo refresh --config <copy>               # one bounded run; repeat to make progress
+#
+# Only ercot-rt-spp is enabled, so it is the only dataset on ercot.com and the shared cap
+# (18, unchanged) is not exceeded: 1 list + 15 downloads + 1 recheck + 1 retry = 18.
+# Each run takes the OLDEST uncollected documents in the range first and stops at its bound;
+# nothing loops until the history is downloaded. Never put credentials here.
+version: 1
+
+sources:
+  eia:
+    enabled: false
+    title: EIA-930 hourly demand and day-ahead forecast (ERCO)
+    publication_cadence: >-
+      Hourly values reported by the balancing authority. EIA gives no per-value
+      publication time; demand is collected hourly and again the next morning, and
+      revisions may arrive within 3 days (expected) or 30 days (errors). See the source
+      register.
+    collection_interval_hours: 24
+    window_days: 3              # completed UTC days requested when the store is empty
+    revision_lookback_days: 3   # earlier days re-requested each run to detect revisions
+    max_catchup_days: 14        # most new days one refresh will request after a gap
+    request_budget: 12          # requests per refresh, including retries
+    freshness_threshold_hours: 48
+  eia-generation:
+    enabled: false            # off until deliberately enabled: it shares EIA's request pattern
+    title: EIA-930 hourly net generation by energy source (ERCO)
+    publication_cadence: >-
+      Hourly values by energy source reported by the balancing authority, collected with the
+      same daily files as demand. No per-value publication time; the same 3-day and 30-day
+      revision rules apply. See the source register.
+    collection_interval_hours: 24
+    window_days: 3
+    revision_lookback_days: 3
+    max_catchup_days: 14
+    request_budget: 12          # separate from the demand budget; both count against EIA's API
+    freshness_threshold_hours: 48
+  ercot:
+    enabled: false
+    title: ERCOT NP6-345-CD actual system load by weather zone
+    publication_cadence: >-
+      One document per operating day, posted the next morning (product page: no later
+      than 06:00). The public list keeps about 31 days of documents.
+    collection_interval_hours: 24
+    window_documents: 3          # latest documents requested when the store is empty
+    revision_lookback_documents: 1  # already-stored documents re-downloaded to detect reposts
+    max_catchup_documents: 7     # most documents one refresh will request after a gap
+    request_budget: 12           # 1 list request + downloads + retries
+    freshness_threshold_hours: 48
+
+  ercot-dam-spp:
+    enabled: false            # opt-in: one more dataset on the same ERCOT host
+    title: ERCOT NP4-190-CD DAM Settlement Point Price, HB_NORTH (North 345 kV Hub)
+    publication_cadence: >-
+      One document per Day-Ahead Market run, posted the day before the Operating Day
+      (Protocols: results no later than 1330). The public list keeps about 31 days. Prices are
+      final at 1000 on the second Business Day after the Operating Day; corrections are a
+      separate report that is not collected.
+    collection_interval_hours: 24
+    window_documents: 2
+    revision_lookback_documents: 1
+    max_catchup_documents: 3     # each document is ~190 KB and holds every settlement point
+    request_budget: 6            # 1 list + 3 downloads + 2 retries
+    freshness_threshold_hours: 48
+
+  ercot-rt-spp:
+    enabled: true             # the only dataset in this example
+    title: ERCOT NP6-905-CD real-time Settlement Point Price, HB_NORTH (North 345 kV Hub)
+    publication_cadence: >-
+      One document per 15-minute Settlement Interval, posted about every 15 minutes; the
+      public list keeps about 7 days. Prices are final at 1600 on the second Business Day
+      after the Operating Day; corrections are a separate report that is not collected.
+    collection_interval_hours: 1  # your intent; nothing runs unless you (or a task) run it
+    mode: coverage               # snapshot: newest uncollected; coverage: oldest first in a range
+    coverage_from: 2026-10-07    # coverage mode: first PublishDate label (as ERCOT writes it)
+    coverage_to: null            # coverage mode: last PublishDate label; null = newest listed
+    window_documents: 4          # first run: the newest 4 intervals (one hour)
+    revision_lookback_documents: 1  # revision recheck: 1 collected document per run
+    max_catchup_documents: 15    # oldest 15 uncollected documents in the range per run
+    request_budget: 18           # 1 list + 15 + 1 recheck + 1 retry = the shared cap
+    freshness_threshold_hours: 2  # judged by the newest document's publication time
+    # Capacity (docs/refresh-runbook.md): about 96 documents are published per day and the
+    # public list keeps about 7 days. 8 per refresh keeps pace only if a refresh really runs
+    # at least every 2 hours; with ercot and ercot-dam-spp enabled this dataset never fits
+    # under the shared ercot.com cap below. Use bounded backfill runs to work through a range.
+
+# Shared per-host limits: every enabled dataset on a host counts against one budget per
+# refresh, so per-dataset budgets never add up to more load on one host than this.
+hosts:
+  ercot.com:
+    max_requests_per_refresh: 18
+
+logs:
+  retention_days: 30   # refresh logs older than this are pruned after each refresh
+  max_files: 200       # and never more than this many are kept
