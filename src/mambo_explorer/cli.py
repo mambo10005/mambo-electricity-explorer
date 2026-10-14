@@ -15,6 +15,9 @@ Commands:
     assumption show|status|approve|revoke  the versioned M1 alignment assumption and its
                local approval records (approve/revoke are dry runs unless --execute; every
                reviewer field must be supplied, nothing is filled in)
+    aggregation list|show|status|approve|revoke|restore  versioned hourly real-time
+               aggregation records and their local approvals (same rules; approve also needs
+               --version, --scope, and --accept-limitations from `show`)
 
 --source defaults to eia. ERCOT (NP6-345-CD) uses ERCOT's public download, needs no
 credential, and never uses EIA_API_KEY. Nothing is deleted by default.
@@ -353,6 +356,94 @@ def cmd_health(args, settings) -> int:
     return 0
 
 
+def cmd_aggregation(args, settings) -> int:
+    from dataclasses import asdict
+
+    from mambo_explorer.ercot import aggregation_policy as agp
+    from mambo_explorer.ercot import approvals as ap
+
+    if args.action == "list":
+        _print(
+            [
+                {
+                    "id": r.id,
+                    "version": r.version,
+                    "method": r.method,
+                    "output_name": r.output_name,
+                    "approval_status": ap.status(settings.data_dir, r).status,
+                }
+                for r in agp.RECORDS
+            ]
+            + [{"id": k, "approvable": False, "why": v} for k, v in agp.NOT_APPROVABLE.items()]
+        )
+        return 0
+    if not args.record_id:
+        print(
+            "error: this action needs a record id (see `mambo aggregation list`)", file=sys.stderr
+        )
+        return 1
+    try:
+        record = agp.record(args.record_id)
+    except KeyError:
+        print(f"error: no aggregation record {args.record_id!r}", file=sys.stderr)
+        return 1
+    if args.action == "show":
+        _print(
+            {
+                **{k: v for k, v in asdict(record).items()},
+                "scope_fingerprint": record.scope_fingerprint(),
+                "limitations_fingerprint": record.limitations_fingerprint(),
+            }
+        )
+        return 0
+    try:
+        if args.action == "status":
+            state = ap.status(settings.data_dir, record)
+            # reviewer identity is not printed; the local file holds it
+            _print(
+                {
+                    "record": f"{record.id} {record.version}",
+                    "approval_status": state.status,
+                    "approval_reference": state.reference,
+                    "superseded_records": ap.superseded_records(settings.data_dir, record),
+                    "records_file": str(ap.path(settings.data_dir)),
+                }
+            )
+            return 0
+        if args.action in ("approve", "restore"):
+            if args.version != record.version or args.scope != record.scope_fingerprint():
+                raise ap.ApprovalError(
+                    f"--version and --scope must match {record.id} {record.version} "
+                    f"({record.scope_fingerprint()}); read them with `show`"
+                )
+            if args.action == "restore" and not args.record:
+                raise ap.ApprovalError("restore needs --record (the revoked approval)")
+            event = ap.new_approval(
+                record,
+                reviewer=args.reviewer,
+                role=args.role,
+                evidence=args.evidence,
+                approved_on=args.approved_on,
+                accepted_limitations=args.accept_limitations,
+                restores=args.record if args.action == "restore" else None,
+            )
+        else:
+            if not args.record or not args.reason:
+                raise ap.ApprovalError("revoke needs --record and --reason")
+            event = ap.new_revocation(record, args.record, args.reason)
+        print(
+            f"{event.kind} {event.record_id} for {record.id} {record.version} (contents not shown)"
+        )
+        if not args.execute:
+            print("Dry run: nothing was recorded. Re-run with --execute to append this record.")
+            return 0
+        print(f"Appended to {ap.append(settings.data_dir, event)}")
+        return 0
+    except ap.ApprovalError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
 def cmd_assumption(args, settings) -> int:
     from dataclasses import asdict
 
@@ -536,6 +627,26 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--reason", help="revoke: why")
     p.add_argument("--execute", action="store_true", help="append the record (default: dry run)")
     p.set_defaults(func=cmd_assumption)
+
+    p = sub.add_parser(
+        "aggregation",
+        help="versioned hourly real-time aggregation records and their local approvals",
+    )
+    p.add_argument("action", choices=("list", "show", "status", "approve", "revoke", "restore"))
+    p.add_argument("record_id", nargs="?", help="aggregation record id, e.g. AGG-A")
+    p.add_argument("--version", help="approve/restore: the record version, as shown")
+    p.add_argument("--scope", help="approve/restore: the scope fingerprint, as shown")
+    p.add_argument(
+        "--accept-limitations", help="approve/restore: the limitations fingerprint, as shown"
+    )
+    p.add_argument("--reviewer", help="approve/restore: the reviewer's name, as they supplied it")
+    p.add_argument("--role", help="approve/restore: the reviewer's role")
+    p.add_argument("--evidence", help="approve/restore: where the approval is documented")
+    p.add_argument("--approved-on", help="approve/restore: the actual approval date (YYYY-MM-DD)")
+    p.add_argument("--record", help="revoke: the approval to revoke; restore: the revoked one")
+    p.add_argument("--reason", help="revoke: why")
+    p.add_argument("--execute", action="store_true", help="append the record (default: dry run)")
+    p.set_defaults(func=cmd_aggregation)
     return parser
 
 

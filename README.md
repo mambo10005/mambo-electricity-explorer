@@ -156,6 +156,12 @@ Since Stage 23 the same panel can use **assumption M1**.
   `mambo assumption approve … --execute` (ADR 0020, `docs/assumption-register.md`).
 - **Current state:** no approval is recorded, so it stays pending.
 
+Stage 24 adds an **aggregation investigation**: candidate ways to summarize an hour's four
+real-time prices, with formulas, units, and synthetic benchmarks. A governed hourly analytical
+summary is shown only after **both** M1 and an aggregation record (`mambo aggregation …`) are
+approved. Neither is, so it is withheld. It is never an ERCOT settlement price or a spread
+(ADR 0021).
+
 ### Refresh both sources and check health
 
 ```powershell

@@ -2,6 +2,35 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-13 — Stage 24: governed hourly real-time aggregation investigation (#47)
+
+Branched from `feat/stage-20-ercot-real-time-prices` at 79a58b4: the owner merged Stage 23 (PR
+#46) into it. None of this is on `main`. No live collection and no approval created. Real
+`data/` and progress unchanged.
+
+- **Sources** (`docs/aggregation-evidence.md`):
+  - §6.6.1.1: each RT SPP is a time-weighted average of SCED prices in its 15-minute
+    interval;
+  - §16.11.4.3.3: HRSAP averages an Operating Hour's four North Hub RT SPPs with equal
+    weight, in a credit formula;
+  - §6.6.3: settlement uses participant quantities × ¼;
+  - no hourly real-time SPP product found.
+- **Candidates:** arithmetic mean, duration-weighted mean, energy-weighted price, settlement
+  amount. Each has its own dimensions and classification. Energy weighting and settlement
+  amounts are not approvable.
+- **Records:** AGG-A 1.0.0 and AGG-B 1.0.0 (DUR-15 for DSTFlag N only).
+  - Local approvals: version, scope, and accepted limitations are required; revoke and restore
+    are supported.
+  - Synthetic approvals count only in a marked scratch directory.
+  - No approval is recorded, so production is withheld.
+- **Service:** `aggregation.aggregate` returns 11 statuses with every blocker, exact Decimal
+  arithmetic, and no fallback. `candidate()` is for synthetic diagnostics. Aggregation
+  snapshots go stale on any input, approval, method, duration, formula, or validation change.
+- **UI:** "Aggregation investigation" section with the persistent limitation text
+  (EXPLORE-10).
+- **Guards:** no spread, DART, P&L, or backtest identifiers; aggregation never reads day-ahead
+  prices; no implicit aggregation or Finance use; no unnegated ERCOT or settlement claims.
+
 ## 2026-10-13 — Stage 23: assumption-governed day-ahead/real-time alignment under M1 (#45)
 
 Branched from `feat/stage-20-ercot-real-time-prices` at e0a89ad: the owner merged Stage 22 (PR

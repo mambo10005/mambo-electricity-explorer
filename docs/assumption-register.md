@@ -95,3 +95,64 @@ never committed and never shown outside this computer. Each line is one event.
 
 The page and every result then show: "Aligned under review-approved assumption M1. ERCOT
 report-label definitions remain unverified."
+
+## Aggregation records (Stage 24, ADR 0021)
+
+Source of truth: `src/mambo_explorer/ercot/aggregation_policy.py`. `mambo aggregation list`
+lists the records and `mambo aggregation show <id>` prints each one with its fingerprints. Full
+evidence: `docs/aggregation-evidence.md`.
+
+| Field | AGG-A 1.0.0 | AGG-B 1.0.0 |
+|---|---|---|
+| Method | arithmetic mean | duration-weighted mean |
+| Formula (version) | S = (P1 + P2 + P3 + P4) / 4 (A.1) | S = Σ(Pi × Di) / ΣDi (B.1) |
+| Output name / units | "Hourly analytical RT SPP summary (arithmetic mean)", $/MWh | "Hourly analytical RT SPP summary (duration-weighted mean)", $/MWh |
+| Dataset / location | NP6-905-CD, `HB_NORTH`/`HU` | same |
+| Depends on | M1 1.0.0 and its scope fingerprint | same |
+| Completeness | one current M1 alignment snapshot: four intervals, one selected revision each, published prices, no unresolved duplicates | same, plus duration evidence for every interval |
+| Duration evidence | not used | DUR-15: 15 minutes, DSTFlag N only (OFF-2, OFF-11). DSTFlag Y gives `duration_unsupported`. |
+| Revision policies | latest-retrieved, first-retrieved | same |
+| Allowed use | describing an hour's typical posted RT SPP level in learning and diagnostic views | same |
+| Prohibited | an ERCOT settlement price for the hour, a final price, a spread or DART, a settlement amount, P&L or a backtest, energy weighting, Finance input | same |
+| Evidence | OFF-2, OFF-12 (HRSAP, a credit formula) | OFF-2, OFF-11, OFF-12 |
+| Official status | no ERCOT-defined hourly real-time SPP | same |
+| Reviewer / role / date / evidence | **none recorded** | **none recorded** |
+| Approval status | **missing**, so production is inactive | **missing**, so production is inactive |
+| Record status | current | current |
+
+**Re-review triggers:**
+- a new M1 or record version, or a change to M1's scope;
+- ERCOT publishing an hourly real-time SPP or label definitions;
+- an NP6-905-CD header, identity, or interval-length change;
+- extending a record to another point or to DSTFlag Y.
+
+**Not approvable:**
+- **energy-weighted price:** no compatible quantities; EIA-930 demand must not stand in;
+- **settlement amount:** an amount, not a price, and it needs participant quantities.
+
+**Status of each record, four separate things:**
+- **Authorization to build:** given (Stage 24 request).
+- **Reported acceptance:** none.
+- **Recorded, attributable approval:** none.
+- **Official definition:** none exists.
+
+### Approving an aggregation record (local, append-only)
+
+```powershell
+.venvs/py314/Scripts/mambo aggregation list
+.venvs/py314/Scripts/mambo aggregation show AGG-A          # version, scope and limitations fingerprints
+.venvs/py314/Scripts/mambo aggregation approve AGG-A --version 1.0.0 --scope <scope_fingerprint> `
+    --accept-limitations <limitations_fingerprint> --reviewer "<name>" --role "<role>" `
+    --evidence "<where documented>" --approved-on YYYY-MM-DD            # dry run
+.venvs/py314/Scripts/mambo aggregation approve AGG-A ... --execute
+.venvs/py314/Scripts/mambo aggregation status AGG-A          # never prints the reviewer
+.venvs/py314/Scripts/mambo aggregation revoke AGG-A --record APR-AGG-A-xxxxxxxx --reason "<why>" --execute
+.venvs/py314/Scripts/mambo aggregation restore AGG-A --record APR-AGG-A-xxxxxxxx --version 1.0.0 `
+    --scope <...> --accept-limitations <...> --reviewer ... --role ... --evidence ... --approved-on ... --execute
+```
+
+- **Which approvals count:** an aggregation summary needs **both** an active M1 approval and an
+  active approval of the chosen record.
+- **Synthetic approvals** (tests and scratch checks) are marked `synthetic`. They count only
+  where the data directory contains a `SYNTHETIC-ENVIRONMENT` file; never create that file in
+  the real data directory.

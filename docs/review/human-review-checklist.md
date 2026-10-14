@@ -377,3 +377,16 @@ the lessons that use it.
      Decide whether that is acceptable for beginners.
   2. "Offer" is defined as a synthetic cost per MWh, explicitly not a market bid. Confirm a
      reader cannot confuse it with real offers.
+
+## Assumption and aggregation records (Stages 23–24)
+
+Agent-authored records that govern optional diagnostics. Approvals are recorded separately
+with the CLI; ticking a box here records no approval.
+- [ ] M1 1.0.0 rule, scope, and unresolved definitions (`docs/assumption-register.md`).
+- [ ] AGG-A 1.0.0 (arithmetic mean) and AGG-B 1.0.0 (duration-weighted mean): formulas,
+      output names, allowed and prohibited uses, and limitations.
+- [ ] The persistent limitation text: "This is an analytical summary under review-approved
+      assumptions. It is not an ERCOT-defined hourly settlement price, settlement, or trading
+      backtest."
+- [ ] The aggregation-evidence classification (`docs/aggregation-evidence.md`), especially the
+      HRSAP finding (a credit formula, not a published price).

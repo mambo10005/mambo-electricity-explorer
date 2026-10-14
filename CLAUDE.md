@@ -129,6 +129,15 @@ non-trivial work.
     - Never invent or infer a reviewer, date, or approval, and never commit approval records.
     - Never mark M1 accepted in `alignment.CANDIDATES`, or the official semantics verified.
     - The four-interval expectation lives only in `m1_policy.M1`.
+  - Hourly aggregation (ADR 0021): only through `aggregation.aggregate`.
+    - Requires active M1 and aggregation-record approvals, complete M1 alignment, and one
+      current alignment snapshot; withhold with named blockers otherwise.
+    - Never fall back to another method.
+    - Never call the result an ERCOT, settlement, or final price.
+    - Never compute a spread, DART, P&L, or backtest.
+    - Never weight by EIA demand, and never substitute 0.25 h without duration evidence.
+    - Never create a `SYNTHETIC-ENVIRONMENT` file or a synthetic approval in the real data
+      directory.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,

@@ -140,6 +140,11 @@ features:
     section: explore
     status: done
     ui: true
+  - id: EXPLORE-10
+    name: "Hourly real-time aggregation investigation: candidate formulas and dimensions, synthetic benchmarks, versioned records AGG-A/AGG-B with local approvals, governed or withheld summary, aggregation snapshots (no method approved)"
+    section: explore
+    status: done
+    ui: true
   - id: EXPLORE-08
     name: "Day-ahead vs real-time price comparison (DART) at HB_NORTH"
     section: explore

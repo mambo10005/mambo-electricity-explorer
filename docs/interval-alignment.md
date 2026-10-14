@@ -230,3 +230,14 @@ Ways to unblock prerequisite 2 (owner's choice; none attempted):
   an explicit user selection, an active recorded approval for the same version and scope, an
   in-scope location, and a supported revision policy.
 - **Approval:** no attributable approval is recorded, so activation is pending.
+
+## 11. Stage 24: hourly aggregation investigation (ADR 0021)
+
+- **What it uses:** aggregation of the four M1-aligned intervals runs only under M1, after an
+  active approval and with complete alignment. See `docs/aggregation-evidence.md`.
+- **Two new official findings:**
+  - §6.6.1.1 defines each 15-minute SPP as a time-weighted average of SCED prices (OFF-11);
+  - §16.11.4.3.3 uses an equal-weight mean of an Operating Hour's four North Hub RT SPPs in a
+    credit formula (OFF-12).
+- **What they don't change:** neither defines the report labels, and neither is a published
+  hourly price.

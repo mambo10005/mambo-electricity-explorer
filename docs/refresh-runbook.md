@@ -175,6 +175,24 @@ output shows the combined figure as `eia_api_requests_budgeted` so you can see i
 a run. Its collection success, coverage, and health come from its own store: a successful
 demand refresh never implies generation was refreshed.
 
+## Assumption and aggregation approvals (Stages 23–24)
+
+These commands never collect, and approvals never come from a refresh.
+- **Dry runs:** every `approve`, `revoke`, and `restore` is a dry run without `--execute`.
+- **Storage:** records are appended to `<MAMBO_DATA_DIR>/assumptions/approvals.jsonl`
+  (gitignored).
+- **Details:** `docs/assumption-register.md`.
+
+```powershell
+.venvs/py314/Scripts/mambo assumption status                 # M1 approval state
+.venvs/py314/Scripts/mambo aggregation list                  # AGG-A, AGG-B, non-approvable candidates
+.venvs/py314/Scripts/mambo aggregation show AGG-A            # fingerprints needed to approve
+.venvs/py314/Scripts/mambo aggregation status AGG-A
+```
+
+Aggregation and alignment snapshots are written only from the diagnostic page's buttons. They
+go to `<MAMBO_DATA_DIR>/alignment/` and `<MAMBO_DATA_DIR>/aggregation/` and are never deleted.
+
 ## What a refresh does
 
 1. Takes the refresh lock `<data>/refresh/.refresh.lock`. If it already exists, the
