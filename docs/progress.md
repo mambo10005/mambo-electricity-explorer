@@ -2,6 +2,36 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-13 — Stage 25: governed day-ahead vs RT-summary comparison (#49)
+
+Branched from `feat/stage-20-ercot-real-time-prices` at 3a0c61f: the owner merged Stage 24 (PR
+#48) into it. None of this is on `main`. No collection and no approval created. Real `data/` and
+progress unchanged.
+
+- **Sources** (`docs/comparison-evidence.md`): no ERCOT-defined day-ahead/real-time price
+  difference.
+  - "DART" appears only as a variable prefix for a locational day-ahead difference (§4.6.3).
+  - PTP obligations use sink minus source (§7.9.2.1).
+  - Settlement uses quantities (§6.6.3).
+  - Credit uses ratios (§16.11.4.3.3).
+- **Records:** CMP-A 1.0.0 (RT − DAM) and CMP-B 1.0.0 (DAM − RT).
+  - Each has checked sign metadata, accepted AGG records, the HB_NORTH scope, and output names
+    "Analytical DAM-to-RT price difference (…)".
+  - Absolute and percentage differences are candidates only.
+- **Approvals:** `mambo comparison list|show|status|approve|revoke|restore`; approve restates
+  the M1 version, the accepted aggregations, and the location. Nothing is recorded, so
+  production is withheld.
+- **Service:** `comparison.compare` returns 17 statuses with every blocker and needs three
+  approvals plus current alignment and aggregation snapshots. Output is $/MWh; finality is
+  "not determined". Comparison snapshots are append-only and go stale on any change.
+- **UI:** "Comparison investigation": mode off and no sign chosen by default, one hour, no
+  chart, persistent notice (EXPLORE-11).
+- **Guards:** no money, trading, quantity, forecast, or DART identifiers; no unnegated claims;
+  multiplication only by the ±1 coefficients; no percentage in production; no import from
+  refresh, collection, or Finance.
+  - The Stage 24 identifier guard is unchanged (the governed difference uses neutral names).
+  - Its aggregation-import allow-list gained the three comparison modules.
+
 ## 2026-10-13 — Stage 24: governed hourly real-time aggregation investigation (#47)
 
 Branched from `feat/stage-20-ercot-real-time-prices` at 79a58b4: the owner merged Stage 23 (PR

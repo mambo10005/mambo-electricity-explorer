@@ -189,3 +189,9 @@ Still unresolved:
 - correction feeds (NP4-196-M/NP4-197-M);
 - publication and license;
 - human lesson and content review.
+
+## 11. Stage 25 use (ADR 0022)
+
+The comparison accepts only an `aggregation_approved_complete` summary from an AGG record listed in
+the comparison record. It also needs a current aggregation snapshot whose output and interval
+revisions match. A candidate-only or withheld aggregation never feeds a comparison.

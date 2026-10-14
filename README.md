@@ -162,6 +162,13 @@ summary is shown only after **both** M1 and an aggregation record (`mambo aggreg
 approved. Neither is, so it is withheld. It is never an ERCOT settlement price or a spread
 (ADR 0021).
 
+Stage 25 adds a **comparison investigation** for one hour at a time.
+- **What it compares:** the day-ahead price with that approved summary, as CMP-A (RT minus DAM)
+  or CMP-B (DAM minus RT), in $/MWh.
+- **When it runs:** only with three recorded approvals (M1, an AGG record, a CMP record) and
+  current snapshots. None is recorded, so it is withheld.
+- **What it is not:** a settlement, profit or loss, backtest, or forecast evaluation (ADR 0022).
+
 ### Refresh both sources and check health
 
 ```powershell

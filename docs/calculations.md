@@ -461,8 +461,23 @@ governed records. Neither is approved, so no production summary is shown.
 4. the displayed non-settlement limitation;
 5. a separately defined and reviewed day-ahead-versus-real-time comparison formula.
 
+**Stage 25 (ADR 0022, `docs/comparison-evidence.md`):** governed single-hour comparison
+records. Neither is approved, so no production comparison is shown.
+- **CMP-A:** S_RT − P_DAM. **CMP-B:** P_DAM − S_RT, the exact reversal.
+- **Units:** both in $/MWh. They are differences of prices, never amounts of money; no quantity
+  is involved.
+- **Candidates only:** the absolute and percentage differences.
+- **Finality:** stays "not determined".
+
+**Stage 26 prerequisites:**
+1. active M1, AGG, and CMP approvals;
+2. complete aligned hours with current snapshots;
+3. an explicit revision policy;
+4. the persistent limitations;
+5. human review of the lesson.
+
 The interval-alignment diagnostic itself computes no price figure; only the governed
-aggregation section can. Candidate hourly summaries
+aggregation and comparison sections can. Candidate hourly summaries
 (arithmetic, duration-weighted, energy-weighted, settlement amount) are researched in
 `docs/interval-alignment.md` §8, and none is implemented.
 

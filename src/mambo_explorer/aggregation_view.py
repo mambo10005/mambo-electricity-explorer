@@ -134,7 +134,9 @@ def _alignment_snapshot(
     return snap, state
 
 
-def render_actual(data_dir, res: aa.AssumedResult, ctx: dict, m1_approval: ap.Approval) -> None:
+def render_actual(
+    data_dir, res: aa.AssumedResult, ctx: dict, m1_approval: ap.Approval
+) -> tuple[ag.AggregationResult, str | None]:
     st.subheader("Stored observations: hourly analytical summary")
     st.info(f"**{agp.LIMITATION_BANNER}**")
     method_id = st.radio(
@@ -225,6 +227,7 @@ def render_actual(data_dir, res: aa.AssumedResult, ctx: dict, m1_approval: ap.Ap
     )
     st.markdown(md_dollars("**Limitations:**\n" + "\n".join(f"- {t}" for t in result.limitations)))
     render_snapshots(data_dir, result, state)
+    return result, state
 
 
 def render_snapshots(data_dir, result: ag.AggregationResult, alignment_state: str | None) -> None:
