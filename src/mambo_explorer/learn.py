@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 import streamlit as st
 
 from mambo_explorer import calculations as calc
-from mambo_explorer import model_exercises, routes
+from mambo_explorer import model_exercises, routes, settlement_exercises
 from mambo_explorer.config import ConfigError, load_settings
 from mambo_explorer.eia import dataset as ds
 from mambo_explorer.exercises import Unavailable, generate
@@ -521,14 +521,21 @@ def render_learn() -> None:
         from mambo_explorer.model_lessons import render_model_section
 
         records = render_model_section(lesson, runs)
+    settlement_result = None
+    if "energy_settlement" in meta["calculators"]:
+        from mambo_explorer.settlement_ui import render_calculator
+
+        st.header("Energy-settlement calculator (synthetic)")
+        settlement_result = render_calculator(f"learn_{lesson.id}", runs)
 
     st.subheader("Exercises")
     for spec in meta["exercises"]:
-        exercise = (
-            model_exercises.generate(spec, records)
-            if spec["kind"] == "model"
-            else generate(spec, obs, sel)
-        )
+        if spec["kind"] == "model":
+            exercise = model_exercises.generate(spec, records)
+        elif spec["kind"] == "settlement":
+            exercise = settlement_exercises.generate(spec, settlement_result)
+        else:
+            exercise = generate(spec, obs, sel)
         _exercise(lesson, spec, exercise, progress)
     if progress:
         state = progress.lesson_state(lesson.id, [e["exercise_id"] for e in meta["exercises"]])

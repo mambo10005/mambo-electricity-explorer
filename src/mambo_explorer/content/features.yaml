@@ -130,6 +130,11 @@ features:
     name: "Hedging, basis/shape risk, settlement, credit, collateral"
     section: finance
     status: planned
+  - id: FIN-03
+    name: "Introductory energy-settlement calculator and lesson (synthetic, teaching formula)"
+    section: finance
+    status: done
+    ui: true
   - id: COMP-01
     name: "Regulatory authorities and effective-dated rules"
     section: compliance

@@ -2,6 +2,39 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 11: introductory energy settlement (#21)
+
+Stacked on Stage 10 (PR #20) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
+`data/` unchanged (gate check); user progress not reset.
+
+- **Source boundary (ADR 0009):** ISO New England's public markets page and its DA/RT energy
+  bill-item pages support a day-ahead settlement of commitments and a separate real-time
+  settlement of deviations at the RT LMP (hourly DA; five-minute RT; invoices carry other
+  allocations). Nothing generalized to other markets; ISO-NE's invoice sign convention not
+  adopted. Cited as reference documents in the source register (no data ingested).
+- **Calculation `energy_settlement` v1.0.0:** S = D·P_DA + (A − D)·P_RT on MWh and
+  $/MWh; one signed amount (buyer pays, seller receives; negative = buyer credit);
+  bounded finite inputs; MW entry needs an explicit duration; full provenance and a
+  calculation id. Seven hand-derived benchmarks plus the equal-price identity and the
+  exposure derivatives.
+- **Modeled-price import:** only an optimal `opf.dc` run with verified prices, current checks,
+  and the pinned package; one price, one field; one run never supplies both prices;
+  editing the value drops the modeled label.
+- **Finance page (FIN-03) and lesson 8** "From scheduled energy to settlement" (settlement
+  stage; agent-authored, unreviewed), with 5 exercises from the calculator's current
+  result. Futures, options, PPAs, hedging, credit, and collateral stay planned.
+- **Found and fixed:**
+  - an invalid MW entry (no duration) raised before the price widgets were drawn, so
+    Streamlit reset the prices; widgets are now drawn before calculating;
+  - number inputs only recolored a thin border on focus; `focus.css` now rings them
+    (3.68 light / 5.14 dark);
+  - the import's run labels ("cost 3,000 per h") were ambiguous; they now show demand, AC
+    rating, and offers.
+- **Browser:** Finance and lesson 8 in both themes, keyboard entry and the full import by
+  keyboard (only the 6 verified runs offered out of 12 saved), a keyboard-answered exercise,
+  375 px and 200% zoom without overflow. Owned PIDs only; all stopped; real data unchanged.
+- **Tests:** 515 passed, 1 skipped on CPython 3.11.16 and 3.14.2; gate 9/9.
+
 ## 2026-10-11 — Stage 10: isolation hardening, focus visibility, review readiness (#19)
 
 Stacked on Stage 9 (PR #18) ← … ← #2. None merged. mambo-power unchanged at 26be8c1.

@@ -109,7 +109,12 @@ src/mambo_explorer/
   exercises.py      Exercise generators; answers from calculations; deterministic per snapshot
   progress.py       Local progress/bookmarks: <MAMBO_DATA_DIR>/learn/progress.json
   learn.py          Learn page: status table, lesson, panels, exercises, glossary, sources
-  content/lessons/  01..07 *.md (YAML front matter + Beginner / Technical detail)
+  content/lessons/  01..08 *.md (YAML front matter + Beginner / Technical detail)
+  settlement.py     Stage 11: teaching energy-settlement formula, bounds, provenance,
+                    verified modeled-price import (ADR 0009)
+  settlement_ui.py  calculator shared by the Finance page and lesson 8
+  settlement_exercises.py  exercises from the calculator's current result
+  finance.py        Finance page (FIN-03 only)
   model_exercises.py  Stage 8: exercise answers from verified model records; snapshot
                     = inputs, pin, check versions, statuses; result refs = run ids
   model_lessons.py  Stage 8: lesson model section (explicit run button, panels,

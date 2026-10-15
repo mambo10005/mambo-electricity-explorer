@@ -75,6 +75,9 @@ non-trivial work.
 - Browser and harness servers get a scratch `MAMBO_DATA_DIR` and
   `MAMBO_FORBIDDEN_DATA_DIRS=<repo>/data` (`docs/testing-isolation.md`).
 - Never run `mambo learn-reset --execute`; the owner decides about their progress.
+- Settlement is a teaching formula (ADR 0009): never present it as an ISO settlement or
+  invoice, never generalize one operator's rules, never use EIA forecasts as schedules,
+  and import only verified modeled prices (`settlement.modeled_price`).
 - `focus.css` is the only CSS the app adds (ADR 0008): focus-only, stable selectors,
   no generated classes, no script. New CSS needs an ADR.
 - Theme colors live in `.streamlit/config.toml`; re-measure rendered contrast

@@ -35,6 +35,13 @@
   outline-offset: 2px !important;
 }
 
+/* Number inputs (Stage 11 calculator): Streamlit only recolors a thin container border, so
+   ring the visible input box. */
+[data-testid="stApp"] [data-testid="stNumberInputContainer"]:has(> input:focus-visible) {
+  outline: 3px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+}
+
 /* Sliders (React Aria in Streamlit 1.65): the focused element is an input[type="range"]
    hidden in a 1px wrapper inside the visible thumb, so ring the thumb. */
 [data-testid="stApp"] [data-rac]:has(> div > input[type="range"]:focus-visible) {

@@ -150,6 +150,15 @@ to type RESET; never shows contents): `mambo learn-reset`. See
 Lessons are AI-drafted and **not yet reviewed by a person**. See
 `docs/lesson-authoring.md` and `docs/calculations.md`.
 
+## 4b. Finance (introductory)
+
+The **Finance** page has one teaching tool: an energy-settlement calculator (day-ahead
+schedule × day-ahead price + deviation × real-time price) with **synthetic** inputs, and
+lesson 8, *From scheduled energy to settlement*. It is not an invoice or any market's
+settlement engine (ADR 0009). You can optionally import one **verified** modeled price
+from Model Labs; it stays labeled *modeled*. Futures, options, PPAs, hedging, credit, and
+collateral are not implemented.
+
 ## 5. Launch
 
 ```powershell
