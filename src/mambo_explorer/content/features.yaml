@@ -20,6 +20,14 @@ features:
     name: "Local quality workflow"
     section: platform
     status: done
+  - id: QA-02
+    name: "Theme contrast for buttons (light and dark) with automated checks"
+    section: platform
+    status: done
+  - id: QA-03
+    name: "Human-review package for lessons and glossary (review itself pending)"
+    section: platform
+    status: done
   - id: LEARN-01
     name: "Lesson content following the learning sequence"
     section: learn

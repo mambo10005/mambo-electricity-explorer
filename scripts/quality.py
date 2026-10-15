@@ -36,6 +36,7 @@ FORBIDDEN_PATHS = {
     "log or report": r"(\.log$|^logs/|^reports/|^output/|^out/)",
     "local settings": r"(^|/)settings\.local\.json$",
     "key material": r"\.(pem|key|p12|pfx)$",
+    "streamlit secrets": r"(^|/)\.streamlit/secrets\.toml$",
     "build or cache output": r"(__pycache__/|\.egg-info/|^build/|^dist/|_cache/)",
 }
 

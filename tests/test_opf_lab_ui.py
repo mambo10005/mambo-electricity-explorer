@@ -81,13 +81,18 @@ def test_congested_default_run_shows_verified_prices_units_and_provenance(data_d
     assert RunStore(data_dir).recent(kind="opf.dc")[0].price_status == "verified"
 
 
-def test_breakpoint_case_withholds_prices_and_shows_one_sided_rates(data_dir):
+def test_breakpoint_case_withholds_prices_and_shows_average_rates(data_dir):
     at = _run(_case(_open(), "breakpoint"))
     assert _table(at, "Modeled price ($/MWh)") is None
-    one_sided = _table(at, "+0.1 MW demand ($/MWh)")
-    row_c = one_sided[one_sided["Bus"] == "C"].iloc[0]
-    assert (row_c["+0.1 MW demand ($/MWh)"], row_c["−0.1 MW demand ($/MWh)"]) == (30.0, 20.0)
-    assert any("Breakpoint" in w.value for w in at.warning)
+    rates = _table(at, "Average rate ($/MWh)")
+    c = rates[rates["Bus"] == "C"].set_index("Change (MW)")
+    # Hand derivation: +0.1 MW needs G2 (30); −0.1 MW saves G1 (20). ΔC = ±rate × 0.1.
+    assert c.loc["+0.1", "Average rate ($/MWh)"] == "30"
+    assert c.loc["+0.1", "Cost-rate change ($/h)"] == "+3"
+    assert c.loc["−0.1", "Average rate ($/MWh)"] == "20"
+    assert c.loc["−0.1", "Cost-rate change ($/h)"] == "−2"
+    assert any("Price gate: **not passed**" in w.value for w in at.warning)
+    assert not any("one-sided rates" in w.value.lower() for w in at.warning)
 
 
 def test_infeasible_case_shows_failure_without_stale_results(data_dir):
@@ -130,3 +135,16 @@ def test_no_unescaped_dollar_in_rendered_markdown(data_dir):
     assert [t for t in texts if unescaped.search(t)] == []
     labels = [s.label for s in at.slider] + [s.label for s in at.selectbox]
     assert [lb for lb in labels if len(unescaped.findall(lb)) > 1 or "\\" in lb] == []
+
+
+def test_result_from_older_checks_is_hidden_with_its_old_wording(data_dir):
+    """A result whose explanation was produced by older checks is never shown (BL-5)."""
+    at = _run(_case(_open(), "breakpoint"))
+    old = at.session_state["opf_last_run"]
+    old.checks_version = "1.1.0"
+    old.price_note = "Breakpoint at bus(es) A, B, C: ... One-sided rates are shown instead."
+    at.session_state["opf_last_run"] = old
+    at.run(timeout=30)
+    assert _table(at, "Average rate ($/MWh)") is None and _table(at, "Dispatch (MW)") is None
+    assert "older version of the checks" in _text(at)
+    assert "One-sided rates" not in _text(at)

@@ -283,12 +283,17 @@ def test_cost_rate_interval_cost_price_and_sensitivity_are_distinct(records):
 def test_withheld_price_explanations(records):
     reason = _ex("withheld_reason", records)
     assert _answer(reason) == (
-        "Adding demand costs 30 per MWh but removing it saves 20 per MWh, so a unique "
-        "two-sided marginal price was not verified for this run."
+        "Over +0.1 MW the cost rate rises at an average of 30 per MWh; over −0.1 MW it falls "
+        "at an average of 20 per MWh. They differ, so a unique two-sided marginal price was "
+        "not verified for this run."
     )
     assert "not meaningless" in reason.explanation
+    assert "averages over 0.1 MW, not local derivatives" in reason.explanation
     edge = _answer(_ex("infeasible_direction", records))
-    assert edge == "Adding 0.1 MW is infeasible, while removing it changes the cost at 30 per MWh."
+    assert edge == (
+        "The +0.1 MW change is infeasible; the −0.1 MW change is feasible, with an average "
+        "decremental rate of 30 per MWh."
+    )
 
 
 def test_nonunique_dispatch_wording(records):
@@ -322,9 +327,10 @@ def test_changing_a_case_invalidates_its_results_and_exercises(records, monkeypa
 
 
 def test_scenario_version_or_pin_change_invalidates(records, monkeypatch):
+    original = on.SCENARIO_VERSION
     monkeypatch.setattr(on, "SCENARIO_VERSION", "9.9.9")
     assert not any(mc.is_current(k, records) for k in records)
-    monkeypatch.undo()
+    monkeypatch.setattr(on, "SCENARIO_VERSION", original)
     record = records["congested"]
     record_package = dict(record.package)
     try:

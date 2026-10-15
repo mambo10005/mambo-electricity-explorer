@@ -24,7 +24,7 @@ CUR = on.CURRENCY
 UNITS = [
     {"Unit": "MW", "Used for": "Dispatch, line flows, ratings, capacities (power, a rate)"},
     {"Unit": "MWh", "Used for": "Energy over the 1-hour interval (MW × 1 h)"},
-    {"Unit": "synthetic $/MWh", "Used for": "Offers, modeled prices, one-sided rates"},
+    {"Unit": "synthetic $/MWh", "Used for": "Offers, modeled prices, average change rates"},
     {"Unit": "synthetic $/h", "Used for": "Cost rate: Σ offer × MW"},
     {"Unit": "synthetic $", "Used for": "Interval cost: cost rate × 1 h"},
     {"Unit": "synthetic $/h per MW", "Used for": "Line-limit sensitivity (per MW of rating)"},
@@ -229,10 +229,18 @@ def panel_unverified_marginal(records: dict) -> None:
     st.subheader("When one marginal number is not verified (modeled)")
     keys = [
         k
-        for k in ("breakpoint", "ac-at-limit", "capacity-edge", "equal", "infeasible")
+        for k in (
+            "breakpoint",
+            "near-breakpoint",
+            "ac-at-limit",
+            "capacity-edge",
+            "zero-demand",
+            "equal",
+            "infeasible",
+        )
         if k in records
     ]
-    rows, rates = [], []
+    rows, withheld = [], []
     for k in keys:
         r = records[k]
         title = mc.LESSON_RUNS[k].title
@@ -246,35 +254,23 @@ def panel_unverified_marginal(records: dict) -> None:
             }
         )
         if r.price_status == "withheld":
-            for s in r.sensitivities:
-                rates.append(
-                    {
-                        "Case": title,
-                        "Bus": s["bus"],
-                        "+0.1 MW ($/MWh)": "infeasible"
-                        if s["up_per_mwh"] is None
-                        else _n(s["up_per_mwh"]),
-                        "−0.1 MW ($/MWh)": "infeasible"
-                        if s["down_per_mwh"] is None
-                        else _n(s["down_per_mwh"]),
-                    }
-                )
+            withheld.append((title, r))
     st.table(rows, hide_index=True)
     _caption(
         "Dispatch uniqueness and price verification are separate checks. A non-unique dispatch "
         "is still optimal. An infeasible run has no dispatch at all."
     )
-    if rates:
+    if withheld:
+        from mambo_explorer.opf_lab import finite_change_table
+
         st.markdown(
-            "**One-sided rates where prices were withheld.** For each of these runs: *A unique "
-            "two-sided marginal price was not verified for this run.*"
+            "**The price check's finite changes where prices were withheld.** For each of "
+            "these runs: *A unique two-sided marginal price was not verified for this run.* "
+            "Each direction is feasible or infeasible on its own."
         )
-        st.table(rates, hide_index=True)
-        _caption(
-            "Cost-rate change per MW of demand added (+0.1 MW) or removed (−0.1 MW) at each bus, "
-            "from re-solving the model. The check concerns these tested perturbations only, and "
-            "a perturbation can cross into a different constraint regime."
-        )
+        for title, r in withheld:
+            st.markdown(f"**{title}** (price gate: not passed)")
+            finite_change_table(r.sensitivities)
 
 
 PANELS = {

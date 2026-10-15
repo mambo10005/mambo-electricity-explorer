@@ -140,7 +140,13 @@ terms:
     definition: >-
       The change in cost rate per extra MW of a line's rating, in synthetic $
       per hour per MW. Zero unless the limit binds.
+  - term: Average change rate
+    definition: >-
+      The change in cost rate for a finite change of demand, divided by that
+      change: [C(D + h) − C(D)] / h for an increase, [C(D) − C(D − h)] / h for a
+      decrease, in synthetic $ per MWh. An average over the change, not a local
+      marginal rate; it blends two rates if a limit is reached inside the change.
   - term: Breakpoint
     definition: >-
       An operating point where a capacity or line limit is just reached, so
-      adding and removing demand change the cost at different rates.
+      the cost changes at one rate below it and another above it.

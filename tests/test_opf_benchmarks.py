@@ -173,7 +173,11 @@ def test_breakpoint_one_sided_sensitivities_and_withheld_prices(inputs, expected
         )
     run = adapter.run_dc_opf(inputs)
     assert run.status == "optimal" and run.price_status == "withheld" and run.prices == []
-    assert "Breakpoint" in run.price_note
+    # Stage 9 wording: averages over the stated change, never "one-sided local" rates.
+    assert "average cost rates over a +0.1 MW and a −0.1 MW change of demand differ" in (
+        run.price_note
+    )
+    assert "a unique two-sided marginal price was not verified for this run" in run.price_note
 
 
 def test_equal_offers_nonunique_dispatch_verified_by_objective_not_split():

@@ -14,6 +14,8 @@ do not unlock charts on Sources or System Health.
 | SHELL-01 | Application shell and navigation | platform | done | Stage 1; no data on any page |
 | SHELL-02 | Home page with status and data labels | platform | done | Stage 1 |
 | QA-01 | Local quality workflow | platform | done | Stage 2: uv lock, `scripts/check.ps1`, Python 3.11 + 3.14 |
+| QA-02 | Theme contrast for buttons (light and dark) with automated checks | platform | done | Stage 9: `.streamlit/config.toml`; measured ratios in `docs/accessibility.md`; not a WCAG claim (BL-6) |
+| QA-03 | Human-review package for lessons and glossary (review itself pending) | platform | done | Stage 9: `docs/review/human-review-checklist.md`; BL-3 stays open |
 | LEARN-01 | Lesson content following the learning sequence | learn | planned | 7 fundamentals lessons exist (LEARN-03, LEARN-04); stages 2–6 not written. U-8 |
 | LEARN-02 | Effective-dated lessons and rules | learn | planned | PRD P-4; lessons carry `effective_date`, but rules are not built |
 | LEARN-03 | Beginner lessons on demand and forecasts (4 lessons, exercises, local progress) | learn | done | Stage 4; agent-drafted, not human-reviewed |

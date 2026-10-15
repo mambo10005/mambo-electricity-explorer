@@ -9,7 +9,7 @@ objectives:
   - Interpret a modeled nodal price as the verified marginal cost of serving one more MW at a bus, under this formulation.
   - Explain why a nodal price can differ from every generator's offer.
   - Tell apart a cost rate, a one-hour interval cost, a price, and a line-limit sensitivity.
-content_version: 1.0.0
+content_version: 1.0.1
 effective_date: null
 authored_by: Claude (AI agent)
 authored_at: 2026-10-11
@@ -96,8 +96,9 @@ duals. Stage 7 audited this formulation and verified the sign conventions:
 
 Each run checks the KKT conditions and the price decomposition at every bus (with PTDFs
 measured by the verified DC power flow). It re-solves with ±0.1 MW of demand at each bus
-and shows prices only if both one-sided rates agree with each other and with the
-reported price within 10⁻⁴ $/MWh. The **energy part** of a price is λ; the **congestion
+and shows prices only if the two average rates, [C(D + h) − C(D)] / h and
+[C(D) − C(D − h)] / h with h = 0.1 MW, agree with each other and with the reported price
+within 10⁻⁴ $/MWh. The **energy part** of a price is λ; the **congestion
 part** is the rest.
 
 In step B, the extra-demand comparison and the price agree: the change in dispatch per

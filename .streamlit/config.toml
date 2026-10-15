@@ -1,0 +1,14 @@
+# Streamlit configuration for this app (committed; contains no secrets).
+# Secrets never go here: .streamlit/secrets.toml is gitignored and rejected by the gate.
+#
+# Theme (Stage 9, accessibility): only the primary accent changes. Streamlit's default
+# primary (#FF4B4B) gave white button text 3.30:1. Defining both [theme.light] and
+# [theme.dark] keeps the user's light/dark choice in the app's settings menu.
+# Measured rendered colors and ratios: docs/accessibility.md. Checked by
+# tests/test_theme_contrast.py.
+
+[theme.light]
+primaryColor = "#2563EB"
+
+[theme.dark]
+primaryColor = "#2563EB"

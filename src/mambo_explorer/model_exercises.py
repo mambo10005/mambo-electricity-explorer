@@ -20,7 +20,7 @@ from mambo_explorer.exercises import Exercise, Unavailable, _order
 from mambo_explorer.modeling import adapter
 from mambo_explorer.modeling import cases as mc
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"  # 1.1.0: finite-change wording; blended_rate
 CUR = "synthetic $"
 TOL = 1e-6
 
@@ -381,14 +381,22 @@ def cost_units(ex_id, records):
     )
 
 
-def _two_sided(record):
-    """(bus, up, down) for a bus whose one-sided rates differ or are missing (C, the demand
-    bus, first)."""
+def _differing(record):
+    """(bus, increase rate, decrease rate) for a bus whose two finite-change averages differ
+    (C, the demand bus, first). Both directions must be feasible."""
     for s in sorted(record.sensitivities, key=lambda s: s["bus"] != "C"):
         up, down = s["up_per_mwh"], s["down_per_mwh"]
-        if up is None or down is None or abs(up - down) > adapter.PRICE_FD_TOL:
+        if up is not None and down is not None and abs(up - down) > adapter.PRICE_FD_TOL:
             return s["bus"], up, down
     return None
+
+
+STEP = f"{adapter.PRICE_STEP_MW:g}"
+FORMULAS = (
+    f"increase rate = [C(D + h) − C(D)] / h and decrease rate = [C(D) − C(D − h)] / h, with "
+    f"h = {STEP} MW and C the cost rate in synthetic dollars per hour, so each rate is in "
+    "synthetic dollars per MWh"
+)
 
 
 @requires("breakpoint")
@@ -396,29 +404,69 @@ def withheld_reason(ex_id, records):
     r = records["breakpoint"]
     if r.status != "optimal" or r.price_status != "withheld":
         return Unavailable(ex_id, "this run's prices were not withheld")
-    found = _two_sided(r)
-    if found is None or found[1] is None or found[2] is None:
-        return Unavailable(ex_id, "this run has no bus with two different finite rates")
+    found = _differing(r)
+    if found is None:
+        return Unavailable(ex_id, "this run has no bus with two different finite averages")
     bus, up, down = found
     return _exercise(
         ex_id,
         REQUIRES["withheld_reason"],
         records,
         f"In the breakpoint case the run is optimal, but no prices are shown. What did the "
-        f"±{_n(adapter.PRICE_STEP_MW)} MW check find at bus {bus}?",
-        f"Adding demand costs {_n(up)} per MWh but removing it saves {_n(down)} per MWh, so a "
-        "unique two-sided marginal price was not verified for this run.",
+        f"±{STEP} MW check find at bus {bus}?",
+        f"Over +{STEP} MW the cost rate rises at an average of {_n(up)} per MWh; over −{STEP} MW "
+        f"it falls at an average of {_n(down)} per MWh. They differ, so a unique two-sided "
+        "marginal price was not verified for this run.",
         [
             "The solver failed, so none of the run's results can be trusted.",
             "The solver's numbers are meaningless at every breakpoint.",
             f"The price is exactly {_n((up + down) / 2)}, the average of the two rates.",
         ],
-        f"The check re-solved with {_n(adapter.PRICE_STEP_MW)} MW more and less demand at "
-        f"each bus. At {bus}: {_n(up)} up, {_n(down)} down (synthetic dollars per MWh). One "
-        "number cannot match both, so prices are withheld and both one-sided rates are shown. "
-        "The dispatch and cost still passed every check. The solver's own number is not "
-        "meaningless, and nothing says it is the average; it just cannot describe both "
-        "directions at once.",
+        f"The check uses {FORMULAS}. At {bus}: increase {_n(up)}, decrease {_n(down)}. These "
+        f"are averages over {STEP} MW, not local derivatives. Because they differ, a limit is "
+        f"reached within {STEP} MW of this point, so one number cannot describe both "
+        "directions and no price is shown. The dispatch and cost still passed every check. The "
+        "solver's own number is not meaningless, and nothing says it is the average of the two.",
+    )
+
+
+@requires("near-breakpoint")
+def blended_rate(ex_id, records):
+    r = records["near-breakpoint"]
+    if r.status != "optimal":
+        return Unavailable(ex_id, "the run did not pass its checks")
+    inputs = _inputs("near-breakpoint")
+    g1 = _dispatch(r)["G1"]
+    h = adapter.PRICE_STEP_MW
+    headroom = inputs.cap_g1 - g1
+    if not 0 < headroom < h or _binding(r):
+        return Unavailable(ex_id, "the cheap generator's capacity is not inside the change")
+    expected = (headroom * inputs.cost_g1 + (h - headroom) * inputs.cost_g2) / h
+    c = next(s for s in r.sensitivities if s["bus"] == "C")
+    if c["up_per_mwh"] is None or abs(c["up_per_mwh"] - expected) > 1e-4:
+        return Unavailable(ex_id, "the measured average does not match the blend")
+    return _exercise(
+        ex_id,
+        REQUIRES["blended_rate"],
+        records,
+        f"Demand at C is {_n(inputs.load_c)} MW, just below G1's {_n(inputs.cap_g1)} MW "
+        f"capacity. The +{STEP} MW change at C raises the cost rate at an average of "
+        f"{_n(c['up_per_mwh'])} per MWh. What is that number?",
+        f"A blend: the first {_n(headroom)} MW comes from G1 at {_n(inputs.cost_g1)} and the "
+        f"remaining {_n(h - headroom)} MW from G2 at {_n(inputs.cost_g2)}. It is an average "
+        "over the change, not a local marginal rate.",
+        [
+            "The local marginal cost of one more MW at C.",
+            f"G2's offer, because G2 supplies the whole +{STEP} MW.",
+            "The verified modeled nodal price at C.",
+        ],
+        f"G1 has {_n(headroom)} MW of headroom, so the change crosses G1's capacity: "
+        f"({_n(headroom)} × {_n(inputs.cost_g1)} + {_n(h - headroom)} × {_n(inputs.cost_g2)}) "
+        f"÷ {STEP} = {_n(expected)} per MWh, which matches the re-solve. Up to G1's capacity "
+        f"the cost rate rises at {_n(inputs.cost_g1)} per MWh (that is the local rate here); "
+        f"past it, at {_n(inputs.cost_g2)} per MWh. The {STEP} MW average mixes the two, which "
+        "is why the app never calls it a one-sided local marginal rate, and why no price is "
+        "shown here.",
     )
 
 
@@ -440,25 +488,32 @@ def infeasible_direction(ex_id, records):
     bus = side["bus"]
     up_bad = side["up_per_mwh"] is None
     finite = side["down_per_mwh"] if up_bad else side["up_per_mwh"]
-    bad, good = ("Adding", "removing") if up_bad else ("Removing", "adding")
-    step = _n(adapter.PRICE_STEP_MW)
+    bad, good = (f"+{STEP}", f"−{STEP}") if up_bad else (f"−{STEP}", f"+{STEP}")
+    kind = "decremental" if up_bad else "incremental"
+    inputs = _inputs("capacity-edge")
+    why = (
+        "Demand equals total capacity, so there is no spare capacity for more."
+        if up_bad and abs(inputs.cap_g1 + inputs.cap_g2 - inputs.load_c) < TOL
+        else "No dispatch meets that change within the generator limits and line ratings."
+    )
     return _exercise(
         ex_id,
         REQUIRES["infeasible_direction"],
         records,
         f"In the edge-of-capacity case the run is optimal, but no prices are shown. What did "
-        f"the ±{step} MW check find at bus {bus}?",
-        f"{bad} {step} MW is infeasible, while {good} it changes the cost at {_n(finite)} per MWh.",
+        f"the ±{STEP} MW check find at bus {bus}?",
+        f"The {bad} MW change is infeasible; the {good} MW change is feasible, with an average "
+        f"{kind} rate of {_n(finite)} per MWh.",
         [
-            "Both directions are infeasible, so the run itself failed.",
-            f"{good.capitalize()} {step} MW is infeasible, while {bad.lower()} it changes the "
-            f"cost at {_n(finite)} per MWh.",
-            "The run is infeasible, so no dispatch is shown.",
+            "Both changes are infeasible, so the run itself failed.",
+            f"The {good} MW change is infeasible; the {bad} MW change is feasible, with an "
+            f"average rate of {_n(finite)} per MWh.",
+            "The base run is infeasible, so no dispatch is shown.",
         ],
-        f"Demand equals total capacity, so the run is optimal but has no spare capacity. "
-        f"{bad} {step} MW cannot be served or balanced within the limits; {good} it is feasible "
-        f"and changes the cost at {_n(finite)} synthetic dollars per MWh. With one side "
-        "missing, a unique two-sided marginal price was not verified for this run.",
+        f"Each direction is checked separately. {why} The {bad} MW re-solve is infeasible; the "
+        f"{good} MW re-solve is feasible ({FORMULAS}). With one direction missing, a unique "
+        "two-sided marginal price was not verified for this run. The base run is still optimal "
+        "and verified: an infeasible *perturbation* is not an infeasible *run*.",
     )
 
 
@@ -555,6 +610,7 @@ GENERATORS = {
         relaxation_cost,
         cost_units,
         withheld_reason,
+        blended_rate,
         infeasible_direction,
         nonunique_vs_infeasible,
         uniqueness_vs_price,
