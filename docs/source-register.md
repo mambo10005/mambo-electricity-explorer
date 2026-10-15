@@ -130,8 +130,8 @@ marked as such and is not legal advice.
    source is the EIA." **Project rule:** derived values are labeled
    *derived* (PRD R-15) and never presented as unmodified EIA figures.
 
-**Not yet reviewed:** how EIA publishes revisions (Revisions column), and
-the source notes of each route we plan to use.
+**Not yet reviewed:** how EIA publishes revisions (Revisions column) beyond the
+resubmission rules in the form instructions, and the source notes of routes not yet used.
 
 ### EIA-930 hourly demand and forecast (`electricity/rto/region-data`) — 2026-10-11
 
@@ -279,6 +279,39 @@ repository.** The test fixtures are synthetic.
 - `validate`: ok.
 - The EIA store was unchanged: identical catalog sha256 and the same counts before
   and after.
+
+### EIA-930 hourly net generation by energy source (`electricity/rto/fuel-type-data`) — 2026-10-12
+
+Scope reviewed: one balancing authority (ERCO) and one measure, net generation by energy
+source. Contract: `docs/datasets/eia930-fuel-type-data.md`. Decision: ADR 0014.
+
+**Pages and calls (2026-10-12).**
+- Live API metadata with the local key (4 requests, URLs never shown): parent listing
+  `electricity/rto`, route metadata, facet `fueltype`, facet `respondent`.
+- Form EIA-930 instructions (OMB 1905-0129, expiration 07/31/2029), text extracted locally.
+- "About the EIA-930 data": https://www.eia.gov/electricity/930-content/about.html
+- The Grid Monitor "about" page returned only navigation (script-rendered); not used.
+
+| Item | Finding | Status |
+|---|---|---|
+| Route | `fuel-type-data`, "Hourly Generation by Energy Source"; facets `respondent`, `fueltype`; `value` alias "Net Generation", `megawatthours`, SUM; `hourly` = UTC | Live metadata |
+| Codes | 15 in the instructions (COL, NG, NUC, OIL, WAT, PS, SUN, SNB, WND, WNB, BAT, OES, GEO, OTH, UNK) plus `UES` in the API facet (undefined in the instructions read) | Instructions; live facet |
+| Sign | Net storage reported as negative net generation per category; combined hydro may be negative; About page: EIA asked BAs to report pumped-storage charging as demand instead, and accepts battery-charging negatives where a BA says so | **ERCOT's convention not stated per BA**; values kept signed |
+| Totals | By-source sum equals the reported total "to the extent possible"; the SYS total is on `region-data` and is not collected | No total shown |
+| Missing | Anomalies left blank, "Do not report zeros … unless they are valid zeros" | Absent/null kept; never zero |
+| Imputation | Hourly BA data published "exactly as reported without imputation" | None applied |
+| Revisions | Errors > 10 MWh resubmitted within 30 days; demand collected twice | Lineage kept; lookback |
+| History | API `startPeriod` 2019-01-01T00; by-source data from 2018-07-01 in EIA files | Not bulk-collected |
+| Third-party content | Route description names only Form EIA-930; no vendor or license notice found | None found |
+
+**Local collection and use: CLEARED** on the same basis as `region-data` (general EIA
+terms, EIA-930 public-information statement, no third-party notice; attribution, no
+endorsement, rate guidance). This review does not extend the demand review by
+assumption: the route's own metadata and description were read.
+
+**Public redistribution: NOT REVIEWED** (PUB-01), as for every EIA route.
+
+**Live verification (2026-10-12, scratch storage, 1 + 1 + 3 requests):** 232 rows (8 categories × 29 hours), all matching the archived response; repeat idempotent; `validate` ok. Details in `docs/datasets/eia930-fuel-type-data.md`.
 
 ### EIA vs. ERCOT: unresolved differences (no join, no reconciliation yet)
 

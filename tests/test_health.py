@@ -122,7 +122,7 @@ def test_unknown_when_freshness_cannot_be_determined():
 
 def test_content_health_reports_versions_review_and_no_monitoring():
     c = health.content_health()
-    assert len(c["lessons"]) == 12
+    assert len(c["lessons"]) == 13
     assert {row["Automatic change monitoring"] for row in c["lessons"]} == {"none"}
     assert {row["Human review"] for row in c["lessons"]} == {"unreviewed"}
     assert c["records"]["Automatic change monitoring"] == "none"

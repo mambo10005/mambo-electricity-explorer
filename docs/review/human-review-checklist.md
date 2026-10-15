@@ -1,6 +1,6 @@
-# Human-review checklist: lessons 1–12, the glossary, and the responsibility records
+# Human-review checklist: lessons 1–13, the glossary, and the responsibility records
 
-**Status: not reviewed by a person.** All twelve lessons, the glossary, the exercise
+**Status: not reviewed by a person.** All thirteen lessons, the glossary, the exercise
 wording, and the regulatory responsibility records were drafted by an AI agent (Claude). This checklist was also prepared by the
 agent; it lists what a reviewer should check and the potential issues the agent noticed.
 It is **not** a review. BL-3 stays open until a named person completes it.
@@ -274,6 +274,29 @@ Copy this block for each item you review. Leave fields blank until they are true
   4. Order No. 918's effective date (2026-05-26) is the final rule's. The standard's own
      enforceable date follows its implementation plan, which was not read.
 
+## Lesson 13 — Reading the actual generation mix · `generation-mix` · v1.0.0
+
+- Data: EIA-930 `electricity/rto/fuel-type-data`, entity ERCO, net generation by energy
+  source (own store; `mambo collect --source eia-generation`). Calculation
+  `generation_mix` v1.0.0.
+- Sources: `eia930-instructions` (OMB 1905-0129; Data Code list, storage sign rules,
+  energy balance), `eia930-about` (net generation definition; imputation; pumped-storage
+  guidance), `eia-api-fuel-type-data` (route metadata read with a key; agent-checked
+  2026-10-12).
+- Exercises: `largest-category`, `negative-meaning`, `absent-category-hours`,
+  `partial-sum-not-total`, `mix-not-price` (generation; answers from the window's
+  observations; a revision or new category regenerates them).
+- Agent-noticed items:
+  1. The instructions and the About page differ on pumped-storage charging (negative
+     generation vs demand). The lesson discloses this and says ERCOT's convention is not
+     stated. Confirm that framing, and whether EIA states ERCOT's practice anywhere.
+  2. "Net of station use" is inferred from the instructions' remark that station use above
+     gross output yields negative net generation. Confirm.
+  3. `UES` appears in the API facet but not in the instructions read; it is labeled
+     "not in the form instructions". Check a current reference table.
+  4. The exercise "largest category" sums signed valid values; confirm a beginner reads
+     "largest" as energy over the window, not capacity or share.
+
 ## Regulatory responsibility records (`content/responsibilities.yaml`, set v1.0.0)
 
 - 17 records, 11 sources, 4 open questions, 7 source gaps. Each record: claim paraphrase,
@@ -290,7 +313,7 @@ Copy this block for each item you review. Leave fields blank until they are true
 
 ## Glossary (`src/mambo_explorer/content/glossary.yaml`)
 
-68 terms. Check each definition for accuracy, beginner readability, and consistency with
+75 terms. Check each definition for accuracy, beginner readability, and consistency with
 the lessons that use it.
 
 - [ ] Observation terms: Absent row, BA, Day-ahead demand forecast, Demand, EIA, EIA-930,
@@ -301,6 +324,8 @@ the lessons that use it.
 - [ ] Basis terms (lesson 9): Basis, Fixed-for-floating hedge, Quantity mismatch,
       Reference location.
 - [ ] Shape terms (lesson 10): Flat-block hedge, Load shape, Time-shape component.
+- [ ] Generation terms (lesson 13): Category sum, Energy source category, Fuel consumption,
+      Installed capacity, Marginal generation, Net generation, Net storage.
 - [ ] Compliance terms (lessons 11–12): Applicability, Bulk-power system, Compliance review,
       Control, Effective date, Electric reliability organization, Evidence, FERC, Proposed
       rule, Regional entity, Regulator, Reliability standard, Remediation, Requirement,

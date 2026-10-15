@@ -182,10 +182,37 @@ class EIAClient:
         page_size: int = ds.MAX_ROWS_PER_REQUEST,
         max_rows: int,
     ) -> list[Page]:
-        """Fetch all rows for one respondent and the given types, in deterministic order.
+        """Demand/forecast rows (route region-data, facet `type`). See fetch_series."""
+        return self.fetch_series(
+            ds.ROUTE,
+            "type",
+            respondent,
+            types,
+            start_period,
+            end_period,
+            page_size=page_size,
+            max_rows=max_rows,
+        )
 
-        Raises if pagination is truncated or inconsistent, if rows fall outside the
-        requested scope, or if the total exceeds max_rows (scope guard).
+    def fetch_series(
+        self,
+        route: str,
+        facet: str,
+        respondent: str,
+        codes: list[str] | None,
+        start_period: str,
+        end_period: str,
+        *,
+        page_size: int = ds.MAX_ROWS_PER_REQUEST,
+        max_rows: int,
+        required_fields: tuple[str, ...] = ds.REQUIRED_FIELDS,
+    ) -> list[Page]:
+        """Fetch all rows for one respondent on `route`, in deterministic order.
+
+        `codes` filters the series facet (`type` or `fueltype`); None fetches every
+        category the source has, so unknown or new categories are kept. Raises if
+        pagination is truncated or inconsistent, if rows fall outside the requested scope,
+        or if the total exceeds max_rows (scope guard).
         """
         if not 1 <= page_size <= ds.MAX_ROWS_PER_REQUEST:
             raise ValueError(f"page_size must be 1..{ds.MAX_ROWS_PER_REQUEST}")
@@ -193,16 +220,17 @@ class EIAClient:
             ("frequency", ds.FREQUENCY),
             ("data[0]", "value"),
             ("facets[respondent][]", respondent),
-            *[("facets[type][]", t) for t in sorted(types)],
+            *[(f"facets[{facet}][]", c) for c in sorted(codes or [])],
             ("start", start_period),
             ("end", end_period),
-            *ds.SORT_PARAMS,
+            *ds.sort_params(facet),
         ]
+        allowed = None if codes is None else set(codes)
         pages: list[Page] = []
         offset, total = 0, None
         while True:
             params = [*base, ("offset", str(offset)), ("length", str(page_size))]
-            payload, body, sanitized = self._get(f"{ds.ROUTE}/data/", params)
+            payload, body, sanitized = self._get(f"{route}/data/", params)
             self.stats.pages += 1
             response = payload["response"]
             page_total = _int(response.get("total"), "response.total")
@@ -218,7 +246,9 @@ class EIAClient:
             if not isinstance(rows, list):
                 raise ResponseValidationError("response.data is not a list")
             for row in rows:
-                validate_row(row, respondent, set(types), start_period, end_period)
+                validate_row(
+                    row, respondent, allowed, start_period, end_period, facet, required_fields
+                )
             pages.append(Page(offset=offset, body=body, sanitized=sanitized, rows=rows))
             received = offset + len(rows)
             if received >= total:
@@ -232,21 +262,32 @@ class EIAClient:
         all_rows = [row for page in pages for row in page.rows]
         if len(all_rows) != total:
             raise PaginationError(f"received {len(all_rows)} rows but source reported {total}")
-        keys = [(r["period"], r["respondent"], r["type"]) for r in all_rows]
+        keys = [(r["period"], r["respondent"], r[facet]) for r in all_rows]
         if keys != sorted(keys):
             raise ResponseValidationError("rows are not in the requested deterministic order")
         if len(set(keys)) != len(keys):
-            raise ResponseValidationError("duplicate (period, respondent, type) rows in response")
+            raise ResponseValidationError(
+                f"duplicate (period, respondent, {facet}) rows in response"
+            )
         return pages
 
 
 _PERIOD = re.compile(ds.PERIOD_PATTERN)
 
 
-def validate_row(row: object, respondent: str, types: set[str], start: str, end: str) -> None:
+def validate_row(
+    row: object,
+    respondent: str,
+    types: set[str] | None,
+    start: str,
+    end: str,
+    facet: str = "type",
+    required_fields: tuple[str, ...] = ds.REQUIRED_FIELDS,
+) -> None:
+    """`types` None accepts any category code (it must still be a non-empty string)."""
     if not isinstance(row, dict):
         raise ResponseValidationError("data row is not an object")
-    missing = [f for f in ds.REQUIRED_FIELDS if f not in row]
+    missing = [f for f in required_fields if f not in row]
     if missing:
         raise ResponseValidationError(f"data row missing fields {missing}")
     period = row["period"]
@@ -256,8 +297,11 @@ def validate_row(row: object, respondent: str, types: set[str], start: str, end:
         raise ResponseValidationError(f"period {period} outside requested window {start}..{end}")
     if row["respondent"] != respondent:
         raise ResponseValidationError(f"unexpected respondent {row['respondent']!r}")
-    if row["type"] not in types:
-        raise ResponseValidationError(f"unexpected type {row['type']!r}")
+    code = row[facet]
+    if not isinstance(code, str) or not code.strip():
+        raise ResponseValidationError(f"{facet} is not a non-empty string: {code!r}")
+    if types is not None and code not in types:
+        raise ResponseValidationError(f"unexpected {facet} {code!r}")
     value = row["value"]
     if value is not None and not isinstance(value, (int, float, str)) or isinstance(value, bool):
         raise ResponseValidationError(f"unexpected value type {type(value).__name__}")

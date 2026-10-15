@@ -15,10 +15,20 @@ from importlib.resources import files
 import yaml
 
 from mambo_explorer.catalog import learning_sequence
+from mambo_explorer.eia.dataset import GENERATION_ROUTE
 
 REVIEW_STATUSES = ("unreviewed", "human-reviewed")
 IMPLEMENTATION_STATUSES = ("implemented", "draft")
-EXERCISE_KINDS = ("data", "concept", "model", "settlement", "basis", "shape", "compliance")
+EXERCISE_KINDS = (
+    "data",
+    "concept",
+    "model",
+    "settlement",
+    "basis",
+    "shape",
+    "compliance",
+    "generation",
+)
 CALCULATION_IDS = (
     "power_energy",
     "series_summary",
@@ -30,8 +40,15 @@ CALCULATION_IDS = (
     "basis_exposure",
     "time_shape",
     "responsibility_records",  # not arithmetic: answers come from the record set (ADR 0012)
+    "generation_mix",
 )
-DATA_PANELS = ("power_energy_example", "demand_series", "forecast_comparison", "coverage")
+DATA_PANELS = (
+    "power_energy_example",
+    "demand_series",
+    "forecast_comparison",
+    "coverage",
+    "generation_mix",
+)
 MODEL_PANELS = ("pf_vs_opf", "location_prices", "unverified_marginal")
 # Optional fields (default: empty list) for lessons backed by verified model runs, calculators,
 # or responsibility records (claims: record ids from content/responsibilities.yaml).
@@ -190,6 +207,7 @@ def validate_meta(meta: dict, source: str) -> None:
     from mambo_explorer import (  # local imports avoid a cycle
         basis_exercises,
         compliance_exercises,
+        generation_exercises,
         model_exercises,
         responsibilities,
         settlement_exercises,
@@ -226,6 +244,10 @@ def validate_meta(meta: dict, source: str) -> None:
             if url not in urls:
                 fail(f"claim {claim}: its source {url} is not in the lesson's sources")
 
+    generation_bound = any(b.get("route") == GENERATION_ROUTE for b in meta["dataset_bindings"])
+    if "generation_mix" in meta["data_panels"] and not generation_bound:
+        fail(f"data panel generation_mix needs a dataset binding to route {GENERATION_ROUTE}")
+
     ids = set()
     for ex in meta["exercises"]:
         if not {"exercise_id", "kind", "generator", "calculation_id"} <= set(ex):
@@ -236,6 +258,7 @@ def validate_meta(meta: dict, source: str) -> None:
             "basis": basis_exercises.GENERATORS,
             "shape": shape_exercises.GENERATORS,
             "compliance": compliance_exercises.GENERATORS,
+            "generation": generation_exercises.GENERATORS,
         }.get(ex["kind"], GENERATORS)
         if ex["kind"] not in EXERCISE_KINDS or ex["generator"] not in known:
             fail(f"exercise {ex['exercise_id']}: bad kind or unknown generator")
@@ -257,6 +280,11 @@ def validate_meta(meta: dict, source: str) -> None:
             fail(f"exercise {ex['exercise_id']}: calculation_id not declared by the lesson")
         if ex["kind"] == "data" and not meta["dataset_bindings"]:
             fail(f"exercise {ex['exercise_id']}: data exercise needs a dataset binding")
+        if ex["kind"] == "generation" and not generation_bound:
+            fail(
+                f"exercise {ex['exercise_id']}: generation exercises need a dataset binding to "
+                f"route {GENERATION_ROUTE}"
+            )
         if ex["exercise_id"] in ids:
             fail(f"duplicate exercise_id {ex['exercise_id']}")
         ids.add(ex["exercise_id"])

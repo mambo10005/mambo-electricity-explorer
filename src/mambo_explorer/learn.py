@@ -14,6 +14,8 @@ import streamlit as st
 from mambo_explorer import (
     basis_exercises,
     compliance_exercises,
+    generation,
+    generation_exercises,
     model_exercises,
     responsibilities,
     routes,
@@ -88,6 +90,25 @@ def _freshness(last: dict | None) -> None:
         f"- **Observations:** EIA-930 (`{ds.ROUTE}`), entity `{ds.ENTITY}`, unit as reported "
         f"(`{ds.EXPECTED_UNIT}`). Last successful local collection {finished:%Y-%m-%d %H:%M} "
         f"UTC (run `{last['run_id']}`). Publication time is not provided by the source."
+    )
+    if datetime.now(UTC) - finished > STALE_AFTER:
+        st.warning(
+            f"These observations may be stale: the last collection finished more than "
+            f"{STALE_AFTER.total_seconds() / 3600:.0f} hours ago."
+        )
+
+
+def _generation_freshness(gen_store) -> None:
+    last = gen_store.last_committed_run() if gen_store else None
+    if last is None:
+        st.markdown("- **Generation observations:** none collected on this computer yet.")
+        return
+    finished = datetime.fromisoformat(last["finished_at"]).astimezone(UTC)
+    st.markdown(
+        f"- **Generation observations:** EIA-930 (`{ds.GENERATION_ROUTE}`), entity "
+        f"`{ds.ENTITY}`, unit as reported (`{ds.EXPECTED_UNIT}`), signed as published. Last "
+        f"successful local collection {finished:%Y-%m-%d %H:%M} UTC (run `{last['run_id']}`). "
+        "Publication time is not provided by the source."
     )
     if datetime.now(UTC) - finished > STALE_AFTER:
         st.warning(
@@ -333,6 +354,36 @@ PANELS = {
 }
 
 
+def _generation_context(data_dir):
+    """(observations, selection) for the lesson's generation window, or Nones if no data."""
+    from mambo_explorer.generation_explore import window_picker
+
+    if data_dir is None:
+        return None, None
+    store = generation.store(data_dir)
+    sel, last = window_picker(store, "learn_generation_window")
+    if sel is None:
+        return None, None
+    return calc.load_generation(store, sel), sel
+
+
+def panel_generation_mix(obs, sel) -> None:
+    from mambo_explorer.generation_explore import render_mix
+
+    st.subheader("Net generation by energy source in the selected window (observed)")
+    if obs is None:
+        st.info(
+            "No net-generation observations have been collected on this computer, so this "
+            "part of the lesson has no actual data to show. Collection runs from the command "
+            "line (`mambo collect --source eia-generation`), never from this page."
+        )
+        return
+    render_mix(obs, sel, "learn_generation")
+
+
+PANELS["generation_mix"] = panel_generation_mix
+
+
 # --- exercises -------------------------------------------------------------------------------
 
 
@@ -541,10 +592,17 @@ def render_learn() -> None:
         st.markdown(md_dollars(lesson.technical))
 
     obs = sel = last = None
-    if meta["dataset_bindings"]:
+    gen_obs = gen_sel = None
+    bindings = meta["dataset_bindings"]
+    if any(b.get("route") == ds.GENERATION_ROUTE for b in bindings):
+        gen_obs, gen_sel = _generation_context(settings.data_dir if store else None)
+    if any(b.get("route") != ds.GENERATION_ROUTE for b in bindings):
         obs, sel, last = _data_context(store)
     for panel in meta["data_panels"]:
-        PANELS[panel](obs, sel)
+        if panel == "generation_mix":
+            PANELS[panel](gen_obs, gen_sel)
+        else:
+            PANELS[panel](obs, sel)
 
     records = {}
     if meta["model_bindings"]:
@@ -582,6 +640,8 @@ def render_learn() -> None:
             exercise = shape_exercises.generate(spec, shape_result)
         elif spec["kind"] == "compliance":
             exercise = compliance_exercises.generate(spec)
+        elif spec["kind"] == "generation":
+            exercise = generation_exercises.generate(spec, gen_obs, gen_sel)
         else:
             exercise = generate(spec, obs, sel)
         _exercise(lesson, spec, exercise, progress)
@@ -615,7 +675,9 @@ def render_learn() -> None:
             "under *Model provenance*. The formulation and its verification are documented in "
             "the project's calculations notes and ADR 0007."
         )
-    if meta["dataset_bindings"]:
+    if any(b.get("route") != ds.GENERATION_ROUTE for b in bindings):
         _freshness(store.last_committed_run() if store else None)
+    if gen_sel is not None or any(b.get("route") == ds.GENERATION_ROUTE for b in bindings):
+        _generation_freshness(generation.store(settings.data_dir) if store else None)
     st.subheader("Limitations")
     st.markdown(md_dollars("\n".join(f"- {item}" for item in meta["limitations"])))

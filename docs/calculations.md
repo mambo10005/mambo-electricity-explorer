@@ -363,3 +363,23 @@ intervals unless stated):
 In the last row p̄ = (1·20 + 3·60)/4 = 50. An unweighted mean (40) would split the same
 net into −2,000 and 1,000.
 
+## `generation_mix` v1.0.0 — Stage 16 (ADR 0014)
+
+`calculations.generation_mix(observations, selection)` over EIA-930 net generation by
+energy source (`load_generation`; each observation's `metric` is the energy-source code).
+
+| Quantity | Rule |
+|---|---|
+| Category energy | Sum of that category's **valid** values over the window (source unit). Absent and null hours add nothing; negative hours subtract. |
+| Coverage per category | valid, negative, zero, null, absent counts; `unreviewed` when the code is outside the reviewed list |
+| Hour sum | Sum of the categories with a valid value in that hour: "sum of reported categories", never total system generation |
+| Complete hour | Every category seen anywhere in the window has a valid value in that hour |
+| Window sum | Sum of hour sums over complete hours only |
+| Largest category | Highest category energy (ties broken by code) |
+| Shares | Only when at least one complete hour exists **and** no category is negative in any complete hour **and** the window sum is non-zero: category energy over complete hours ÷ window sum. Otherwise withheld with a reason. |
+
+- No total system generation: the source's SYS total is not collected.
+- Generation is never equated with demand; interchange and losses are never inferred.
+- `status: unavailable` with no observations, mixed units, or duplicate (category, period).
+- References list every observation used; exclusions list absent rows and null values.
+

@@ -305,3 +305,35 @@ terms:
     definition: >-
       The date this project read a source. It says nothing about when the source
       took effect.
+  # Generation-mix lesson (Stage 16). Same status: agent-drafted, not human-reviewed.
+  - term: Net generation
+    definition: >-
+      In EIA-930, the metered hourly output of the generating units a balancing
+      authority manages or can see, in MWh. Net of station use; distribution-connected
+      generators such as rooftop solar are typically not included.
+  - term: Energy source category
+    definition: >-
+      The code under which a balancing authority reports net generation, such as COL,
+      NG, NUC, WAT, SUN, WND, BAT, or OTH. The list is set by the Form EIA-930
+      instructions and can change; this app keeps any code the source publishes.
+  - term: Installed capacity
+    definition: >-
+      The most a generator or fleet could produce, in MW. Not in the EIA-930 data; a
+      source with little generation may still have large capacity.
+  - term: Fuel consumption
+    definition: >-
+      The fuel burned to generate electricity (for example MMBtu of gas). Not in the
+      EIA-930 hourly data; generation per unit of fuel differs by technology.
+  - term: Marginal generation
+    definition: >-
+      Output from the unit that would change if demand changed by a small amount. It
+      depends on offers and constraints, and cannot be read from the generation mix.
+  - term: Net storage
+    definition: >-
+      An hour in which a storage category (batteries, pumped storage) stored more
+      electricity than it generated. The EIA-930 instructions report it as negative
+      net generation for that category.
+  - term: Category sum
+    definition: >-
+      The sum of the energy-source categories reported for an hour. It is not the
+      source's total net generation (not collected here) and is not demand.

@@ -45,6 +45,12 @@ SORT_PARAMS = (
     ("sort[2][direction]", "asc"),
 )
 
+
+def sort_params(facet: str = "type") -> tuple[tuple[str, str], ...]:
+    """Deterministic order (period, respondent, series facet) for any EIA-930 route."""
+    return tuple((k, facet if v == "type" else v) for k, v in SORT_PARAMS)
+
+
 # How a period label maps to a UTC interval. EIA documents the hour-ending convention
 # for EIA-930 (Grid Monitor "about" page, Form EIA-930 instructions), but not for the
 # API's `period` field itself, so it is NOT treated as verified: interval columns stay
@@ -128,5 +134,113 @@ def verify_metadata(client) -> dict:
         result["frequency_available"]
         and result["entity_found"]
         and all(result["metrics_found"].values())
+    )
+    return result
+
+
+# --- Hourly net generation by energy source (Stage 16; ADR 0014) ----------------------------
+# Facts below were read from the live API metadata on 2026-10-12 (parent route listing,
+# route metadata, facet values; 4 requests) and from the Form EIA-930 instructions (OMB
+# 1905-0129, expiration 07/31/2029) and the "About the EIA-930 data" page. See
+# docs/datasets/eia930-fuel-type-data.md and docs/source-register.md.
+GENERATION_ROUTE = "electricity/rto/fuel-type-data"  # "Hourly Generation by Energy Source"
+GENERATION_FACET = "fueltype"  # facet description: "Energy Source"
+GENERATION_METRIC = "NG"  # Form EIA-930 data type for net generation
+GENERATION_VALUE_ALIAS = "Net Generation"  # API data column alias; units megawatthours
+GENERATION_START_PERIOD = "2019-01-01T00"  # API metadata startPeriod (by-source data from 2018-07)
+GENERATION_STORE = "eia930-fuel-type"  # separate namespace: never mixes with demand/forecast
+GENERATION_REQUIRED_FIELDS = ("period", "respondent", GENERATION_FACET, "value", "value-units")
+GENERATION_NAME_FIELD = "type-name"  # optional in rows; stored when present
+
+# Energy-source codes from the Form EIA-930 instructions ("Data Code" for data type NG).
+# Order: as listed in the instructions. Names are the instruction wording, shortened.
+ENERGY_SOURCE_NAMES = {
+    "COL": "Coal",
+    "NG": "Natural gas",
+    "NUC": "Nuclear",
+    "OIL": "Petroleum (all products)",
+    "WAT": "Hydro (excluding pumped storage, unless combined)",
+    "PS": "Pumped storage",
+    "SUN": "Solar (without integrated battery storage)",
+    "SNB": "Solar with integrated battery storage",
+    "WND": "Wind (without integrated battery storage)",
+    "WNB": "Wind with integrated battery storage",
+    "BAT": "Battery storage",
+    "OES": "Other energy storage",
+    "GEO": "Geothermal",
+    "OTH": "Other (all other sources; also used to mask small categories)",
+    "UNK": "Unknown",
+    # Present in the API facet list (2026-10-12) but not in the instructions read.
+    "UES": "Unknown energy storage (API facet; not in the form instructions)",
+}
+ENERGY_SOURCE_CODES = tuple(ENERGY_SOURCE_NAMES)
+# Categories the instructions say may be reported negative in an hour of net storage.
+# A combined hydro report (WAT including pumped storage) may also be negative.
+STORAGE_CODES = ("PS", "BAT", "OES", "SNB", "WNB", "UES")
+# Scope guard for one fetch: more categories than this is treated as an unexpected response.
+MAX_CATEGORIES = 24
+
+GENERATION_INTERVAL_TEXT = INTERVAL_TEXT  # same period labels and the same unverified convention
+STORAGE_TEXT = (
+    "Form EIA-930 instructions: for hours when storage devices store more electricity than "
+    "they generate, the net storage is reported as negative net generation for that "
+    "category; hydro combined with pumped storage may also be negative. EIA's 'About the "
+    "EIA-930 data' page adds that it has asked balancing authorities to count pumped-storage "
+    "negative net generation as demand instead, and accepts negative values where a BA has "
+    "said it reports battery charging. Which convention ERCOT follows is not stated per "
+    "balancing authority, so this app shows signed values exactly as published."
+)
+NET_GENERATION_TEXT = (
+    "EIA describes net generation as the metered output of generating units managed by, or "
+    "visible to, the balancing authority; distribution-connected generation such as rooftop "
+    "solar is typically not included. The form instructions say station use above gross "
+    "output yields negative net generation, so values are net of station use. This is not "
+    "installed capacity, fuel consumption, or marginal generation."
+)
+
+
+def energy_source_name(code: str) -> str:
+    return ENERGY_SOURCE_NAMES.get(code, f"{code} (not in the reviewed code list)")
+
+
+def generation_review_summary() -> dict:
+    return {
+        "source": f"{SOURCE} Open Data API v2",
+        "dataset": DATASET,
+        "route": GENERATION_ROUTE,
+        "facet": GENERATION_FACET,
+        "frequency": FREQUENCY,
+        "entity": {ENTITY: ENTITY_NAMES[ENTITY]},
+        "energy_sources": ENERGY_SOURCE_NAMES,
+        "expected_unit": EXPECTED_UNIT,
+        "interval": GENERATION_INTERVAL_TEXT,
+        "storage_sign": STORAGE_TEXT,
+        "review": "docs/source-register.md — EIA-930 fuel-type-data review",
+    }
+
+
+def verify_generation_metadata(client) -> dict:
+    """Check the reviewed generation route, facet, entity, and codes against live metadata."""
+    meta = client.route_metadata(GENERATION_ROUTE)
+    facets = {f.get("id") for f in meta.get("facets", []) if isinstance(f, dict)}
+    respondents = {v.get("id") for v in client.facet_values("respondent", GENERATION_ROUTE)}
+    codes = {v.get("id") for v in client.facet_values(GENERATION_FACET, GENERATION_ROUTE)}
+    frequencies = {f.get("id") for f in meta.get("frequency", []) if isinstance(f, dict)}
+    units = (meta.get("data") or {}).get("value", {}).get("units")
+    result = {
+        "route_id": meta.get("id"),
+        "frequency_available": FREQUENCY in frequencies,
+        "facet_found": GENERATION_FACET in facets,
+        "entity_found": ENTITY in respondents,
+        "units": units,
+        "codes_not_reviewed": sorted(codes - set(ENERGY_SOURCE_CODES)),
+        "reviewed_codes_absent": sorted(set(ENERGY_SOURCE_CODES) - codes),
+        "requests_used": client.stats.requests,
+    }
+    result["ok"] = (
+        result["frequency_available"]
+        and result["facet_found"]
+        and result["entity_found"]
+        and units == EXPECTED_UNIT
     )
     return result

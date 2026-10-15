@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 
 import streamlit as st
 
-from mambo_explorer import health, refresh, refresh_config
+from mambo_explorer import generation, health, refresh, refresh_config
 from mambo_explorer.catalog import features
 from mambo_explorer.config import ConfigError, load_settings
 from mambo_explorer.ercot import collect as ercot_collect
@@ -95,15 +95,24 @@ def render_system_health() -> None:
     except (ConfigError, refresh_config.RefreshConfigError) as exc:
         st.error(f"Configuration problem: {exc}. Status cannot be shown.")
         return
-    stores = {"eia": Store(settings.data_dir), "ercot": ercot_collect.store(settings.data_dir)}
+    stores = {
+        "eia": Store(settings.data_dir),
+        "ercot": ercot_collect.store(settings.data_dir),
+        "eia-generation": generation.store(settings.data_dir),
+    }
     now = NOW()
     st.caption(f"Checked at {now.astimezone(UTC).isoformat(timespec='seconds')} (UTC).")
     st.button("Check again", key="health_recheck", help="Re-reads local files; sends nothing")
 
     view = st.radio(
         "Show",
-        ["all", "eia", "ercot"],
-        format_func={"all": "All sources", "eia": "EIA-930", "ercot": "ERCOT NP6-345-CD"}.get,
+        ["all", "eia", "ercot", "eia-generation"],
+        format_func={
+            "all": "All sources",
+            "eia": "EIA-930 demand",
+            "ercot": "ERCOT NP6-345-CD",
+            "eia-generation": "EIA-930 generation",
+        }.get,
         horizontal=True,
         key="health_view",
     )
@@ -144,7 +153,7 @@ def render_system_health() -> None:
                     "Collection interval (your schedule)": f"{s.collection_interval_hours} h",
                     "Request budget per refresh": str(s.request_budget),
                 }
-                for s in (config.eia, config.ercot)
+                for s in (config.eia, config.ercot, config.generation)
             ],
             hide_index=True,
         )

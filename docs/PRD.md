@@ -130,10 +130,10 @@ Anything not listed is not implemented yet.
 
 | Requirement | Feature(s) | Status | Evidence |
 |---|---|---|---|
-| R-1 learning and analysis with actual observations | DATA-01, EXPLORE-02, LEARN-03 | partial: one BA, two metrics | `tests/test_collect_storage.py`, `tests/test_learn_ui.py` |
-| R-2 novice-oriented | LEARN-03, LEARN-04, FIN-03, FIN-04, FIN-05, COMP-03 | partial: 12 lessons (agent-drafted, unreviewed) | `content/lessons/`, `docs/lesson-authoring.md` |
+| R-1 learning and analysis with actual observations | DATA-01, DATA-05, EXPLORE-02, EXPLORE-04, LEARN-03 | partial: one BA; demand, forecast, and net generation by energy source | `tests/test_collect_storage.py`, `tests/test_learn_ui.py` |
+| R-2 novice-oriented | LEARN-03, LEARN-04, FIN-03, FIN-04, FIN-05, COMP-03, EXPLORE-04 | partial: 13 lessons (agent-drafted, unreviewed) | `content/lessons/`, `docs/lesson-authoring.md` |
 | R-3 learning sequence | LEARN-01, LEARN-03, LEARN-04, FIN-03, FIN-04, FIN-05, COMP-03 | partial: fundamentals (1–7), settlement (8), financial contracts and risk (9–10), compliance (11–12) | `tests/test_lessons.py` |
-| R-4 physical system: demand | LEARN-03 | partial: demand only | lessons 1–2 |
+| R-4 physical system: demand and generation | LEARN-03, EXPLORE-04 | partial: demand (lessons 1–2) and net generation by energy source (lesson 13); no capacity, fuel, or plant-level data | lessons 1–2, 13; ADR 0014 |
 | R-5 forecasting | LEARN-03 | partial: published day-ahead forecast accuracy (descriptive) | lesson 3, `docs/calculations.md` |
 | R-7 ERCOT | DATA-01 | partial: EIA-930 `ERCO` only | source register |
 | R-13 continuously updated data; effective-dated lessons | DATA-01, LEARN-03, COMP-02, OPS-01, HEALTH-01 | partial: bounded `mambo refresh` (manual, or an optional Windows task that is previewed but not registered), System Health freshness; lessons carry `effective_date` and `content_version`; responsibility records carry published/effective dates only when the source states them (point-in-time, not monitored) | `lessons.py` validation |

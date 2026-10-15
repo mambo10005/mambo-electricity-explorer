@@ -27,6 +27,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from mambo_explorer import generation
 from mambo_explorer.collect import (
     DEFAULT_DAYS,
     DEFAULT_LOOKBACK_DAYS,
@@ -46,7 +47,7 @@ from mambo_explorer.refresh_config import RefreshConfigError
 from mambo_explorer.safe_zip import ArchiveError
 from mambo_explorer.storage import Store, WriterLockError
 
-SOURCES = ("eia", "ercot")
+SOURCES = ("eia", "ercot", "eia-generation")
 
 
 def _print(obj: object) -> None:
@@ -54,7 +55,11 @@ def _print(obj: object) -> None:
 
 
 def _store(args, settings) -> Store:
-    return ercot.store(settings.data_dir) if args.source == "ercot" else Store(settings.data_dir)
+    if args.source == "ercot":
+        return ercot.store(settings.data_dir)
+    if args.source == "eia-generation":
+        return generation.store(settings.data_dir)
+    return Store(settings.data_dir)
 
 
 def cmd_sources(args, settings) -> int:
@@ -84,6 +89,14 @@ def cmd_sources(args, settings) -> int:
             }
         )
         return 0
+    if args.source == "eia-generation":
+        _print(ds.generation_review_summary())
+        if not args.remote:
+            print("\n(offline summary; add --remote to verify route, facet, and codes with EIA)")
+            return 0
+        client = EIAClient(settings.api_key, max_requests=5)
+        _print(ds.verify_generation_metadata(client))
+        return 0
     _print(ds.review_summary())
     if not args.remote:
         print("\n(offline summary; add --remote to verify route, entity, and metrics with EIA)")
@@ -108,7 +121,8 @@ def cmd_collect(args, settings) -> int:
         print("\nCollection committed:")
         _print(summary)
         return 0
-    plan = plan_collection(
+    planner = generation.plan_generation if args.source == "eia-generation" else plan_collection
+    plan = planner(
         days=args.days,
         start=args.start,
         end=args.end,
@@ -122,7 +136,10 @@ def cmd_collect(args, settings) -> int:
         print("\nDry run: no requests sent, nothing written.")
         return 0
     client = EIAClient(settings.api_key, max_requests=plan.max_requests)
-    summary = collect(plan, client, Store(settings.data_dir))
+    if args.source == "eia-generation":
+        summary = generation.collect(plan, client, generation.store(settings.data_dir))
+    else:
+        summary = collect(plan, client, Store(settings.data_dir))
     print("\nCollection committed:")
     _print(summary)
     return 0
@@ -173,7 +190,11 @@ def _refresh_parts(settings, config_path):
     from mambo_explorer import refresh_config
 
     config = refresh_config.load(Path(config_path) if config_path else None)
-    stores = {"eia": Store(settings.data_dir), "ercot": ercot.store(settings.data_dir)}
+    stores = {
+        "eia": Store(settings.data_dir),
+        "ercot": ercot.store(settings.data_dir),
+        "eia-generation": generation.store(settings.data_dir),
+    }
     return config, stores
 
 
@@ -186,6 +207,7 @@ def cmd_refresh(args, settings) -> int:
     sources = list(dict.fromkeys(args.source)) if args.source else config.enabled()
     clients = {
         "eia": lambda budget: EIAClient(settings.api_key, max_requests=budget),
+        "eia-generation": lambda budget: EIAClient(settings.api_key, max_requests=budget),
         "ercot": lambda budget: ErcotClient(max_requests=budget),
     }
     record = refresh.refresh(
@@ -234,7 +256,8 @@ def build_parser() -> argparse.ArgumentParser:
             "--source",
             choices=SOURCES,
             default="eia",
-            help="eia (EIA-930 via EIA API) or ercot (ERCOT NP6-345-CD direct)",
+            help="eia (EIA-930 demand/forecast), ercot (ERCOT NP6-345-CD direct), or "
+            "eia-generation (EIA-930 net generation by energy source)",
         )
         p.set_defaults(func=func)
         return p

@@ -79,7 +79,8 @@ Two failure modes need guarding against:
 
 - "Continuously updated" means "as often as the owner runs a refresh while the computer
   and network are available". It is never real-time.
-- EIA history beyond the catch-up cap, and ERCOT documents older than the public list,
-  need a deliberate manual `mambo collect`, or may not be recoverable at all.
+- EIA history beyond the catch-up cap needs a deliberate manual `mambo collect`. ERCOT
+  documents older than the public list are not available through the access method this
+  app implements (the public report listing); this says nothing about other ERCOT channels.
 - No new datasets, cloud services, regulatory crawler, or automatic content approval.
   Compliance content stays a dated snapshot (ADR 0012).
