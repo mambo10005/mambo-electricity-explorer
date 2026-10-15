@@ -37,6 +37,7 @@ private/
 # --- Logs & generated output ---
 logs/
 *.log
+*.stackdump
 reports/
 output/
 out/

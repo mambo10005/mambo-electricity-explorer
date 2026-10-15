@@ -1,40 +1,123 @@
 # Product Requirements — mambo-electricity-explorer
 
-**Status:** Draft — skeleton awaiting owner input. Sections marked _TBD_ are
-open questions, not decisions.
+**Status:** Stage 1. Requirements are sorted into three tiers:
 
-## Problem
+- **Confirmed requirements (R-*)** come from the owner and are fixed unless the
+  owner changes them.
+- **Proposed design decisions (P-*)** are engineering proposals. They can be
+  changed through an ADR without reopening the requirements.
+- **Unresolved decisions (U-*)** are still open and need an owner decision or
+  further research.
 
-_TBD — what electricity question(s) is this tool meant to answer, and for whom?_
+Implementation status for each feature is in [feature-matrix.md](feature-matrix.md).
+Most of what this document describes is **not implemented yet**.
 
-## Users
+## 1. Product
 
-_TBD — primary user(s) and how they'll use it (CLI, notebook, web UI)._
+**R-1.** A local-first, novice-oriented U.S. electricity learning and analysis
+platform that uses actual observations and reproducible modeling.
 
-## Goals
+### Problem
 
-_TBD — 2–4 measurable outcomes._
+The U.S. electricity system has physical, market, financial, and regulatory
+layers. Each one has its own vocabulary, institutions, and data. A newcomer
+usually has to pick these up from scattered documents and has no way to tie a
+concept to what actually happened on a real operating day. This platform
+teaches each layer in order and grounds every lesson in observed data and
+reproducible models, labeled so the learner always knows which is which.
 
-## Non-goals
+### Users
 
-- Public deployment (not authorized at this stage).
-- Storing raw data or private documents in the repository.
+**R-2.** Primary user: a newcomer to the U.S. electricity industry, learning and
+analyzing on their own machine. Explanations assume no prior industry knowledge.
 
-## Data sources
+## 2. Learning sequence
 
-| Source | Content | Access / auth | License / terms | Status |
-|--------|---------|---------------|-----------------|--------|
-| _TBD_ | | | | |
+**R-3.** Content and navigation follow this order:
 
-Each source's terms of use must be reviewed before ingestion.
+1. Fundamentals
+2. Individual regional markets
+3. Settlement
+4. Financial contracts and risk
+5. Compliance
+6. Integrated analysis
 
-## Requirements
+## 3. Required scope
 
-_TBD — numbered, testable requirements with acceptance criteria._
+| ID | Requirement |
+|----|-------------|
+| R-4 | Physical system: fuel, generation, transmission, distribution, storage, and demand. |
+| R-5 | Weather, forecasting, reliability, planning, and interconnection. |
+| R-6 | Industry participants and their institutional responsibilities. |
+| R-7 | Markets: ERCOT, CAISO, PJM, MISO, SPP, NYISO, ISO-NE, and non-ISO markets. |
+| R-8 | Replay of actual operating days. |
+| R-9 | Modeling with mambo-power through a separately validated adapter. This repository does not modify mambo-power. |
+| R-10 | Contracts: futures, forwards, swaps, options, PPAs, tolling, capacity, storage-service, and other long-term contracts. |
+| R-11 | Hedging, basis and shape risk, settlement, credit, and collateral. |
+| R-12 | Authorities: FERC, NERC and regional entities, DOE, state PUCs/PSCs, ISO/RTO rules, the CFTC, and other relevant authorities. |
+| R-13 | Continuously updated data, plus lessons and rules that carry effective dates. |
+| R-14 | Provenance, revisions, licensing, reproducibility, and limitations are recorded and shown to the user. |
+| R-15 | Every displayed value is labeled **observed**, **derived**, **modeled**, or **synthetic**. Synthetic values are never presented as real. |
 
-## Open questions
+## 4. Infrastructure
 
-1. Which data sources, and under what terms?
-2. Interface: CLI, notebook, or web app?
-3. Single user (owner) or shared?
-4. Application license (see ADR 0001).
+| ID | Requirement |
+|----|-------------|
+| R-16 | No paid runtime services and no paid runtime AI. |
+| R-17 | Collection, storage, and heavy modeling all run locally. |
+| R-18 | Optional static public publication may come later. It is not authorized now. |
+| R-19 | Claude development access is separate from runtime infrastructure. The running application does not depend on Claude or any other AI service. |
+
+## 5. Application stack (owner-specified for Stage 1)
+
+| ID | Requirement |
+|----|-------------|
+| R-20 | Python application using Streamlit. |
+| R-21 | DuckDB + Parquet for observations; SQLite for metadata (both used from the data stages onward). |
+| R-22 | Learning content written in Markdown/YAML. |
+| R-23 | pytest and Ruff for verification. |
+| R-24 | Navigation: Learn, Explore, Replay, Model Labs, Finance, Compliance, Sources, System Health. |
+
+## 6. Data
+
+| ID | Requirement |
+|----|-------------|
+| R-25 | EIA is the first planned connector. |
+| R-26 | Regional operator and regulatory sources follow EIA. |
+| R-27 | Each source needs its own access and redistribution review before ingestion. The review is recorded in [source-register.md](source-register.md). |
+| R-28 | Credentials come from local environment variables, never from the repository. |
+
+## 7. Non-goals (current)
+
+- Public deployment or hosting.
+- Authentication or multi-user accounts.
+- Trading, investment, or compliance advice. The platform is educational and
+  analytical and does not replace professional or legal judgment.
+- Storing data, databases, or private documents in Git.
+
+## 8. Proposed design decisions
+
+| ID | Proposal | Rationale |
+|----|----------|-----------|
+| P-1 | Store observations append-only, with source, retrieval time, and revision identifier on every record. | Satisfies R-13/R-14: revisions stay visible instead of being overwritten. |
+| P-2 | Raw source responses go to Parquet under `DATA_DIR`. DuckDB queries the Parquet files in place. SQLite holds source, series, job, and model-run metadata. | Matches R-21 and keeps everything in local files with no server. |
+| P-3 | One connector module per source, each with an offline test fixture. Tests never call live APIs. | Keeps the test suite reproducible and free (R-16). |
+| P-4 | Lessons are Markdown files with YAML front matter (`effective_from`, `effective_to`, `sources`, `stage`). | Satisfies R-13's effective dating and R-22. |
+| P-5 | The mambo-power adapter is a narrow interface with its own validation suite (comparison against reference cases) before any output is shown. Outputs are always labeled *modeled*. | R-9: validated separately, no changes to mambo-power. |
+| P-6 | Feature status has one source of truth (`src/mambo_explorer/content/features.yaml`), and a test enforces that `feature-matrix.md` matches it. | Stops the status shown in the app from drifting away from the docs. |
+| P-7 | Each source has its own environment variable (e.g. `EIA_API_KEY`) instead of one generic key. | Different sources have different credentials and terms. |
+| P-8 | Static publication (R-18), if approved, would export only content whose sources allow redistribution. | Respects R-27. |
+
+## 9. Unresolved decisions
+
+| ID | Question | Blocks |
+|----|----------|--------|
+| U-1 | Application license (see [ADR 0001](decisions/0001-license.md)). | Any change in visibility or distribution |
+| U-2 | mambo-power adapter interface, where the adapter lives, and its validation acceptance criteria. | MODEL-01 |
+| U-3 | Which regional operator connector follows EIA, and in what order. | DATA-02 |
+| U-4 | Redistribution terms for each source. | PUB-01, SRC-01 |
+| U-5 | How far back history goes and the local storage budget. | STORE-01 |
+| U-6 | How "continuously updated" collection is scheduled locally (manual, OS scheduler, or in-app). | HEALTH-01, DATA-* |
+| U-7 | Which balancing authorities and utilities count as "non-ISO markets" for R-7. | EXPLORE-01, LEARN-01 |
+| U-8 | Who authors and reviews lessons and rules for accuracy, and the citation standard. | LEARN-01, COMP-01 |
+| U-9 | Supported Python versions. Floor declared at 3.11; so far verified only on 3.14. | QA-01 |

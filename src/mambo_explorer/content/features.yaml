@@ -1,0 +1,84 @@
+# Single source of truth for feature status. docs/feature-matrix.md must match
+# (enforced by tests/test_feature_status.py).
+# status: done | in-progress | planned | dropped
+features:
+  - id: DOCS-01
+    name: "Product documents (PRD, architecture, source register)"
+    section: platform
+    status: done
+  - id: SHELL-01
+    name: "Application shell and navigation"
+    section: platform
+    status: done
+  - id: SHELL-02
+    name: "Home page with status and data labels"
+    section: platform
+    status: done
+  - id: QA-01
+    name: "Local quality workflow"
+    section: platform
+    status: planned
+  - id: LEARN-01
+    name: "Lesson content following the learning sequence"
+    section: learn
+    status: planned
+  - id: LEARN-02
+    name: "Effective-dated lessons and rules"
+    section: learn
+    status: planned
+  - id: DATA-01
+    name: "EIA connector"
+    section: sources
+    status: planned
+  - id: DATA-02
+    name: "Regional operator connectors"
+    section: sources
+    status: planned
+  - id: DATA-03
+    name: "Regulatory source connectors"
+    section: sources
+    status: planned
+  - id: SRC-01
+    name: "Source register with provenance and licensing review"
+    section: sources
+    status: planned
+  - id: STORE-01
+    name: "DuckDB/Parquet observation store"
+    section: system-health
+    status: planned
+  - id: STORE-02
+    name: "SQLite metadata store"
+    section: system-health
+    status: planned
+  - id: HEALTH-01
+    name: "Collection, freshness, and storage status"
+    section: system-health
+    status: planned
+  - id: EXPLORE-01
+    name: "Observation explorer across regions"
+    section: explore
+    status: planned
+  - id: REPLAY-01
+    name: "Actual operating-day replay"
+    section: replay
+    status: planned
+  - id: MODEL-01
+    name: "Validated mambo-power adapter"
+    section: model-labs
+    status: planned
+  - id: FIN-01
+    name: "Financial and long-term contract library"
+    section: finance
+    status: planned
+  - id: FIN-02
+    name: "Hedging, basis/shape risk, settlement, credit, collateral"
+    section: finance
+    status: planned
+  - id: COMP-01
+    name: "Regulatory authorities and effective-dated rules"
+    section: compliance
+    status: planned
+  - id: PUB-01
+    name: "Optional static public publication"
+    section: platform
+    status: planned

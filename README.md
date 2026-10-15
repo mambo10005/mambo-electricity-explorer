@@ -1,18 +1,43 @@
 # mambo-electricity-explorer
 
-A Python application for exploring electricity data. Scope, users, and data
-sources are still being defined — see [docs/PRD.md](docs/PRD.md).
+A local-first, novice-oriented platform for learning and analyzing the U.S.
+electricity system from actual observations and reproducible modeling. See
+[docs/PRD.md](docs/PRD.md).
 
-**Status:** project scaffold only. No application code yet.
+**Status:** Stage 1, the application shell. Navigation and documentation
+exist. Data collection, modeling, and the finance and compliance features
+are **not implemented**. The app shows no data. Feature-by-feature status:
+[docs/feature-matrix.md](docs/feature-matrix.md).
 
-## Quick start
+## Install
+
+Requires Python 3.11+ (verified on 3.14.2 only). Commands below are for
+Windows (Git Bash or PowerShell); on macOS/Linux use `.venv/bin/` instead
+of `.venv/Scripts/`.
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install pytest ruff        # dev tools; runtime deps TBD
-cp .env.example .env           # fill in locally; never commit .env
+.venv/Scripts/python -m pip install -e ".[dev]"
+cp .env.example .env           # optional in Stage 1; never commit .env
 ```
+
+## Launch
+
+```bash
+.venv/Scripts/streamlit run src/mambo_explorer/app.py
+```
+
+Then open http://localhost:8501.
+
+## Test
+
+```bash
+.venv/Scripts/ruff check .
+.venv/Scripts/ruff format --check .
+.venv/Scripts/pytest
+```
+
+The tests are offline. They include Streamlit `AppTest` renders of every page.
 
 ## Repository rules
 
@@ -22,14 +47,17 @@ cp .env.example .env           # fill in locally; never commit .env
   `.env.example` with placeholders is committed.
 - **No private documents.** Contracts and compliance evidence are stored
   elsewhere.
+- **Every data source is reviewed first.** See
+  [docs/source-register.md](docs/source-register.md).
 
 ## Docs
 
 | Doc | Purpose |
 |-----|---------|
-| [PRD](docs/PRD.md) | What we're building and why |
+| [PRD](docs/PRD.md) | Confirmed requirements, proposals, open decisions |
 | [Architecture](docs/architecture.md) | How it's structured |
 | [Feature matrix](docs/feature-matrix.md) | Feature status at a glance |
+| [Source register](docs/source-register.md) | Data source access and licensing review |
 | [Progress](docs/progress.md) | Running log of work |
 | [GitHub workflow](docs/github-workflow.md) | Branching, PRs, reviews |
 | [Decisions](docs/decisions/) | Architecture Decision Records |

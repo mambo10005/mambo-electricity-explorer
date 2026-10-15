@@ -6,3 +6,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | ADR | Title | Status |
 |-----|-------|--------|
 | [0001](0001-license.md) | Application license | Proposed |
+| [0002](0002-application-stack.md) | Application stack and dependency versions | Accepted |

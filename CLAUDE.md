@@ -27,10 +27,17 @@ non-trivial work.
   `0000-template.md`).
 - Update `docs/progress.md` and `docs/feature-matrix.md` when work lands.
 
-## Commands
+- Feature status lives in `src/mambo_explorer/content/features.yaml`; keep
+  `docs/feature-matrix.md` in sync (a test enforces it).
+- Never show fabricated data. Every displayed value must carry an
+  observed/derived/modeled/synthetic label (PRD R-15).
+
+## Commands (Windows; venv at `.venv`)
 
 ```bash
-ruff check .
-ruff format --check .
-pytest
+.venv/Scripts/python -m pip install -e ".[dev]"
+.venv/Scripts/streamlit run src/mambo_explorer/app.py
+.venv/Scripts/ruff check .
+.venv/Scripts/ruff format --check .
+.venv/Scripts/pytest
 ```
