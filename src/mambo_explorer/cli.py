@@ -7,12 +7,16 @@ Commands:
     validate   check stored files against the catalog; report orphans/interrupted runs
     status     recent collection runs
     storage    storage diagnostics
+    refresh    bounded refresh of the enabled sources, one after another (--dry-run shows the
+               plan and budgets; --source eia/ercot selects; --config uses another plan)
+    health     read-only collection, freshness, and storage status
     learn-reset  optional backup-and-reset of local learning progress (dry run unless
                --execute; asks for typed confirmation; never shows contents)
 
 --source defaults to eia. ERCOT (NP6-345-CD) uses ERCOT's public download, needs no
 credential, and never uses EIA_API_KEY. Nothing is deleted by default.
-Exit codes: 0 ok, 1 check failed, 2 configuration or source error.
+Exit codes: 0 ok, 1 check failed, 2 configuration or source error (refresh: every source
+failed, or another refresh is running), 3 refresh partially succeeded.
 """
 
 from __future__ import annotations
@@ -37,6 +41,8 @@ from mambo_explorer.eia.client import EIAClient, EIAError
 from mambo_explorer.ercot import collect as ercot
 from mambo_explorer.ercot import dataset as ercot_ds
 from mambo_explorer.ercot.client import ErcotClient, ErcotError
+from mambo_explorer.refresh import RefreshLockError
+from mambo_explorer.refresh_config import RefreshConfigError
 from mambo_explorer.safe_zip import ArchiveError
 from mambo_explorer.storage import Store, WriterLockError
 
@@ -163,6 +169,56 @@ def cmd_learn_reset(args, settings) -> int:
         return 1
 
 
+def _refresh_parts(settings, config_path):
+    from mambo_explorer import refresh_config
+
+    config = refresh_config.load(Path(config_path) if config_path else None)
+    stores = {"eia": Store(settings.data_dir), "ercot": ercot.store(settings.data_dir)}
+    return config, stores
+
+
+def cmd_refresh(args, settings) -> int:
+    from datetime import UTC, datetime
+
+    from mambo_explorer import refresh
+
+    config, stores = _refresh_parts(settings, args.config)
+    sources = list(dict.fromkeys(args.source)) if args.source else config.enabled()
+    clients = {
+        "eia": lambda budget: EIAClient(settings.api_key, max_requests=budget),
+        "ercot": lambda budget: ErcotClient(max_requests=budget),
+    }
+    record = refresh.refresh(
+        config,
+        sources,
+        data_dir=settings.data_dir,
+        stores=stores,
+        clients=clients,
+        now=lambda: datetime.now(UTC),
+        local_today=date.today(),
+        dry_run=args.dry_run,
+        secrets=[settings.api_key],
+    )
+    _print(record)
+    if args.dry_run:
+        print("\nDry run: no requests sent, nothing written.")
+        return 0
+    print(f"\nRefresh {record['overall']}.")
+    return refresh.exit_code(record["overall"])
+
+
+def cmd_health(args, settings) -> int:
+    from dataclasses import asdict
+    from datetime import UTC, datetime
+
+    from mambo_explorer import health, refresh
+
+    config, stores = _refresh_parts(settings, args.config)
+    logs = refresh.read_logs(settings.data_dir)
+    _print([asdict(h) for h in health.source_health(stores, config, datetime.now(UTC), logs)])
+    return 0
+
+
 def _date(text: str) -> date:
     return date.fromisoformat(text)
 
@@ -228,6 +284,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("storage", "storage diagnostics", cmd_storage)
 
+    p = sub.add_parser("refresh", help="bounded refresh of the enabled sources (sequential)")
+    p.add_argument("--dry-run", action="store_true", help="show the plan and budgets only")
+    p.add_argument(
+        "--source",
+        action="append",
+        choices=SOURCES,
+        help="source to refresh; repeatable (default: the sources enabled in the plan)",
+    )
+    p.add_argument("--config", help="refresh plan YAML (default: the packaged plan)")
+    p.set_defaults(func=cmd_refresh)
+
+    p = sub.add_parser("health", help="read-only collection, freshness, and storage status")
+    p.add_argument("--config", help="refresh plan YAML (thresholds; default: packaged plan)")
+    p.set_defaults(func=cmd_health)
+
     p = sub.add_parser(
         "learn-reset",
         help="optional backup-and-reset of local learning progress (dry run by default)",
@@ -258,6 +329,8 @@ def main(argv: list[str] | None = None) -> int:
         ercot_ds.ReportFormatError,
         ercot.SelectionError,
         ArchiveError,
+        RefreshConfigError,
+        RefreshLockError,
     ) as exc:
         print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2

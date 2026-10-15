@@ -4,8 +4,8 @@ Status key: `planned` · `in-progress` · `done` · `dropped`
 
 The source of truth is `src/mambo_explorer/content/features.yaml`.
 `tests/test_feature_status.py` fails if this table and that file disagree on
-IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, and COMP-02 are pages (`ui: true`
-in the YAML), so Explore, Learn, Model Labs, Finance, and Compliance are the only sections allowed to show data elements. Compliance shows none: its tables are source records, not data. Done backend features (DATA-01, STORE-01/02)
+IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, COMP-02, and HEALTH-01 are pages (`ui: true`
+in the YAML), so Explore, Learn, Model Labs, Finance, Compliance, and System Health are the only sections allowed to show data elements. Compliance shows none: its tables are source records, not data. Done backend features (DATA-01, STORE-01/02)
 do not unlock charts on Sources or System Health.
 
 | ID | Feature | Section | Status | Notes |
@@ -30,7 +30,8 @@ do not unlock charts on Sources or System Health.
 | SRC-01 | Source register with provenance and licensing review | sources | planned | Doc register exists; in-app view not built |
 | STORE-01 | DuckDB/Parquet observation store | system-health | done | Stage 3: append-only revisions, latest view (ADR 0004) |
 | STORE-02 | SQLite metadata store | system-health | done | Stage 3: run catalog, recoverable commit (ADR 0004) |
-| HEALTH-01 | Collection, freshness, and storage status | system-health | planned | CLI `status`/`storage`/`validate` exist; no UI page yet. U-6 |
+| HEALTH-01 | Collection, freshness, and storage status | system-health | done | Stage 15: System Health page (read-only; never collects) and `mambo health`; ADR 0013. U-6 |
+| OPS-01 | Bounded local refresh of existing collectors (plan, budgets, catch-up, logs) and optional Windows task scripts | system-health | done | Stage 15: `mambo refresh`, `content/refresh.yaml`, `scripts/refresh-task.ps1` (preview by default; no task registered) |
 | EXPLORE-01 | Observation explorer across regions | explore | planned | U-7 |
 | EXPLORE-02 | ERCOT actual demand vs. published day-ahead forecast | explore | done | Stage 3; browser-checked with synthetic and live data |
 | EXPLORE-03 | ERCOT direct actual load by weather zone (separate from EIA) | explore | done | Stage 5; no EIA join |

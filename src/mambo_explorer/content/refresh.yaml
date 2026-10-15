@@ -1,0 +1,43 @@
+# Default local refresh plan (Stage 15, ADR 0013). Validated by refresh_config.py.
+#
+# Copy this file somewhere outside the repository (or to a gitignored path) and pass
+# `mambo refresh --config <file>` to change it. Never put credentials here: the EIA key is
+# read only from EIA_API_KEY / .env at run time.
+#
+# Two separate ideas:
+#   publication_cadence  what the SOURCE says about how often it publishes (text, sourced)
+#   collection_interval_hours  how often YOU intend to run a refresh (a schedule choice)
+# Neither promises real-time data. Each refresh is bounded by the budgets below.
+version: 1
+
+sources:
+  eia:
+    enabled: true
+    title: EIA-930 hourly demand and day-ahead forecast (ERCO)
+    publication_cadence: >-
+      Hourly values reported by the balancing authority. EIA gives no per-value
+      publication time; demand is collected hourly and again the next morning, and
+      revisions may arrive within 3 days (expected) or 30 days (errors). See the source
+      register.
+    collection_interval_hours: 24
+    window_days: 3              # completed UTC days requested when the store is empty
+    revision_lookback_days: 3   # earlier days re-requested each run to detect revisions
+    max_catchup_days: 14        # most new days one refresh will request after a gap
+    request_budget: 12          # requests per refresh, including retries
+    freshness_threshold_hours: 48
+  ercot:
+    enabled: true
+    title: ERCOT NP6-345-CD actual system load by weather zone
+    publication_cadence: >-
+      One document per operating day, posted the next morning (product page: no later
+      than 06:00). The public list keeps about 31 days of documents.
+    collection_interval_hours: 24
+    window_documents: 3          # latest documents requested when the store is empty
+    revision_lookback_documents: 1  # already-stored documents re-downloaded to detect reposts
+    max_catchup_documents: 7     # most documents one refresh will request after a gap
+    request_budget: 12           # 1 list request + downloads + retries
+    freshness_threshold_hours: 48
+
+logs:
+  retention_days: 30   # refresh logs older than this are pruned after each refresh
+  max_files: 200       # and never more than this many are kept

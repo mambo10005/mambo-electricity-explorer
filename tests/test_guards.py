@@ -51,12 +51,13 @@ def test_real_catalog_authorizes_charts_only_where_a_feature_is_done(chart_page)
     assert section_is_implemented("learn")  # LEARN-03 is done
     assert_no_unauthorized_data(chart_page, "explore")
     assert_no_unauthorized_data(chart_page, "learn")
-    # Includes Sources and System Health, which hold done backend features
+    # Includes Sources, which holds done backend features
     # (DATA-01, STORE-01/02) but whose pages are not built.
     assert section_is_implemented("model-labs")  # MODEL-02 is done
     assert section_is_implemented("finance")  # FIN-03 (settlement calculator) is done
     assert section_is_implemented("compliance")  # COMP-02 (responsibility explorer) is done
-    others = ("replay", "sources", "system-health")
+    assert section_is_implemented("system-health")  # HEALTH-01 (read-only page) is done
+    others = ("replay", "sources")
     assert not any(section_is_implemented(k) for k in others)
 
 
