@@ -33,6 +33,11 @@ features:
     section: learn
     status: done
     ui: true
+  - id: LEARN-04
+    name: "Market-mechanics lessons backed by verified model runs (3 lessons, model exercises)"
+    section: learn
+    status: done
+    ui: true
   - id: CALC-01
     name: "Shared calculation services (power/energy, summary, coverage, forecast error)"
     section: platform

@@ -15,7 +15,7 @@ from mambo_explorer.modeling.adapter import OpfRunRecord, RunRecord
 from mambo_explorer.storage import atomic_write
 
 _RUN_ID = re.compile(r"\d{8}T\d{6}Z-[0-9a-f]{8}")
-_KINDS = {"pf.dc": RunRecord, "opf.dc": OpfRunRecord}
+_KINDS = {"pf.dc": RunRecord, "pf.dispatch": RunRecord, "opf.dc": OpfRunRecord}
 
 
 def _record(data: dict) -> RunRecord | OpfRunRecord:

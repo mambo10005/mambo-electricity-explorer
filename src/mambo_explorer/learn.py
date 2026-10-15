@@ -12,11 +12,14 @@ from datetime import UTC, datetime, timedelta
 import streamlit as st
 
 from mambo_explorer import calculations as calc
+from mambo_explorer import model_exercises, routes
 from mambo_explorer.config import ConfigError, load_settings
 from mambo_explorer.eia import dataset as ds
 from mambo_explorer.exercises import Unavailable, generate
 from mambo_explorer.explore import SETUP_INSTRUCTIONS, STALE_AFTER
 from mambo_explorer.lessons import Lesson, load_glossary, load_lessons
+from mambo_explorer.modeling.runs import RunStore
+from mambo_explorer.opf_lab import md_dollars
 from mambo_explorer.progress import UNDERSTANDING, Progress
 from mambo_explorer.storage import Store
 
@@ -325,22 +328,23 @@ PANELS = {
 # --- exercises -------------------------------------------------------------------------------
 
 
-def _exercise(lesson: Lesson, spec: dict, obs, sel, progress: Progress | None) -> None:
-    exercise = generate(spec, obs, sel)
+def _exercise(lesson: Lesson, spec: dict, exercise, progress: Progress | None) -> None:
+    key = f"ex::{lesson.id}::{spec['exercise_id']}"
     if isinstance(exercise, Unavailable):
+        # No answer from an earlier question is shown once its results are gone or failed.
+        st.session_state.pop(f"{key}::result", None)
         st.info(f"Exercise unavailable: {exercise.reason}.")
         return
-    key = f"ex::{lesson.id}::{spec['exercise_id']}"
     shown = st.session_state.get(f"{key}::snapshot")
     if shown is not None and shown != exercise.snapshot_id:
         st.warning(
-            "The selected window or the stored data changed, so this exercise was "
-            "regenerated from the new data."
+            "The selected window, the stored data, or the model results changed, so this "
+            "exercise was regenerated from the new results."
         )
         st.session_state.pop(f"{key}::result", None)
     st.session_state[f"{key}::snapshot"] = exercise.snapshot_id
     with st.form(f"{key}::{exercise.snapshot_id}::form"):
-        st.markdown(f"**{exercise.question}**")
+        st.markdown(f"**{md_dollars(exercise.question)}**")
         choice = st.radio(
             "Your answer",
             exercise.options,
@@ -355,7 +359,11 @@ def _exercise(lesson: Lesson, spec: dict, obs, sel, progress: Progress | None) -
             correct = exercise.options.index(choice) == exercise.answer_index
             record = (
                 progress.record_answer(
-                    lesson.id, spec["exercise_id"], exercise.snapshot_id, correct
+                    lesson.id,
+                    spec["exercise_id"],
+                    exercise.snapshot_id,
+                    correct,
+                    exercise.result_refs,
                 )
                 if progress
                 else None
@@ -370,10 +378,18 @@ def _exercise(lesson: Lesson, spec: dict, obs, sel, progress: Progress | None) -
     result = st.session_state.get(f"{key}::result")
     if result:
         (st.success if result["correct"] else st.error)(
-            ("Correct. " if result["correct"] else "Not quite. ")
-            + f"Answer: {exercise.options[exercise.answer_index]}"
+            md_dollars(
+                ("Correct. " if result["correct"] else "Not quite. ")
+                + f"Answer: {exercise.options[exercise.answer_index]}"
+            )
         )
-        st.markdown(f"*Worked explanation:* {exercise.explanation}")
+        st.markdown(md_dollars(f"*Worked explanation:* {exercise.explanation}"))
+        if exercise.result_refs:
+            st.caption(
+                "Computed from model run(s) "
+                + ", ".join(f"`{ref}`" for ref in exercise.result_refs)
+                + " (synthetic network, modeled results)."
+            )
         if result["attempts"] > 1:
             st.caption(
                 "Only the first attempt on a question counts toward 'understanding demonstrated'."
@@ -391,8 +407,9 @@ def _go_to(lesson_id: str) -> None:
 def render_learn() -> None:
     st.title("Learn")
     st.markdown(
-        "Beginner lessons that use real EIA observations collected on this computer. "
-        "Lessons are drafted by an AI agent and have **not yet been reviewed by a person**."
+        "Beginner lessons that use real EIA observations collected on this computer, and "
+        "lessons that use **modeled** results from a **synthetic** teaching network. Lessons "
+        "are drafted by an AI agent and have **not yet been reviewed by a person**."
     )
     lessons = load_lessons()
     glossary = load_glossary()
@@ -401,14 +418,18 @@ def render_learn() -> None:
     try:
         settings = load_settings()
         store, progress = Store(settings.data_dir), Progress(settings.data_dir)
+        runs = RunStore(settings.data_dir)
     except ConfigError as exc:
         st.error(
             f"Unsafe data directory configuration: {exc}. Lessons are shown without "
-            "observations or saved progress."
+            "observations, saved progress, or saved model runs."
         )
-        store = progress = None
+        store = progress = runs = None
 
     ids = [lesson.id for lesson in lessons]
+    handoff = st.session_state.pop(routes.HANDOFF_LESSON, None)
+    if handoff in by_id:  # from a Model Labs link; validated against the lesson list
+        st.session_state["lesson_choice"] = handoff
     if st.session_state.get("lesson_choice") not in by_id:
         # First render: honor a deep link (?lesson=...), else start with lesson 1.
         requested = st.query_params.get("lesson")
@@ -479,12 +500,15 @@ def render_learn() -> None:
         if marked != progress.bookmarked(lesson.id):
             progress.set_bookmark(lesson.id, marked)
 
-    st.markdown("**You will be able to:**\n" + "\n".join(f"- {o}" for o in meta["objectives"]))
+    # "$" is escaped in every lesson text: a pair of "$" would render as LaTeX in Markdown.
+    st.markdown(
+        md_dollars("**You will be able to:**\n" + "\n".join(f"- {o}" for o in meta["objectives"]))
+    )
     technical = st.toggle("Show technical detail", key="technical_detail")
-    st.markdown(lesson.beginner)
+    st.markdown(md_dollars(lesson.beginner))
     if technical:
         st.subheader("Technical detail")
-        st.markdown(lesson.technical)
+        st.markdown(md_dollars(lesson.technical))
 
     obs = sel = last = None
     if meta["dataset_bindings"]:
@@ -492,29 +516,49 @@ def render_learn() -> None:
     for panel in meta["data_panels"]:
         PANELS[panel](obs, sel)
 
+    records = {}
+    if meta["model_bindings"]:
+        from mambo_explorer.model_lessons import render_model_section
+
+        records = render_model_section(lesson, runs)
+
     st.subheader("Exercises")
     for spec in meta["exercises"]:
-        _exercise(lesson, spec, obs, sel, progress)
+        exercise = (
+            model_exercises.generate(spec, records)
+            if spec["kind"] == "model"
+            else generate(spec, obs, sel)
+        )
+        _exercise(lesson, spec, exercise, progress)
     if progress:
         state = progress.lesson_state(lesson.id, [e["exercise_id"] for e in meta["exercises"]])
         (st.success if state == UNDERSTANDING else st.caption)(f"Lesson status: {state}.")
 
     with st.expander("Glossary for this lesson"):
         st.markdown(
-            "\n".join(
-                f"- **{t}**"
-                + (f" ({glossary[t]['expansion']})" if glossary[t].get("expansion") else "")
-                + f": {glossary[t]['definition']}"
-                for t in meta["glossary_terms"]
+            md_dollars(
+                "\n".join(
+                    f"- **{t}**"
+                    + (f" ({glossary[t]['expansion']})" if glossary[t].get("expansion") else "")
+                    + f": {glossary[t]['definition']}"
+                    for t in meta["glossary_terms"]
+                )
             )
         )
     st.subheader("Sources and freshness")
-    st.markdown(
-        "\n".join(
-            f"- [{s['title']}]({s['url']}) (accessed {s['accessed']})" for s in meta["sources"]
+    if meta["sources"]:
+        st.markdown(
+            "\n".join(
+                f"- [{s['title']}]({s['url']}) (accessed {s['accessed']})" for s in meta["sources"]
+            )
         )
-    )
+    else:
+        st.markdown(
+            "No external source: every number in this lesson comes from the model runs listed "
+            "under *Model provenance*. The formulation and its verification are documented in "
+            "the project's calculations notes and ADR 0007."
+        )
     if meta["dataset_bindings"]:
         _freshness(store.last_committed_run() if store else None)
     st.subheader("Limitations")
-    st.markdown("\n".join(f"- {item}" for item in meta["limitations"]))
+    st.markdown(md_dollars("\n".join(f"- {item}" for item in meta["limitations"])))

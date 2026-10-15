@@ -18,9 +18,19 @@ from mambo_explorer.catalog import learning_sequence
 
 REVIEW_STATUSES = ("unreviewed", "human-reviewed")
 IMPLEMENTATION_STATUSES = ("implemented", "draft")
-EXERCISE_KINDS = ("data", "concept")
-CALCULATION_IDS = ("power_energy", "series_summary", "coverage", "forecast_error")
+EXERCISE_KINDS = ("data", "concept", "model")
+CALCULATION_IDS = (
+    "power_energy",
+    "series_summary",
+    "coverage",
+    "forecast_error",
+    "dc_power_flow",
+    "dc_opf",
+)
 DATA_PANELS = ("power_energy_example", "demand_series", "forecast_comparison", "coverage")
+MODEL_PANELS = ("pf_vs_opf", "location_prices", "unverified_marginal")
+# Optional fields (default: empty list) for lessons backed by verified model runs.
+OPTIONAL = {"model_bindings": [], "model_panels": []}
 REQUIRED = (
     "lesson_id",
     "title",
@@ -97,6 +107,9 @@ def parse_lesson(text: str, source: str = "<string>") -> Lesson:
     technical = body[positions[1] + len(SECTIONS[1]) :].strip()
     if not beginner or not technical:
         raise LessonError(f"{source}: empty beginner or technical section")
+    if isinstance(meta, dict):
+        for key, default in OPTIONAL.items():
+            meta.setdefault(key, list(default))
     lesson = Lesson(meta, beginner, technical)
     validate_meta(meta, source)
     return lesson
@@ -168,14 +181,34 @@ def validate_meta(meta: dict, source: str) -> None:
     unknown_panels = set(meta["data_panels"]) - set(DATA_PANELS)
     if unknown_panels:
         fail(f"unknown data_panels {sorted(unknown_panels)}")
-    from mambo_explorer.exercises import GENERATORS  # local import avoids a cycle
+    from mambo_explorer import model_exercises  # local imports avoid a cycle
+    from mambo_explorer.exercises import GENERATORS
+    from mambo_explorer.modeling.cases import LESSON_RUNS
+
+    bindings = meta.get("model_bindings", [])
+    if not isinstance(bindings, list) or set(bindings) - set(LESSON_RUNS):
+        fail(f"model_bindings must be keys of modeling.cases.LESSON_RUNS: {bindings}")
+    for key in bindings:
+        source = LESSON_RUNS[key].g2_from
+        if source and source not in bindings:
+            fail(f"model binding {key} needs its source run {source} bound too")
+    panels = meta.get("model_panels", [])
+    if not isinstance(panels, list) or set(panels) - set(MODEL_PANELS):
+        fail(f"unknown model_panels {panels}")
+    if panels and not bindings:
+        fail("model panels need model_bindings")
 
     ids = set()
     for ex in meta["exercises"]:
         if not {"exercise_id", "kind", "generator", "calculation_id"} <= set(ex):
             fail(f"exercise needs exercise_id, kind, generator, calculation_id: {ex}")
-        if ex["kind"] not in EXERCISE_KINDS or ex["generator"] not in GENERATORS:
+        known = model_exercises.GENERATORS if ex["kind"] == "model" else GENERATORS
+        if ex["kind"] not in EXERCISE_KINDS or ex["generator"] not in known:
             fail(f"exercise {ex['exercise_id']}: bad kind or unknown generator")
+        if ex["kind"] == "model":
+            needed = set(model_exercises.REQUIRES[ex["generator"]]) - set(bindings)
+            if needed:
+                fail(f"exercise {ex['exercise_id']}: model runs not bound {sorted(needed)}")
         if ex["calculation_id"] not in meta["calculation_ids"]:
             fail(f"exercise {ex['exercise_id']}: calculation_id not declared by the lesson")
         if ex["kind"] == "data" and not meta["dataset_bindings"]:

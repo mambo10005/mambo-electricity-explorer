@@ -4,9 +4,10 @@ A local-first, novice-oriented platform for learning and analyzing the U.S.
 electricity system from actual observations and reproducible modeling. See
 [docs/PRD.md](docs/PRD.md).
 
-**Status:** Stage 7. The application shell, the quality workflow, ERCOT's hourly actual
+**Status:** Stage 8. The application shell, the quality workflow, ERCOT's hourly actual
 demand and published day-ahead forecast (EIA-930) in a local store and on the Explore
-page, four beginner lessons on the Learn page that use those observations, and a direct
+page, four beginner lessons on the Learn page that use those observations, three
+market-mechanics lessons backed by verified model runs, and a direct
 ERCOT connector (actual load by weather zone) shown separately on Explore, and a Model Labs
 DC power flow lab and an economic-dispatch (DC optimal power flow) lab on synthetic three-bus
 networks using mambo-power (pinned commit). Navigation and documentation
@@ -117,15 +118,24 @@ and exposed. See `docs/capability-register.md` and ADR 0007.
 
 ## 4. Learn
 
-The **Learn** page has four beginner lessons:
+The **Learn** page has seven beginner lessons:
 1. power versus energy
 2. reading a demand series
 3. demand versus the published forecast
 4. missing observations
+5. power flow versus economic dispatch
+6. why modeled prices differ by location
+7. when one marginal number is not verified
 
 Lessons 2–4 use your locally collected ERCOT observations. Without data they still
 show their text, plus collection instructions. Exercises are generated from the data
 window you select.
+
+Lessons 5–7 use the **synthetic** three-bus network from Model Labs. Nothing runs until
+you press **Run this lesson's model cases**. The results are **modeled** (never ISO
+prices), and every exercise answer is computed from those verified runs. Results that
+no longer match the scenario or the pinned package are hidden. Each lesson links to its
+cases in Model Labs, and each lab links back to its lessons.
 
 Progress and bookmarks are saved only on this computer, in
 `<MAMBO_DATA_DIR>/learn/progress.json` (gitignored; no account). A lesson moves

@@ -4,7 +4,7 @@ Status key: `planned` · `in-progress` · `done` · `dropped`
 
 The source of truth is `src/mambo_explorer/content/features.yaml`.
 `tests/test_feature_status.py` fails if this table and that file disagree on
-IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, MODEL-02, and MODEL-03 are pages (`ui: true`
+IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, LEARN-04, MODEL-02, and MODEL-03 are pages (`ui: true`
 in the YAML), so Explore, Learn, and Model Labs are the only sections allowed to show charts. Done backend features (DATA-01, STORE-01/02)
 do not unlock charts on Sources or System Health.
 
@@ -14,9 +14,10 @@ do not unlock charts on Sources or System Health.
 | SHELL-01 | Application shell and navigation | platform | done | Stage 1; no data on any page |
 | SHELL-02 | Home page with status and data labels | platform | done | Stage 1 |
 | QA-01 | Local quality workflow | platform | done | Stage 2: uv lock, `scripts/check.ps1`, Python 3.11 + 3.14 |
-| LEARN-01 | Lesson content following the learning sequence | learn | planned | 4 fundamentals lessons exist (LEARN-03); stages 2–6 not written. U-8 |
+| LEARN-01 | Lesson content following the learning sequence | learn | planned | 7 fundamentals lessons exist (LEARN-03, LEARN-04); stages 2–6 not written. U-8 |
 | LEARN-02 | Effective-dated lessons and rules | learn | planned | PRD P-4; lessons carry `effective_date`, but rules are not built |
 | LEARN-03 | Beginner lessons on demand and forecasts (4 lessons, exercises, local progress) | learn | done | Stage 4; agent-drafted, not human-reviewed |
+| LEARN-04 | Market-mechanics lessons backed by verified model runs (3 lessons, model exercises) | learn | done | Stage 8: power flow vs. dispatch, modeled nodal prices, unverified marginal numbers; synthetic network; agent-drafted, not human-reviewed |
 | CALC-01 | Shared calculation services (power/energy, summary, coverage, forecast error) | platform | done | Stage 4; docs/calculations.md |
 | DATA-01 | EIA connector (EIA-930 ERCOT demand and forecast) | sources | done | Live-verified 2026-10-11 (metadata, collection, repeat ingest); one BA, two metrics |
 | DATA-02 | Regional operator connectors | sources | planned | ERCOT started (DATA-04); other operators planned |

@@ -64,6 +64,10 @@ non-trivial work.
   - Never mark content `human-reviewed` unless a named person reviewed it.
   - Never hardcode current data in lesson text.
   - Numbers come from `calculations.py`, never from UI code.
+  - Model lessons take numbers only from current verified runs
+    (`modeling/cases.py`, `model_exercises.py`); never quote results in prose.
+  - Escape `$` in rendered Markdown (`opf_lab.md_dollars`); keep at most one `$` in
+    widget labels and radio options.
 - Tested Python versions (3.11, 3.14) are recorded separately from the
   declared `requires-python`; never change `requires-python` to hide a failure.
 

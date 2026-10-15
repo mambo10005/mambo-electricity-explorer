@@ -1,4 +1,4 @@
-"""The only place application code calls mambo-power. DC power flow only.
+"""The only place application code calls mambo-power: DC power flow and linear-cost DC OPF.
 
 `run_dc_power_flow(inputs)` builds the package's own `Network`, calls
 `mambo_power.pf.solve_dc`, then checks the result with this application's independent
@@ -13,6 +13,7 @@ checks. Run status:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import uuid
@@ -25,6 +26,9 @@ from mambo_explorer.storage import now_utc
 PACKAGE = "mambo-power"
 PINNED_COMMIT = "26be8c18b7efb865419054bec7b0b171478bc37a"
 PINNED_VERSION = "0.2.0"
+# Version of this module's check and record logic, recorded in exercise snapshots. Bump it
+# when a check, tolerance, or record field changes meaning.
+CHECKS_VERSION = "1.1.0"  # 1.1.0: power flow at a specified dispatch (Stage 8)
 TOLERANCE_MW = 1e-6  # numerical consistency tolerance for balance, KCL, and flow checks
 
 
@@ -191,6 +195,11 @@ def run_dc_power_flow(inputs: tn.Inputs, solver=None) -> RunRecord:
         record.message = f"solver error ({type(exc).__name__}): {exc}"
         return record
 
+    return _finish_power_flow(record, net, result, inputs)
+
+
+def _finish_power_flow(record: RunRecord, net, result, inputs) -> RunRecord:
+    """Shared tail of the power-flow runs: checks, then outputs only if they pass."""
     record.solver = result.provenance.solver
     record.elapsed_s = result.provenance.elapsed_s
     checks = _checks(net, result, inputs)
@@ -221,6 +230,72 @@ def run_dc_power_flow(inputs: tn.Inputs, solver=None) -> RunRecord:
         {"generator": g.id, "bus": g.bus, "output_mw": g.p_mw} for g in result.generators
     ]
     return record
+
+
+# --- Power flow at a specified dispatch on the dispatch scenario (Stage 8) -----------------
+
+
+def dispatch_snapshot(inputs, g2_mw: float) -> dict:
+    return {**inputs.snapshot(), "g2_mw": g2_mw}
+
+
+def dispatch_fingerprint(inputs, g2_mw: float) -> str:
+    payload = json.dumps(dispatch_snapshot(inputs, g2_mw), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+def run_dispatch_power_flow(inputs, g2_mw: float, solver=None) -> RunRecord:
+    """Evaluate a SPECIFIED dispatch on the economic-dispatch scenario with the verified DC
+    power flow: G2 is fixed at g2_mw and G1 at the reference bus covers the rest.
+
+    Nothing is optimised and no limit is enforced. Ratings and capacities are reported as
+    "limit" checks (violations), exactly as in the power-flow lab. `solver` is for tests.
+    """
+    from mambo_explorer.modeling import opf_network as on
+
+    record = RunRecord(
+        run_id=now_utc().strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8],
+        created_at_utc=now_utc().isoformat(),
+        scenario_id=on.SCENARIO_ID,
+        scenario_version=on.SCENARIO_VERSION,
+        inputs=dispatch_snapshot(inputs, g2_mw),
+        input_fingerprint="",
+        package=package_info(),
+        status="failed",
+        kind="pf.dispatch",
+    )
+    try:
+        if isinstance(g2_mw, bool) or not isinstance(g2_mw, (int, float)):
+            raise on.InputError("g2_mw must be a number")
+        if not math.isfinite(g2_mw) or not 0.0 <= g2_mw <= on.BOUNDS["cap_g2"][1]:
+            raise on.InputError(f"g2_mw = {g2_mw} is outside 0–{on.BOUNDS['cap_g2'][1]}")
+        record.input_fingerprint = dispatch_fingerprint(inputs, g2_mw)
+        base = on.build_network(inputs)
+        net = base.model_copy(
+            update={
+                "generators": [
+                    g.model_copy(update={"p_mw": g2_mw if g.id == "G2" else 0.0})
+                    for g in base.generators
+                ]
+            }
+        )
+        if solver is None:
+            from mambo_power.pf import solve_dc as solver
+        result = solver(net)
+    except on.InputError as exc:
+        record.message = f"invalid input: {exc}"
+        return record
+    except Exception as exc:
+        record.message = f"solver error ({type(exc).__name__}): {exc}"
+        return record
+    return _finish_power_flow(record, net, result, inputs)
+
+
+def linear_cost_rate(inputs, outputs_mw: dict[str, float]) -> float:
+    """Σ offer × output in synthetic $/h for a dispatch on the dispatch scenario (linear offers,
+    the same convention the verified OPF objective uses)."""
+    offers = {"G1": inputs.cost_g1, "G2": inputs.cost_g2}
+    return sum(offers[g] * p for g, p in outputs_mw.items())
 
 
 # --- DC optimal power flow (Stage 7) -------------------------------------------------------

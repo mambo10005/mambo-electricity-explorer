@@ -2,6 +2,44 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 8: market-mechanics lessons backed by verified model runs (#15)
+
+Stacked on Stage 7 (PR #14) ← #12 ← … ← #2. None merged. mambo-power is still pinned to
+26be8c1 (unmodified). No new collectors, cost forms, networks, or calibration.
+
+- **Three lessons** (fundamentals stage, after lesson 1; agent-drafted, unreviewed):
+  5. Power flow versus economic dispatch (prerequisite: lesson 1)
+  6. Why modeled prices differ by location (prerequisite: 5)
+  7. When one marginal number is not verified (prerequisite: 6)
+- **Fixed lesson runs** (`modeling/cases.py`): 10 OPF runs from lab presets plus fixed
+  overrides, and 2 power-flow runs at a specified dispatch
+  (`adapter.run_dispatch_power_flow`, Stage 6 checks; G2 either fixed or taken from a
+  verified OPF run). Results count only while current (case, scenario version, pin,
+  fingerprint). Runs happen only on the lesson's button and are saved to the model-run
+  store, never to observation storage.
+- **11 model-backed exercises** (`model_exercises.py`): binding constraint, next increment,
+  positive price sensitivity (re-dispatch reproduces the verified price), relaxation
+  cost (equals the sensitivity × rating change, same binding set), cost rate vs.
+  interval cost vs. price vs. sensitivity, power-flow violation, feasible but not
+  cheapest, withheld reason, infeasible direction, non-unique vs. infeasible, and
+  uniqueness vs. price verification. The snapshot covers inputs, pin, check and
+  generator versions, and statuses; the run ids are saved with the answer.
+- **Navigation:** lessons link to their lab presets; each lab links to its lessons.
+  Only validated ids cross pages.
+- **Benchmarks asserted in tests:** congested 90/60 MW, 3,600 $/h, prices 20/30/40, AC
+  sensitivity −40. Also: +10 MW → 80/80 (4,000 $/h); AC 70 MW → 130/20 (3,200 $/h); the
+  150/0 power flow puts 75 MW on AC (rated 60); the 60/90 dispatch is feasible at
+  3,900 $/h. At both breakpoint cases the solver's dual lies between the one-sided rates.
+- **Found in the browser and fixed:** the provenance table scrolled sideways at 375 px
+  (now 3 columns); the topology table said ratings were a "learner control" inside
+  lessons; "you (fixed)" mislabeled a dispatch taken from a verified run.
+- **Not changed:** the price gate. Two label issues are logged as BL-5.
+- **Tests:** 382 offline (42 new). Gate 8/8 on CPython 3.11.16 and 3.14.2. Mutation
+  checks: removing the fingerprint guard, the `$` escaping, or the verdict reset each
+  fails a test.
+- **Processes:** baseline none. Owned servers were started with recorded PIDs and
+  restarted once by PID; all 6 stopped, 0 remain, ports free.
+
 ## 2026-10-11 — Stage 7: independently verified DC OPF and economic-dispatch lab (#13)
 
 Stacked on Stage 6 (PR #12) ← #10 ← #8 ← #6 ← #4 ← #2. None merged. mambo-power is still

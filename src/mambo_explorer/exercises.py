@@ -27,6 +27,7 @@ class Exercise:
     explanation: str
     calculation_id: str
     synthetic: bool = False
+    result_refs: tuple[str, ...] = ()  # model run ids the answer was computed from
 
 
 @dataclass(frozen=True)

@@ -131,8 +131,8 @@ Anything not listed is not implemented yet.
 | Requirement | Feature(s) | Status | Evidence |
 |---|---|---|---|
 | R-1 learning and analysis with actual observations | DATA-01, EXPLORE-02, LEARN-03 | partial: one BA, two metrics | `tests/test_collect_storage.py`, `tests/test_learn_ui.py` |
-| R-2 novice-oriented | LEARN-03 | partial: 4 fundamentals lessons (agent-drafted, unreviewed) | `content/lessons/`, `docs/lesson-authoring.md` |
-| R-3 learning sequence | LEARN-01, LEARN-03 | partial: stage 1 (fundamentals) only | `tests/test_lessons.py` |
+| R-2 novice-oriented | LEARN-03, LEARN-04 | partial: 7 fundamentals lessons (agent-drafted, unreviewed) | `content/lessons/`, `docs/lesson-authoring.md` |
+| R-3 learning sequence | LEARN-01, LEARN-03, LEARN-04 | partial: stage 1 (fundamentals) only | `tests/test_lessons.py` |
 | R-4 physical system: demand | LEARN-03 | partial: demand only | lessons 1–2 |
 | R-5 forecasting | LEARN-03 | partial: published day-ahead forecast accuracy (descriptive) | lesson 3, `docs/calculations.md` |
 | R-7 ERCOT | DATA-01 | partial: EIA-930 `ERCO` only | source register |
