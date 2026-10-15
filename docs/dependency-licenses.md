@@ -8,11 +8,12 @@ metadata in `.venvs/py311` and `.venvs/py314` (Windows). **Do not edit by hand.*
 - Nothing here certifies legal compatibility or chooses this project's license
   (ADR 0001).
 
-Locked packages: 46. Compound, unclear, or missing metadata: 10. Reviewed: 3.
+Locked packages: 54. Compound, unclear, or missing metadata: 12. Reviewed: 4.
 
 | Package | Version | Role | Automated metadata | Reviewed evidence | Official source | Status |
 |---|---|---|---|---|---|---|
 | altair | 6.3.0 | transitive | Classifier: BSD License; license files: 1 | Not reviewed | https://github.com/vega/altair | needs review (compound or unclear) |
+| annotated-types | 0.8.0 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/annotated-types/annotated-types | unreviewed |
 | anyio | 4.15.1 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/agronholm/anyio | unreviewed |
 | attrs | 26.1.0 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/python-attrs/attrs | unreviewed |
 | certifi | 2026.7.22 | transitive | Classifier: Mozilla Public License 2.0 (MPL 2.0); license files: 1 | Not reviewed | https://github.com/certifi/python-certifi | needs review (compound or unclear) |
@@ -21,6 +22,7 @@ Locked packages: 46. Compound, unclear, or missing metadata: 10. Reviewed: 3.
 | colorama | 0.4.6 | transitive | Classifier: BSD License; license files: 1 | Not reviewed | https://github.com/tartley/colorama | needs review (compound or unclear) |
 | duckdb | 1.5.6 | runtime | Classifier: MIT License; license files: 0 | Not reviewed | https://github.com/duckdb/duckdb-python | unreviewed |
 | h11 | 0.16.0 | transitive | Classifier: MIT License; license files: 1 | Not reviewed | https://github.com/python-hyper/h11 | unreviewed |
+| highspy | 1.15.1 | transitive | License-Expression: MIT; license files: 2 | Not reviewed | https://github.com/ERGO-Code/HiGHS | unreviewed |
 | httptools | 0.9.0 | transitive | License-Expression: MIT; license files: 3 | Not reviewed | https://github.com/MagicStack/httptools | unreviewed |
 | idna | 3.20 | transitive | License-Expression: BSD-3-Clause; license files: 1 | Not reviewed | https://github.com/kjd/idna | unreviewed |
 | iniconfig | 2.3.1 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/pytest-dev/iniconfig | unreviewed |
@@ -28,6 +30,7 @@ Locked packages: 46. Compound, unclear, or missing metadata: 10. Reviewed: 3.
 | jinja2 | 3.1.6 | transitive | Classifier: BSD License; license files: 1 | Not reviewed | https://github.com/pallets/jinja/ | needs review (compound or unclear) |
 | jsonschema | 4.26.0 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/python-jsonschema/jsonschema | unreviewed |
 | jsonschema-specifications | 2025.9.1 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/python-jsonschema/jsonschema-specifications | unreviewed |
+| mambo-power | 0.2.0 | runtime | License-Expression: MIT; license files: 1 | Repository LICENSE at commit 26be8c1 read 2026-10-11: MIT (Copyright 2026 Manho Joung). | https://github.com/mambo10005/mambo-power (git, commit 26be8c1) | reviewed |
 | markupsafe | 3.0.4 | transitive | License-Expression: BSD-3-Clause; license files: 1 | Not reviewed | https://github.com/pallets/markupsafe/ | unreviewed |
 | narwhals | 2.27.1 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/narwhals-dev/narwhals | unreviewed |
 | numpy | 2.4.6 | transitive | License-Expression: BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0; license files: 17 | Not reviewed | https://github.com/numpy/numpy | needs review (compound or unclear) |
@@ -38,6 +41,8 @@ Locked packages: 46. Compound, unclear, or missing metadata: 10. Reviewed: 3.
 | pluggy | 1.6.0 | transitive | Classifier: MIT License; license files: 1 | Not reviewed | https://pypi.org/project/pluggy/ | unreviewed |
 | protobuf | 7.36.2 | transitive | License: 3-Clause BSD License; license files: 0 | Not reviewed | https://developers.google.com/protocol-buffers/ | unreviewed |
 | pyarrow | 25.0.1 | runtime | License-Expression: Apache-2.0; license files: 2 | Not reviewed | https://github.com/apache/arrow | unreviewed |
+| pydantic | 2.14.1 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/pydantic/pydantic | unreviewed |
+| pydantic-core | 2.50.1 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/pydantic/pydantic/tree/main/pydantic-core | unreviewed |
 | pydeck | 0.9.3 | transitive | License: Apache License 2.0; license files: 1 | Not reviewed | https://github.com/visgl/deck.gl/tree/master/bindings/pydeck | unreviewed |
 | pygments | 2.21.0 | transitive | License-Expression: BSD-2-Clause; license files: 2 | Not reviewed | https://github.com/pygments/pygments | unreviewed |
 | pytest | 9.1.1 | dev | License-Expression: MIT; license files: 1 | Shipped LICENSE read 2026-10-11: MIT License text. | https://github.com/pytest-dev/pytest | reviewed |
@@ -48,11 +53,14 @@ Locked packages: 46. Compound, unclear, or missing metadata: 10. Reviewed: 3.
 | requests | 2.34.2 | transitive | Classifier: Apache Software License; license files: 2 | Not reviewed | https://github.com/psf/requests | unreviewed |
 | rpds-py | 2026.9.1 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/crate-py/rpds | unreviewed |
 | ruff | 0.17.0 | dev | License-Expression: MIT; license files: 1 | Shipped LICENSE read 2026-10-11: MIT for Ruff plus bundled third-party notices (430 lines) not individually reviewed. | https://github.com/astral-sh/ruff | reviewed |
+| scipy | 1.17.1 | transitive | Classifier: BSD License; license files: 0 | Not reviewed | https://github.com/scipy/scipy | needs review (compound or unclear) |
+| scipy | 1.18.1 | transitive | Classifier: BSD License; license files: 0 | Not reviewed | https://github.com/scipy/scipy | needs review (compound or unclear) |
 | six | 1.17.0 | transitive | Classifier: MIT License; license files: 1 | Not reviewed | https://github.com/benjaminp/six | unreviewed |
 | starlette | 1.7.0 | transitive | License-Expression: BSD-3-Clause; license files: 1 | Not reviewed | https://github.com/Kludex/starlette | unreviewed |
 | streamlit | 1.65.0 | runtime | License-Expression: Apache-2.0; license files: 0 | UNRESOLVED: wheel ships no license file; metadata only. Upstream repository LICENSE not yet checked. | https://github.com/streamlit/streamlit | unreviewed |
 | toml | 0.10.2 | transitive | Classifier: MIT License; license files: 0 | Not reviewed | https://github.com/uiri/toml | unreviewed |
 | typing-extensions | 4.16.0 | transitive | License-Expression: PSF-2.0; license files: 1 | Not reviewed | https://github.com/python/typing_extensions | unreviewed |
+| typing-inspection | 0.4.4 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/pydantic/typing-inspection | unreviewed |
 | tzdata | 2026.5 | transitive | License: Apache-2.0; license files: 2 | Not reviewed | https://github.com/python/tzdata | unreviewed |
 | urllib3 | 2.8.0 | transitive | License-Expression: MIT; license files: 1 | Not reviewed | https://github.com/urllib3/urllib3 | unreviewed |
 | uvicorn | 0.54.0 | transitive | License-Expression: BSD-3-Clause; license files: 1 | Not reviewed | https://github.com/Kludex/uvicorn | unreviewed |

@@ -27,6 +27,7 @@ IMPORT_NAMES = {
     "pyyaml": "yaml",
     "duckdb": "duckdb",
     "pyarrow": "pyarrow",
+    "mambo-power": "mambo_power",
 }
 
 

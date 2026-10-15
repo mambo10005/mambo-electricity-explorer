@@ -2,6 +2,52 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 6: verified mambo-power integration and first teaching lab (#11)
+
+Stacked on Stage 5 (PR #10) ← #8 ← #6 ← #4 ← #2. None merged.
+
+- **Package:** mambo10005/mambo-power (MIT), **pinned to v0.2.0 commit 26be8c1**.
+  Inspected from a read-only clone; the package repository was not modified.
+  - Capability register (`docs/capability-register.md`): only **DC power flow** is
+    verified and exposed.
+  - DC OPF is inspected but not exposed: its duals are labeled LMPs ($/MWh) and that
+    was not independently verified.
+- **Package's own tests at the pin** (DC power flow, roles, islands, invariants, guards,
+  results): 99 passed on 3.11.16 and 99 on 3.14.2.
+- **Dependency:** a Git direct reference at the full commit (hatch
+  `allow-direct-references`; the package is never published).
+  - New packages: scipy (1.17.1 on 3.11, 1.18.1 on 3.14), highspy, pydantic,
+    pydantic-core, annotated-types, typing-inspection.
+  - Inventory: 54 packages; mambo-power's license reviewed (MIT).
+  - Installs and imports on both Pythons. At runtime the adapter verifies the
+    installed commit matches the pin.
+- **Lab:** synthetic three-bus DC power flow (`modeling/`).
+  - Bounded inputs: G2 0–200 MW, load at C 0–300 MW, x_AC 0.05–0.50 pu, AC in or out.
+  - Independent checks at 1e-6 MW: balance, KCL, Δθ/x, reference angle, finiteness.
+  - Limit violations are reported. Failed runs show no outputs.
+  - Results are hidden when inputs change.
+  - Runs are saved to `<MAMBO_DATA_DIR>/model-runs/`.
+- **Numerical verification:**
+  - hand-worked case (AB 37.5, BC 87.5, AC 62.5 MW; θB = −0.0375 rad, θC = −0.125 rad)
+  - an independent closed-form reference over 6 cases, a radial case, monotonicity,
+    and sign reversal, all within 1e-9 MW
+- **Accessibility:** a new ERCOT **observation viewer**: a narrow (5-column) table of
+  every value for one series, with series switchable by keyboard. At 375 px it fits with
+  no sideways scrolling. The wide table is kept in an expander. DSTFlag stays as
+  published.
+  - Correction: my Stage 5 chat summary called DSTFlag `N` "standard time". That
+    interpretation is unsupported; it appears nowhere in the repository.
+- **Backlog:** `docs/backlog.md` BL-1 (live ERCOT DST validation, recorded and not
+  scheduled), BL-2 (OPF verification).
+- **Tests:** 286 offline tests. Gate 8/8 on CPython 3.11.16 and 3.14.2.
+- **Browser (Chrome):**
+  - Lab, populated and empty: run → 37.5/87.5/62.5 with provenance.
+  - Keyboard-only: an arrow key moved G2 50 → 60 and hid the stale result; Tab to Run,
+    Enter → 30/90/60, matching the hand calculation.
+  - ERCOT viewer at 375 px dark: fits; keyboard series switch to EAST works.
+- **Processes:** the baseline had no servers. Two were started with recorded PIDs, and
+  exactly those 6 PIDs were killed. 0 remain; ports are free.
+
 ## 2026-10-11 — Stage 5: direct ERCOT actual-load connector (#9)
 
 Stacked on Stage 4 (PR #8) ← #6 ← #4 ← #2. None merged.

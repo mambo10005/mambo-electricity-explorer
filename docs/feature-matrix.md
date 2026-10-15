@@ -4,8 +4,8 @@ Status key: `planned` · `in-progress` · `done` · `dropped`
 
 The source of truth is `src/mambo_explorer/content/features.yaml`.
 `tests/test_feature_status.py` fails if this table and that file disagree on
-IDs or statuses. Only EXPLORE-02, EXPLORE-03, and LEARN-03 are pages (`ui: true` in the YAML), so Explore and
-Learn are the only sections allowed to show charts. Done backend features (DATA-01, STORE-01/02)
+IDs or statuses. Only EXPLORE-02, EXPLORE-03, LEARN-03, and MODEL-02 are pages (`ui: true`
+in the YAML), so Explore, Learn, and Model Labs are the only sections allowed to show charts. Done backend features (DATA-01, STORE-01/02)
 do not unlock charts on Sources or System Health.
 
 | ID | Feature | Section | Status | Notes |
@@ -30,7 +30,8 @@ do not unlock charts on Sources or System Health.
 | EXPLORE-02 | ERCOT actual demand vs. published day-ahead forecast | explore | done | Stage 3; browser-checked with synthetic and live data |
 | EXPLORE-03 | ERCOT direct actual load by weather zone (separate from EIA) | explore | done | Stage 5; no EIA join |
 | REPLAY-01 | Actual operating-day replay | replay | planned | |
-| MODEL-01 | Validated mambo-power adapter | model-labs | planned | U-2 |
+| MODEL-01 | Validated mambo-power adapter | model-labs | in-progress | DC power flow verified (ADR 0006); DC OPF and the rest inspected, not verified |
+| MODEL-02 | DC power flow teaching lab (synthetic 3-bus network) | model-labs | done | Stage 6; capability register |
 | FIN-01 | Financial and long-term contract library | finance | planned | |
 | FIN-02 | Hedging, basis/shape risk, settlement, credit, collateral | finance | planned | |
 | COMP-01 | Regulatory authorities and effective-dated rules | compliance | planned | U-8 |

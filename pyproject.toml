@@ -15,6 +15,8 @@ dependencies = [
     "pyyaml>=6.0.3,<7",
     "duckdb>=1.5.6,<2",
     "pyarrow>=25.0.1,<26",
+    # Pinned to the inspected v0.2.0 release commit, never a branch (ADR 0006).
+    "mambo-power @ git+https://github.com/mambo10005/mambo-power@26be8c18b7efb865419054bec7b0b171478bc37a",
 ]
 classifiers = [
     "Private :: Do Not Upload",
@@ -36,6 +38,11 @@ required-version = ">=0.12.5,<0.13"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/mambo_explorer"]
+
+# Needed for the commit-pinned mambo-power Git dependency (ADR 0006). This package is never
+# published (classifier "Private :: Do Not Upload"), where direct references would be refused.
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.ruff]
 line-length = 100

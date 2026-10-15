@@ -200,6 +200,36 @@ def render_ercot(settings) -> None:
         )
     )
 
-    with st.expander(f"All hours and zones for {day} ({present} rows, as published)"):
+    st.header("Observation viewer")
+    st.caption(
+        "Every published value for the chosen series, one row per hour, in a narrow table "
+        "that needs no sideways scrolling. Pick another series to see its values. Together "
+        "the series cover every value in the file. DSTFlag is shown exactly as ERCOT "
+        "publishes it."
+    )
+    series = st.selectbox(
+        "Series to list",
+        list(ENTITIES),
+        format_func=lambda e: f"{e} — {ds.ZONE_NAMES[e]}",
+        key="ercot_viewer_series",
+    )
+    st.table(viewer_rows(rows, series), hide_index=True)
+
+    with st.expander(f"Wide table: all series for {day} ({present} rows; scrolls sideways)"):
         st.table(table, hide_index=True)
     _limitations()
+
+
+def viewer_rows(rows, series: str) -> list[dict]:
+    """Narrow, complete listing of one series: every row ERCOT sent, in file order."""
+    return [
+        {
+            "#": order + 1,
+            "HourEnding": hour,
+            "DSTFlag": flag,
+            "Value (as published)": raw if raw is not None else "(missing)",
+            "Flags": flags or "—",
+        }
+        for order, hour, flag, entity, raw, _value, flags, *_ in rows
+        if entity == series
+    ]

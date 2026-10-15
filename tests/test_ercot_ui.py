@@ -33,6 +33,10 @@ def _ercot(at: AppTest) -> AppTest:
     return at.run(timeout=30)
 
 
+def _table(at: AppTest, column: str):
+    return next(tb.value for tb in at.table if column in tb.value.columns)
+
+
 def _text(at: AppTest) -> str:
     parts = [m.value for m in at.markdown] + [c.value for c in at.caption]
     parts += [x.value for x in at.info] + [x.value for x in at.warning]
@@ -78,7 +82,7 @@ def test_ercot_populated_shows_total_labels_units_and_provenance(data_dir):
     assert not at.exception
     assert len(at.get("vega_lite_chart")) == 1
     assert_no_unauthorized_data(at, "explore")
-    table = at.table[0].value
+    table = _table(at, "Zones − TOTAL (check)")
     assert list(table.columns)[:2] == ["HourEnding", "DSTFlag"]
     assert {"COAST", "TOTAL", "Zones − TOTAL (check)"} <= set(table.columns)
     assert list(table["HourEnding"])[:2] == ["01:00", "02:00"]
@@ -104,9 +108,9 @@ def test_ercot_dst_twin_rows_are_both_shown(data_dir):
         ),
     )
     at = _ercot(AppTest.from_string(EXPLORE))
-    table = at.table[0].value
-    twins = table[table["HourEnding"] == "02:00"]
-    assert list(twins["DSTFlag"]) == ["N", "Y"]
+    for table in (_table(at, "Zones − TOTAL (check)"), _table(at, "Value (as published)")):
+        twins = table[table["HourEnding"] == "02:00"]
+        assert list(twins["DSTFlag"]) == ["N", "Y"]  # preserved exactly, in both views
     assert any("25 hourly rows" in w.value for w in at.warning)
 
 
@@ -115,3 +119,30 @@ def test_eia_view_unaffected_by_ercot_data(data_dir):
     at = AppTest.from_string(EXPLORE).run(timeout=30)  # default source: EIA
     assert any("No observations have been collected yet" in i.value for i in at.info)
     assert_no_data_elements(at)
+
+
+def test_narrow_viewer_lists_every_value_of_each_series(data_dir):
+    _ingest(
+        data_dir,
+        dict(
+            [
+                day_doc(
+                    date(2026, 10, 10),
+                    "103",
+                    "2026-10-11T05:50:00-05:00",
+                    overrides={("05:00", "N"): {"EAST": ""}},
+                )
+            ]
+        ),
+    )
+    at = _ercot(AppTest.from_string(EXPLORE))
+    viewer = _table(at, "Value (as published)")
+    assert list(viewer.columns) == ["#", "HourEnding", "DSTFlag", "Value (as published)", "Flags"]
+    assert len(viewer) == 24 and list(viewer["#"]) == list(range(1, 25))  # complete, file order
+    assert at.selectbox(key="ercot_viewer_series").value == "TOTAL"
+    at.selectbox(key="ercot_viewer_series").set_value("EAST").run(timeout=30)
+    east = _table(at, "Value (as published)")
+    missing = east[east["HourEnding"] == "05:00"].iloc[0]
+    assert (missing["Value (as published)"], missing["Flags"]) == ("(missing)", "missing")
+    # every series is reachable through the selector, so all 24 x 9 values can be listed
+    assert len(at.selectbox(key="ercot_viewer_series").options) == 9
