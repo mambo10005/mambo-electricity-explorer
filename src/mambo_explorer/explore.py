@@ -14,6 +14,7 @@ from mambo_explorer.config import ConfigError, load_settings
 from mambo_explorer.eia import dataset as ds
 from mambo_explorer.navigation import section_by_key
 from mambo_explorer.storage import Store
+from mambo_explorer.timeview import format_utc, utc_label_chart
 
 STALE_AFTER = timedelta(hours=36)
 SOURCES = {
@@ -121,15 +122,10 @@ def _render_eia(settings) -> None:
 
     with store.query() as con:
         chart = con.execute(
-            f"""
-            SELECT strptime(period, '%Y-%m-%dT%H') AS "Period label (UTC)",
-                   max(value) FILTER (WHERE metric = 'D') AS "{ds.DISPLAY_NAMES["D"]}",
-                   max(value) FILTER (WHERE metric = 'DF') AS "{ds.DISPLAY_NAMES["DF"]}"
-            FROM latest WHERE entity = ? AND period BETWEEN ? AND ?
-            GROUP BY 1 ORDER BY 1
-            """,
+            "SELECT period, metric, value FROM latest WHERE entity = ? AND period BETWEEN ? "
+            "AND ? AND value IS NOT NULL ORDER BY period, metric",
             [entity, start_p, end_p],
-        ).to_arrow_table()
+        ).fetchall()
         table = con.execute(
             """
             SELECT period, metric, value_raw, value, unit, quality_flags, revision,
@@ -169,7 +165,19 @@ def _render_eia(settings) -> None:
     # Blue vs. dark orange: >= 3:1 contrast on both theme backgrounds (WCAG 1.4.11; see
     # tests/test_accessibility.py) and distinguishable for common color-vision
     # deficiencies (Streamlit's default palette draws both series in similar blues).
-    st.line_chart(chart, x="Period label (UTC)", color=["#1f77b4", "#d95f02"])
+    utc_label_chart(
+        [{"period": p, "Series": ds.DISPLAY_NAMES[m], "Value (MWh)": v} for p, m, v in chart],
+        value_field="Value (MWh)",
+        value_title="Value (MWh)",
+        series_field="Series",
+        series_domain=[ds.DISPLAY_NAMES["D"], ds.DISPLAY_NAMES["DF"]],
+        colors=["#1f77b4", "#d95f02"],
+        key="explore_demand_chart",
+        alt_text=(
+            "Line chart of hourly actual demand and day-ahead forecast by UTC period label; "
+            "the tooltip and the table below show the same label. Gaps mean no valid value."
+        ),
+    )
 
     expected = ((end_day - start_day).days + 1) * 24
     by_metric = {row[0]: row for row in stats}
@@ -193,10 +201,10 @@ def _render_eia(settings) -> None:
                 f"(API route `{ds.ROUTE}`, frequency `{ds.FREQUENCY}`).",
                 f"- **Units (as reported):** {', '.join(units) or 'none'}.",
                 f"- **Interval:** {ds.INTERVAL_TEXT}",
-                f"- **Retrieved (by this computer):** {max(retrieved):%Y-%m-%d %H:%M} UTC."
+                f"- **Retrieved (by this computer):** {format_utc(max(retrieved))}."
                 if retrieved
                 else "- **Retrieved:** unknown.",
-                f"- **Last successful collection:** {finished:%Y-%m-%d %H:%M} UTC "
+                f"- **Last successful collection:** {format_utc(finished)} "
                 f"(run `{last['run_id']}`).",
                 "- **Publication time:** not provided by the source.",
             ]

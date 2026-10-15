@@ -2,6 +2,35 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-12 — Stage 17: timestamp-display consistency (#33)
+
+Stacked on Stage 16 (PR #32) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
+`data/` and progress unchanged (gate check).
+
+- **Inventory** (`docs/timestamp-display.md`): every time value shown is classified as a
+  verified UTC source label, an offset-bearing publication timestamp, a retrieval
+  timestamp, an ERCOT label as published, a synthetic elapsed interval, or unknown; each
+  kind has one display convention.
+- **Helper** (`timeview.py`, ADR 0015): `utc_label_chart` draws UTC labels on a Vega-Lite
+  utc scale over aware instants with the verbatim label in the tooltip; `format_utc` prints
+  retrieval times. Built-in Streamlit charts are no longer given datetimes (test-enforced).
+- **Views corrected:** lesson 2 demand chart and lesson 3 error chart (aware values drawn
+  in browser-local time under a UTC title), Explore demand/forecast chart (naive DuckDB
+  timestamps, local by luck), generation chart (Stage 16's stripped-zone workaround).
+  ERCOT's ordinal axis, tables, health labels, and finance intervals were audited and left
+  as they were.
+- **Unchanged:** observation values, identities, revisions, selections, snapshot ids,
+  lesson text and versions, review statuses; interval boundaries still null; ERCOT zone
+  and storage sign convention still unresolved.
+- **Browser evidence (Playwright, synthetic scratch store, emulated zones UTC,
+  America/Los_Angeles, Asia/Seoul):** for label 2026-03-08T08 (00:00 in LA) on lesson 2,
+  every zone showed axis ticks "2026-03-07 00:00, 03:00, …", tooltip "Period label (UTC)
+  2026-03-08T08 / 41,234.00", and table row "2026-03-08T08 41234 megawatthours 1"; the
+  same held for the DST-transition label 2026-03-08T10 in LA, UTC midnight 2026-03-08T00
+  in Seoul, lesson 3's error chart, and the generation bars for 2026-03-07T15 (00:00 in
+  Seoul). Dark theme at 640 CSS px and light at 375 px: no page overflow; the data-table
+  expander opens by keyboard. Empty store: no chart, "no observations" notices.
+
 ## 2026-10-12 — Stage 16: net generation by energy source and lesson 13 (#31)
 
 Stacked on Stage 15 (PR #30) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real

@@ -19,3 +19,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | [0012](0012-regulatory-responsibility-records.md) | Regulatory responsibility records and introductory compliance learning | Accepted |
 | [0013](0013-bounded-local-refresh-and-health.md) | Bounded local refresh orchestration and a truthful System Health page | Accepted |
 | [0014](0014-generation-by-energy-source.md) | EIA-930 net generation by energy source (ERCO) and a generation-mix lesson | Accepted |
+| [0015](0015-timestamp-display-consistency.md) | Application-wide timestamp-display consistency | Accepted |

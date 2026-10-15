@@ -26,7 +26,9 @@ def test_contrast_formula_known_values():
 def test_chart_line_colors_meet_non_text_contrast_in_both_themes():
     colors = set()
     for path in SRC.rglob("*.py"):
-        for call in re.findall(r"line_chart\((.*?)\)\n", path.read_text("utf-8"), re.DOTALL):
+        for call in re.findall(
+            r"(?:line_chart|utc_label_chart)\((.*?)\)\n", path.read_text("utf-8"), re.DOTALL
+        ):
             colors |= set(re.findall(r'"(#[0-9a-fA-F]{6})"', call))
     assert colors, "no chart colors found"
     for color in colors:

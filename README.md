@@ -246,6 +246,7 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
 | [ERCOT NP6-345-CD contract](docs/datasets/ercot-np6-345-cd.md) | Direct ERCOT report: schema, units, time and DST fields |
 | [EIA-930 generation contract](docs/datasets/eia930-fuel-type-data.md) | Net generation by energy source: route, codes, sign conventions, totals |
+| [Timestamp display](docs/timestamp-display.md) | Inventory of every time value shown, its kind, and its display convention; browser regression steps |
 | [mambo-power capability register](docs/capability-register.md) | What is documented vs. inspected vs. verified vs. exposed |
 | [Refresh runbook](docs/refresh-runbook.md) | Refresh configuration, catch-up rules, recovery, optional scheduling |
 | [Backlog](docs/backlog.md) | Recorded, unscheduled tasks (e.g. ERCOT DST validation) |

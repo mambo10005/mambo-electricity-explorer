@@ -15,6 +15,7 @@ from mambo_explorer import calculations as calc
 from mambo_explorer import generation
 from mambo_explorer.eia import dataset as ds
 from mambo_explorer.explore import STALE_AFTER
+from mambo_explorer.timeview import format_utc, utc_label_chart
 
 SETUP_INSTRUCTIONS = """\
 ```powershell
@@ -126,24 +127,25 @@ def render_mix(obs: list[calc.Observation], sel: calc.Selection, key: str) -> ca
     st.caption(
         "Data label: **observed**. Signed hourly net generation by category, exactly as EIA "
         "publishes it; bars below zero are net storage hours. Stacked bars show each "
-        "category separately, not a total. The axis shows the UTC period label, not local time."
+        "category separately, not a total. The axis and the tooltip show the UTC period label, "
+        "never the browser's local time."
     )
     rows = [
-        {
-            "Period label (UTC)": ds.parse_period(o.period).replace(tzinfo=None),
-            "Category": o.metric,
-            f"Net generation ({unit})": o.value,
-        }
+        {"period": o.period, "Category": o.metric, f"Net generation ({unit})": o.value}
         for o in obs
         if o.metric in chosen and o.value is not None
     ]
     if rows:
-        st.bar_chart(
+        utc_label_chart(
             rows,
-            x="Period label (UTC)",
-            y=f"Net generation ({unit})",
-            color="Category",
+            value_field=f"Net generation ({unit})",
+            value_title=f"Net generation ({unit})",
+            series_field="Category",
+            series_domain=[c for c in categories if c in chosen],
+            colors=[COLORS[categories.index(c) % len(COLORS)] for c in categories if c in chosen],
+            mark="bar",
             stack=True,
+            key=f"{key}_chart",
         )
     else:
         st.info("No valid values for the chosen categories in this window.")
@@ -240,7 +242,7 @@ def render_generation(settings) -> None:
                 f"frequency `{ds.FREQUENCY}`).",
                 f"- **Units (as reported):** {', '.join(sorted({o.unit for o in obs})) or 'none'}.",
                 f"- **Interval:** {ds.GENERATION_INTERVAL_TEXT}",
-                f"- **Last successful collection:** {finished:%Y-%m-%d %H:%M} UTC "
+                f"- **Last successful collection:** {format_utc(finished)} "
                 f"(run `{last['run_id']}`). Publication time is not provided by the source.",
             ]
         )
