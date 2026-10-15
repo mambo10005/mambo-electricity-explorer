@@ -2,6 +2,156 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-13 — Stage 24: governed hourly real-time aggregation investigation (#47)
+
+Branched from `feat/stage-20-ercot-real-time-prices` at 79a58b4: the owner merged Stage 23 (PR
+#46) into it. None of this is on `main`. No live collection and no approval created. Real
+`data/` and progress unchanged.
+
+- **Sources** (`docs/aggregation-evidence.md`):
+  - §6.6.1.1: each RT SPP is a time-weighted average of SCED prices in its 15-minute
+    interval;
+  - §16.11.4.3.3: HRSAP averages an Operating Hour's four North Hub RT SPPs with equal
+    weight, in a credit formula;
+  - §6.6.3: settlement uses participant quantities × ¼;
+  - no hourly real-time SPP product found.
+- **Candidates:** arithmetic mean, duration-weighted mean, energy-weighted price, settlement
+  amount. Each has its own dimensions and classification. Energy weighting and settlement
+  amounts are not approvable.
+- **Records:** AGG-A 1.0.0 and AGG-B 1.0.0 (DUR-15 for DSTFlag N only).
+  - Local approvals: version, scope, and accepted limitations are required; revoke and restore
+    are supported.
+  - Synthetic approvals count only in a marked scratch directory.
+  - No approval is recorded, so production is withheld.
+- **Service:** `aggregation.aggregate` returns 11 statuses with every blocker, exact Decimal
+  arithmetic, and no fallback. `candidate()` is for synthetic diagnostics. Aggregation
+  snapshots go stale on any input, approval, method, duration, formula, or validation change.
+- **UI:** "Aggregation investigation" section with the persistent limitation text
+  (EXPLORE-10).
+- **Guards:** no spread, DART, P&L, or backtest identifiers; aggregation never reads day-ahead
+  prices; no implicit aggregation or Finance use; no unnegated ERCOT or settlement claims.
+
+## 2026-10-13 — Stage 23: assumption-governed day-ahead/real-time alignment under M1 (#45)
+
+Branched from `feat/stage-20-ercot-real-time-prices` at e0a89ad: the owner merged Stage 22 (PR
+#44) into it. None of this is on `main`. Request caps unchanged. No live collection. Real `data/`
+and progress unchanged.
+
+- **Assumption record M1 1.0.0** (`ercot/m1_policy.py`, `docs/assumption-register.md`, ADR 0020):
+  rule, datasets, HB_NORTH hub ↔ HB_NORTH/HU scope (observed), expected intervals 1–4 (the only
+  place in the code), flags N/Y verbatim, schema and scope fingerprints, unresolved definitions,
+  limitations, re-review triggers. Its status has four separate parts:
+  - authorization: given;
+  - reported acceptance: not attributable;
+  - recorded approval: none;
+  - official status: unresolved.
+- **Approval workflow:** `mambo assumption show|status|approve|revoke`.
+  - Dry run unless `--execute`; every reviewer field required; credential-like text refused.
+  - Append-only records in the gitignored data directory, bound to version and scope.
+- **Opt-in alignment** (`ercot/assumed_alignment.py`):
+  - **Basis:** the authoritative-only default is unchanged (unsupported_semantics). M1 runs
+    only with an explicit selection, an active approval, an in-scope location, and a supported
+    policy.
+  - **Outcomes:** approval missing, revoked, superseded, incompatible, or invalid;
+    unsupported_scope; conflicting_revisions; complete or incomplete under the assumption.
+- **Snapshots:** selected revisions plus an input fingerprint. A snapshot goes stale on inputs,
+  policy, assumption, approval, or validation-version changes, and is superseded by a later one.
+  Nothing is deleted.
+- **UI:** basis selector (session only), persistent banner, approval panel, interval viewer,
+  snapshots; limitations always visible (EXPLORE-09).
+- **Guards:** the four-interval guard is narrowed to the M1 record; no Finance import of
+  alignment or real-time prices; the approvals module converts no labels.
+
+## 2026-10-13 — Stage 22: evidence-based day-ahead / real-time interval alignment (#43)
+
+Branched from `feat/stage-20-ercot-real-time-prices` at dbaab9d: the owner merged Stage 21 (PR
+#42) into it. None of this is on `main`. Shared ercot.com cap unchanged (18). Real `data/` and
+progress unchanged.
+
+- **Decision: no mapping accepted** (ADR 0019, `docs/interval-alignment.md`).
+  - **Official:** Protocols tie each 15-minute interval to one day-ahead hour (§6.6.3.3).
+    No ERCOT material defines HourEnding, DeliveryHour, DeliveryInterval, or DSTFlag.
+  - **Actual files:** NP4-180-ER and NP6-785-ER, 648 days including three DST days, are
+    fully consistent with candidate M1.
+  - **Candidates:** M1 partially supported; M2 rejected.
+- **Service** (`ercot/alignment.py`):
+  - nine statuses; `align()` returns `unsupported_semantics`;
+  - `check_candidate()` is labelled not asserted;
+  - revision policies: latest-retrieved and first-retrieved available; known-before-cutoff
+    and final unavailable;
+  - strict hour completeness.
+- **Diagnostic:** Explore source "interval labels", labels and price presence only, with the
+  evidence record (EXPLORE-07). EXPLORE-08 (DART/comparison) is planned and blocked.
+- **Guards:** no spread, no SQL price aggregate, no clock time or UTC in the alignment
+  modules, no literal four-interval rule.
+- **Live (scratch):** 9 ercot.com requests (2 listings, 4 annual files, 1 list + 2 day-ahead
+  documents).
+
+## 2026-10-13 — Stage 21: coverage-aware real-time collection and bounded catch-up (#41)
+
+Stacked on Stage 20 (PR #40) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and
+progress unchanged (gate check). Shared ercot.com cap unchanged (18).
+
+- **Capacity audit** (runbook; `capacity` block in every real-time plan):
+  - about 96 documents a day, 7-day list, 1 list + 1 per document;
+  - 8 per refresh at most;
+  - the default plan cannot keep pace, and with load and day-ahead enabled real-time never
+    fits the cap;
+  - `complete_history_claimed: false`.
+- **Inventory** (`ercot/rt_inventory.py`, ADR 0018): every listed DocID with listing times
+  and outcomes. Statuses: discovered, collected (derived from observations), failed,
+  deferred, interval-row-absent, superseded, plus a not-listed flag.
+- **Modes:** snapshot (newest) and coverage (oldest first in a PublishDate range); a separate
+  revision-recheck allocation; dry runs show the mode, range, and a preview from the last
+  listing.
+- **Bounded backfill:**
+  - `collect --coverage-from/--coverage-to/--latest/--recheck` runs at most 16 documents in
+    18 requests;
+  - per-document failures are isolated;
+  - budget exhaustion commits and defers the rest; reruns resume without duplicates.
+- **Refresh:**
+  - `mode`/`coverage_from`/`coverage_to` settings;
+  - a `partial` status for document failures;
+  - explicit `host_allocation` and never-runs warnings;
+  - an example real-time-only catch-up plan within the cap.
+- **Requests:** the ERCOT client counts list, download, and retry attempts consistently.
+- **Health:** freshness, completeness, and published-document coverage are separate;
+  complete only for listed documents in a selected range; hours with fewer than 4 intervals
+  are counted.
+- **Live (scratch):** 2 bounded runs of 17 requests each, 31 intervals, 31/31 matching the
+  archive, no duplicates, 161 remaining in the range.
+
+## 2026-10-12 — Stage 20: ERCOT real-time price at HB_NORTH and lesson 15 (#39)
+
+Stacked on Stage 19 (PR #38) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and
+progress unchanged (gate check).
+
+- **Product verified** (ADR 0017; `docs/datasets/ercot-np6-905-cd.md`): NP6-905-CD (type
+  12301), real-time Settlement Point Prices "produced from SCED LMPs every 15 minutes"; not an
+  LMP report.
+  - North Hub price: Max[−$251, RTRDP + time-weighted Hub Bus prices], so the adder is
+    included (Protocols §3.5.2.1(4)). Unit $/MWh.
+  - Finality rule §6.3(7) is recorded, not computed. Corrections report NP4-197-M is not
+    collected.
+- **Interval contract:** DeliveryDate/DeliveryHour/DeliveryInterval/DSTFlag raw, 15 minutes,
+  no UTC, no assumed 96 per day. The schema is from a live file; rows are unique by (name,
+  type).
+- **Connector:** the client matches FriendlyName patterns; one interval per document;
+  `HB_NORTH`/`HU` only; downloaded scope recorded; store `ercot-np6-905-cd`; revisions; a
+  `--include-stored` re-check.
+- **Refresh:** `ercot-rt-spp`, opt-in; planned from the public list. Reports not yet
+  published, published but not requested, and the oldest listed. The shared ercot.com cap
+  stays 18 (not raised).
+- **Explore and lesson 15 (EXPLORE-06):** chart, interval viewer, all-interval table,
+  coverage, provenance, and definitions; five snapshot-bound exercises; 5 glossary terms.
+- **Comparison prerequisites** with day-ahead are documented in `docs/calculations.md`; not
+  implemented.
+- **Live (scratch):**
+  - The first attempt was rejected by the parser (duplicate name with another type); fixed,
+    with a regression test.
+  - Then 5 requests, 4 intervals from 4,568 downloaded rows, 4/4 matching the archive.
+  - Repeat: 4 unchanged.
+
 ## 2026-10-12 — Stage 19: ERCOT day-ahead price at HB_NORTH and lesson 14 (#37)
 
 Stacked on Stage 18 (PR #36) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and

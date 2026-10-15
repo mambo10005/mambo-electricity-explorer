@@ -11,6 +11,7 @@ No credentials are used or accepted. In particular this client never reads EIA_A
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -75,6 +76,14 @@ class Report:
     csv_friendly_name: str
     label: str
     limits: Limits
+    # Reports with one document per interval give each document its own FriendlyName
+    # (e.g. SPPHLZNP6905_20261013_0015_csv); a full-match regex selects their CSV twins.
+    csv_name_pattern: str | None = None
+
+    def is_csv(self, friendly_name: str) -> bool:
+        if self.csv_name_pattern:
+            return re.fullmatch(self.csv_name_pattern, friendly_name) is not None
+        return friendly_name == self.csv_friendly_name
 
 
 LOAD_REPORT = Report(ds.REPORT_TYPE_ID, ds.CSV_FRIENDLY_NAME, ds.DATASET, ZIP_LIMITS)
@@ -87,13 +96,27 @@ class Document:
     name: str
     publish_time_raw: str
     content_size: int
+    friendly_name: str = ""
 
 
 @dataclass
 class Stats:
+    """Every HTTP attempt counts as a request, including retries; `by_kind` splits the same
+    attempts into listings and document downloads, so the parts always add up to `requests`."""
+
     requests: int = 0
     retries: int = 0
     failures: list[str] = field(default_factory=list)
+    by_kind: dict[str, int] = field(default_factory=dict)
+
+    def breakdown(self) -> dict:
+        return {
+            "list": self.by_kind.get("list", 0),
+            "download": self.by_kind.get("download", 0),
+            "other": self.requests - self.by_kind.get("list", 0) - self.by_kind.get("download", 0),
+            "retries_included": self.retries,
+            "total": self.requests,
+        }
 
 
 class ErcotClient:
@@ -117,13 +140,14 @@ class ErcotClient:
         self._sleep = sleep
         self.stats = Stats()
 
-    def _get(self, url: str, what: str) -> tuple[str, bytes]:
+    def _get(self, url: str, what: str, kind: str = "other") -> tuple[str, bytes]:
         for attempt in range(self.max_retries + 1):
             if self.stats.requests >= self.max_requests:
                 raise BudgetExceeded(f"request budget of {self.max_requests} exhausted")
             if self.stats.requests:
                 self._sleep(self.pause_seconds)  # be gentle with ERCOT (Terms of Use §6)
             self.stats.requests += 1
+            self.stats.by_kind[kind] = self.stats.by_kind.get(kind, 0) + 1
             try:
                 status, content_type, body = self._transport(url, self.timeout)
             except (OSError, urllib.error.URLError) as exc:
@@ -151,7 +175,7 @@ class ErcotClient:
     def list_documents(self, report: Report = LOAD_REPORT) -> list[Document]:
         """Public CSV documents for `report`, oldest first (validated)."""
         url = LIST_URL_TEMPLATE.format(id=report.report_type_id)
-        content_type, body = self._get(url, f"the {report.label} document list")
+        content_type, body = self._get(url, f"the {report.label} document list", "list")
         if len(body) > MAX_LIST_BYTES:
             raise ResponseError("document list exceeds size limit")
         if "html" in content_type.lower():
@@ -168,7 +192,7 @@ class ErcotClient:
             doc = entry.get("Document") if isinstance(entry, dict) else None
             if not isinstance(doc, dict):
                 raise ResponseError("DocumentList entry without a Document object")
-            if doc.get("FriendlyName") != report.csv_friendly_name:
+            if not report.is_csv(str(doc.get("FriendlyName", ""))):
                 continue  # XML twin of each document; only CSV is used
             if doc.get("ReportTypeID") != report.report_type_id or doc.get("SecurityStatus") != "P":
                 raise ResponseError(f"unexpected document metadata for {doc.get('DocID')!r}")
@@ -181,7 +205,13 @@ class ErcotClient:
             except ValueError:
                 raise ResponseError(f"invalid ContentSize for {doc_id}") from None
             documents.append(
-                Document(doc_id, str(doc.get("ConstructedName", "")), str(doc["PublishDate"]), size)
+                Document(
+                    doc_id,
+                    str(doc.get("ConstructedName", "")),
+                    str(doc["PublishDate"]),
+                    size,
+                    str(doc.get("FriendlyName", "")),
+                )
             )
         return sorted(
             documents, key=lambda d: (ds.parse_publish_time(d.publish_time_raw), d.doc_id)
@@ -196,7 +226,9 @@ class ErcotClient:
                 f"document {document.doc_id} declares {document.content_size} bytes"
             )
         content_type, body = self._get(
-            ds.DOWNLOAD_URL.format(doc_id=document.doc_id), f"document {document.doc_id}"
+            ds.DOWNLOAD_URL.format(doc_id=document.doc_id),
+            f"document {document.doc_id}",
+            "download",
         )
         if "html" in content_type.lower() or not body.startswith(b"PK\x03\x04"):
             raise ResponseError(f"document {document.doc_id} is not a ZIP ({content_type!r})")

@@ -363,3 +363,27 @@ terms:
       When a published price can no longer be corrected. ERCOT's Protocols set this for
       day-ahead prices at 1000 on the second Business Day after the Operating Day; this
       app does not decide it.
+  # Real-time price lesson (Stage 20). Same status: agent-drafted, not human-reviewed.
+  - term: Real-time Settlement Point Price
+    definition: >-
+      In ERCOT, the price for one settlement point for one 15-minute Settlement Interval,
+      produced from SCED LMPs (and for hubs, including a reliability deployment price
+      adder and a price floor). Different from the day-ahead price.
+  - term: Settlement Interval
+    definition: >-
+      The period for which ERCOT's markets are settled. In real time it is 15 minutes,
+      identified in the report by DeliveryDate, DeliveryHour, DeliveryInterval, and
+      DSTFlag.
+  - term: SCED
+    expansion: Security-Constrained Economic Dispatch
+    definition: >-
+      ERCOT's real-time dispatch process, which runs every few minutes and produces
+      locational marginal prices (LMPs).
+  - term: Price adder
+    definition: >-
+      An amount added to a computed price. ERCOT's Real-Time Reliability Deployment Price
+      Adder for Energy reflects the price effect of certain reliability deployments.
+  - term: Price floor
+    definition: >-
+      The lowest value a price may take. ERCOT's Protocols floor real-time Settlement
+      Point Prices at -$251/MWh.

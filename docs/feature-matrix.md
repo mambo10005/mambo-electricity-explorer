@@ -4,7 +4,7 @@ Status key: `planned` · `in-progress` · `done` · `dropped`
 
 The source of truth is `src/mambo_explorer/content/features.yaml`.
 `tests/test_feature_status.py` fails if this table and that file disagree on
-IDs or statuses. Only EXPLORE-02, EXPLORE-03, EXPLORE-04, EXPLORE-05, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, COMP-02, and HEALTH-01 are pages (`ui: true`
+IDs or statuses. Only EXPLORE-02, EXPLORE-03, EXPLORE-04, EXPLORE-05, EXPLORE-06, EXPLORE-07, EXPLORE-09, EXPLORE-10, LEARN-03, LEARN-04, MODEL-02, MODEL-03, FIN-03, FIN-04, FIN-05, COMP-02, and HEALTH-01 are pages (`ui: true`
 in the YAML), so Explore, Learn, Model Labs, Finance, Compliance, and System Health are the only sections allowed to show data elements. Compliance shows none: its tables are source records, not data. Done backend features (DATA-01, STORE-01/02)
 do not unlock charts on Sources or System Health.
 
@@ -27,6 +27,7 @@ do not unlock charts on Sources or System Health.
 | DATA-01 | EIA connector (EIA-930 ERCOT demand and forecast) | sources | done | Live-verified 2026-10-11 (metadata, collection, repeat ingest); one BA, two metrics |
 | DATA-02 | Regional operator connectors | sources | planned | ERCOT started (DATA-04); other operators planned |
 | DATA-04 | ERCOT direct connector: NP6-345-CD actual load by weather zone | sources | done | Stage 5; public download, live-verified 2026-10-11 (ADR 0005) |
+| DATA-07 | ERCOT direct connector: NP6-905-CD real-time settlement point price at HB_NORTH (15-minute intervals, own store namespace) | sources | done | Stage 20: ADR 0017; opt-in; counts against the shared ercot.com cap (not raised) |
 | DATA-06 | ERCOT direct connector: NP4-190-CD DAM settlement point price at HB_NORTH (one hub, own store namespace) | sources | done | Stage 19: ADR 0016; opt-in in refresh; shared ercot.com cap |
 | DATA-05 | EIA connector: EIA-930 hourly net generation by energy source (ERCO), own store namespace | sources | done | Stage 16: route `fuel-type-data`, ADR 0014; disabled in the default refresh plan |
 | DATA-03 | Regulatory source connectors | sources | planned | |
@@ -34,10 +35,16 @@ do not unlock charts on Sources or System Health.
 | STORE-01 | DuckDB/Parquet observation store | system-health | done | Stage 3: append-only revisions, latest view (ADR 0004) |
 | STORE-02 | SQLite metadata store | system-health | done | Stage 3: run catalog, recoverable commit (ADR 0004) |
 | HEALTH-01 | Collection, freshness, and storage status | system-health | done | Stage 15: System Health page (read-only; never collects) and `mambo health`; ADR 0013. U-6 |
+| OPS-02 | Coverage-aware real-time price collection: document inventory, snapshot and coverage modes, bounded backfill, revision recheck, freshness vs completeness | system-health | done | Stage 21: ADR 0018; shared ercot.com cap unchanged (18); never claims complete history |
 | OPS-01 | Bounded local refresh of existing collectors (plan, budgets, catch-up, logs) and optional Windows task scripts | system-health | done | Stage 15: `mambo refresh`, `content/refresh.yaml`, `scripts/refresh-task.ps1` (preview by default; no task registered) |
 | EXPLORE-01 | Observation explorer across regions | explore | planned | U-7 |
 | EXPLORE-02 | ERCOT actual demand vs. published day-ahead forecast | explore | done | Stage 3; browser-checked with synthetic and live data |
 | EXPLORE-03 | ERCOT direct actual load by weather zone (separate from EIA) | explore | done | Stage 5; no EIA join |
+| EXPLORE-07 | Interval-alignment diagnostic: day-ahead hour vs real-time interval labels, revision policies, DST and completeness states, evidence record (labels only; no mapping accepted) | explore | done | Stage 22; returns unsupported_semantics by default; candidate M1 partially supported, not accepted; no prices read |
+| EXPLORE-09 | Assumption-governed alignment under M1: versioned assumption record, local approval workflow, opt-in activation, completeness under M1, interval viewer, snapshots with staleness (labels only; approval pending) | explore | done | Stage 23; ADR 0020; no attributable approval recorded, so activation pending; official semantics unresolved |
+| EXPLORE-10 | Hourly real-time aggregation investigation: candidate formulas and dimensions, synthetic benchmarks, versioned records AGG-A/AGG-B with local approvals, governed or withheld summary, aggregation snapshots (no method approved) | explore | done | Stage 24; ADR 0021; production summary withheld (no M1 or aggregation approval); not an ERCOT or settlement price |
+| EXPLORE-08 | Day-ahead vs real-time price comparison (DART) at HB_NORTH | explore | planned | Stage 25 prerequisites (ADR 0021): active M1 and aggregation approvals, complete alignment and inputs, explicit revision policy, non-settlement limitation, a separately defined comparison formula; official label definition still missing |
+| EXPLORE-06 | Real-time price view at HB_NORTH: source-label chart, interval viewer, table, coverage, provenance, and lesson 15 | explore | done | Stage 20; ERCOT interval labels, no UTC; no day-ahead comparison; finality not determined |
 | EXPLORE-05 | Day-ahead price view at HB_NORTH: source-label chart, table, coverage, publication and revision provenance, and lesson 14 | explore | done | Stage 19; ERCOT labels, no UTC; finality not determined; no join with EIA |
 | EXPLORE-04 | Net generation by energy source: signed chart, category coverage, totals with completeness rules, and lesson 13 | explore | done | Stage 16; no pie chart, no system total, shares withheld when misleading; lesson agent-authored, unreviewed |
 | REPLAY-01 | Actual operating-day replay | replay | planned | |

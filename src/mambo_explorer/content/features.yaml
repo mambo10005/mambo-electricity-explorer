@@ -82,6 +82,10 @@ features:
     name: "ERCOT direct connector: NP4-190-CD DAM settlement point price at HB_NORTH (one hub, own store namespace)"
     section: sources
     status: done
+  - id: DATA-07
+    name: "ERCOT direct connector: NP6-905-CD real-time settlement point price at HB_NORTH (15-minute intervals, own store namespace)"
+    section: sources
+    status: done
   - id: DATA-03
     name: "Regulatory source connectors"
     section: sources
@@ -107,6 +111,10 @@ features:
     name: "Bounded local refresh of existing collectors (plan, budgets, catch-up, logs) and optional Windows task scripts"
     section: system-health
     status: done
+  - id: OPS-02
+    name: "Coverage-aware real-time price collection: document inventory, snapshot and coverage modes, bounded backfill, revision recheck, freshness vs completeness"
+    section: system-health
+    status: done
   - id: EXPLORE-04
     name: "Net generation by energy source: signed chart, category coverage, totals with completeness rules, and lesson 13"
     section: explore
@@ -117,6 +125,30 @@ features:
     section: explore
     status: done
     ui: true
+  - id: EXPLORE-06
+    name: "Real-time price view at HB_NORTH: source-label chart, interval viewer, table, coverage, provenance, and lesson 15"
+    section: explore
+    status: done
+    ui: true
+  - id: EXPLORE-07
+    name: "Interval-alignment diagnostic: day-ahead hour vs real-time interval labels, revision policies, DST and completeness states, evidence record (labels only; no mapping accepted)"
+    section: explore
+    status: done
+    ui: true
+  - id: EXPLORE-09
+    name: "Assumption-governed alignment under M1: versioned assumption record, local approval workflow, opt-in activation, completeness under M1, interval viewer, snapshots with staleness (labels only; approval pending)"
+    section: explore
+    status: done
+    ui: true
+  - id: EXPLORE-10
+    name: "Hourly real-time aggregation investigation: candidate formulas and dimensions, synthetic benchmarks, versioned records AGG-A/AGG-B with local approvals, governed or withheld summary, aggregation snapshots (no method approved)"
+    section: explore
+    status: done
+    ui: true
+  - id: EXPLORE-08
+    name: "Day-ahead vs real-time price comparison (DART) at HB_NORTH"
+    section: explore
+    status: planned
   - id: EXPLORE-01
     name: "Observation explorer across regions"
     section: explore

@@ -105,6 +105,24 @@ src/mambo_explorer/
   ercot/prices.py      Stage 19: NP4-190-CD DAM settlement point price, HB_NORTH only; own
                        store ercot-np4-190-cd; client takes a Report (ADR 0016)
   price_view.py, price_exercises.py  source-label price view, provenance, lesson 14
+  ercot/rt_prices.py   Stage 20: NP6-905-CD real-time SPP, HB_NORTH only, one 15-minute
+                       interval per document; store ercot-np6-905-cd (ADR 0017)
+  ercot/rt_inventory.py  Stage 21: published-document inventory for NP6-905-CD (own
+                       SQLite file in the same namespace; collected derived from the store)
+  rt_price_view.py, rt_price_exercises.py  interval chart/viewer/table, lesson 15
+  ercot/alignment.py   Stage 22: interval-alignment evidence, candidates, revision and
+                       completeness policies, align()/check_candidate() (labels only; ADR 0019)
+  alignment_view.py    read-only diagnostic (Explore); reads labels and price presence only
+  ercot/m1_policy.py   Stage 23: versioned assumption record M1 (rule, scope, fingerprints,
+                       unresolved definitions); the only home of the four-interval expectation
+  ercot/approvals.py   local append-only approval records (<data>/assumptions/approvals.jsonl)
+  ercot/aggregation_policy.py  Stage 24: versioned aggregation records AGG-A (arithmetic) and
+                       AGG-B (duration-weighted, DUR-15), prohibited uses (ADR 0021)
+  ercot/aggregation.py  candidate formulas (Decimal), governed aggregate() with blockers,
+                       aggregation snapshots; never reads day-ahead prices
+  aggregation_view.py  "Aggregation investigation" section of the alignment diagnostic
+  ercot/assumed_alignment.py  opt-in alignment by basis (authoritative-only | review-approved
+                       assumption), outcomes, snapshots with staleness (ADR 0020)
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)
 ```
 

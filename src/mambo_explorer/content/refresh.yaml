@@ -66,6 +66,27 @@ sources:
     request_budget: 6            # 1 list + 3 downloads + 2 retries
     freshness_threshold_hours: 48
 
+  ercot-rt-spp:
+    enabled: false            # opt-in: one more dataset on the same ERCOT host
+    title: ERCOT NP6-905-CD real-time Settlement Point Price, HB_NORTH (North 345 kV Hub)
+    publication_cadence: >-
+      One document per 15-minute Settlement Interval, posted about every 15 minutes; the
+      public list keeps about 7 days. Prices are final at 1600 on the second Business Day
+      after the Operating Day; corrections are a separate report that is not collected.
+    collection_interval_hours: 1  # your intent; nothing runs unless you (or a task) run it
+    mode: snapshot               # snapshot: newest uncollected; coverage: oldest first in a range
+    # coverage_from: 2026-10-07  # coverage mode: first PublishDate label (as ERCOT writes it)
+    # coverage_to: null          # coverage mode: last PublishDate label; null = newest listed
+    window_documents: 4          # first run: the newest 4 intervals (one hour)
+    revision_lookback_documents: 0  # revision recheck: 0 = reposts are NOT monitored
+    max_catchup_documents: 8     # at most 8 uncollected intervals per refresh (2 hours)
+    request_budget: 10           # 1 list + 8 downloads + 1 retry
+    freshness_threshold_hours: 2  # judged by the newest document's publication time
+    # Capacity (docs/refresh-runbook.md): about 96 documents are published per day and the
+    # public list keeps about 7 days. 8 per refresh keeps pace only if a refresh really runs
+    # at least every 2 hours; with ercot and ercot-dam-spp enabled this dataset never fits
+    # under the shared ercot.com cap below. Use bounded backfill runs to work through a range.
+
 # Shared per-host limits: every enabled dataset on a host counts against one budget per
 # refresh, so per-dataset budgets never add up to more load on one host than this.
 hosts:

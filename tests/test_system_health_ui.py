@@ -77,7 +77,7 @@ def _items(at) -> list[dict]:
 def test_empty_state_shows_no_data_and_snapshot_note(env):
     data, clock, mp = env
     at = _render(mp, T0)
-    eia, ercot, gen, price = _items(at)
+    eia, ercot, gen, price, rtp = _items(at)
     assert (
         eia["Freshness"]
         == ercot["Freshness"]
@@ -96,7 +96,7 @@ def test_successful_state_separates_attempt_success_label_publication_retrieval(
     data, clock, mp = env
     _fill(data, clock)
     at = _render(mp, T0 + timedelta(hours=1))
-    eia, ercot, gen, price = _items(at)
+    eia, ercot, gen, price, rtp = _items(at)
     assert eia["Freshness"] == ercot["Freshness"] == "fresh"
     assert eia["Last attempted collection"].startswith("committed at 2026-03-10T12:00")
     assert eia["Latest observation label"] == "period 2026-03-09T23 (UTC label)"
@@ -117,7 +117,8 @@ def test_stale_state_after_time_passes(env):
         "stale",
         "no data",
         "no data",
-    ]  # gen: nothing
+        "no data",
+    ]  # generation, day-ahead and real-time prices: nothing collected
     assert "Stale: older than the configured threshold" in _texts(at)
 
 
@@ -127,7 +128,7 @@ def test_unknown_state_when_observations_cannot_be_read(env):
     target = stores(data)["ercot"]
     (target.root / target.committed_files("observations")[0]["path"]).unlink()
     at = _render(mp, T0)
-    eia, ercot, gen, price = _items(at)
+    eia, ercot, gen, price, rtp = _items(at)
     assert ercot["Freshness"] == "unknown" and eia["Freshness"] == "fresh"
     assert "Unknown: freshness cannot be determined" in _texts(at)
     assert any("observations could not be read" in e.value for e in at.error)
@@ -139,7 +140,7 @@ def test_partial_failure_state(env):
     clock.advance(hours=2)
     _fill(data, clock, ercot=FakeErcot({}, script=[(403, "text/html", b"denied")]))
     at = _render(mp, clock())
-    eia, ercot, gen, price = _items(at)
+    eia, ercot, gen, price, rtp = _items(at)
     assert ercot["Last attempted collection"].startswith("failed")
     assert ercot["Last successful collection"].startswith("committed")
     assert any("failed run" in e.value and "403" in e.value for e in at.error)
@@ -174,7 +175,7 @@ def test_a_refresh_that_fails_before_collecting_is_still_shown(env):
         secrets=[],
     )
     at = _render(mp, T0)
-    eia, ercot, gen, price = _items(at)
+    eia, ercot, gen, price, rtp = _items(at)
     assert eia["Last attempted collection"] == "none recorded"
     assert eia["Last refresh including this source"].startswith(
         "failed (refresh started 2026-03-10"

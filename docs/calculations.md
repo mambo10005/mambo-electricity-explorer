@@ -410,3 +410,84 @@ Actual prices are never injected automatically. A future import must require and
 
 No calculator may infer a contract fixed price (K) from an observed price.
 
+## `rt_price_reading` v1 — Stage 20 (ADR 0017)
+
+Lesson 15 reads the stored ERCOT real-time Settlement Point Prices at `HB_NORTH` for one
+DeliveryDate (`rt_price_view.load_day`). There is no arithmetic beyond selection and
+counting.
+
+| Quantity | Rule |
+|---|---|
+| Highest interval | The valid price with the largest value (ties: later in publication order). The label is `H{DeliveryHour} I{DeliveryInterval} {DSTFlag}`, as published. |
+| Negative intervals | Count of stored valid prices below zero. |
+| Missing | Stored intervals with a blank price. |
+| Absent | Intervals not stored at all: shown only as hours with fewer than four stored intervals, never filled. |
+| Snapshot | sha256 of (dataset, location, DeliveryDate, [(label, revision, raw value)]). |
+
+### Day-ahead / real-time comparison: prerequisites (design only; nothing implemented)
+
+**Stage 22 status (ADR 0019, `docs/interval-alignment.md` §9):**
+- prerequisite 2 (interval compatibility) is **blocked by unavailable evidence**: no
+  official label definition, so no mapping is accepted;
+- 1, 3, and 5 are partially verified;
+- 4 is verified;
+- 6 and 7 are unresolved.
+
+**Stage 23 (ADR 0020):** M1 can be used as an opt-in, approval-gated operational assumption.
+- Under it, an hour is `complete_under_assumption` only when exactly one selected valid price
+  exists for each interval M1 expects (1–4) and for the day-ahead hour.
+- That is alignment completeness, not collection coverage, revision availability, finality, or
+  official semantics.
+- No attributable approval is recorded yet.
+
+**Stage 24 prerequisites:**
+1. an active scoped approval of M1;
+2. complete alignment under the selected revision policy;
+3. an explicit, justified real-time aggregation definition;
+4. stated non-settlement and non-backtest limitations.
+
+**Stage 24 (ADR 0021, `docs/aggregation-evidence.md`):** hourly real-time summaries are
+governed records. Neither is approved, so no production summary is shown.
+- **AGG-A**, arithmetic mean: (P1 + P2 + P3 + P4) / 4.
+- **AGG-B**, duration-weighted mean: Σ(Pi × Di) / ΣDi, with 15-minute durations for DSTFlag N
+  only.
+- **Units:** both are $/MWh price summaries, not energy-weighted prices. Energy-weighted prices
+  and settlement amounts ($) are research only.
+
+**Stage 25 prerequisites:**
+1. active M1 and aggregation approvals;
+2. complete M1 alignment and aggregation inputs;
+3. an explicit revision policy;
+4. the displayed non-settlement limitation;
+5. a separately defined and reviewed day-ahead-versus-real-time comparison formula.
+
+The interval-alignment diagnostic itself computes no price figure; only the governed
+aggregation section can. Candidate hourly summaries
+(arithmetic, duration-weighted, energy-weighted, settlement amount) are researched in
+`docs/interval-alignment.md` §8, and none is implemented.
+
+A future comparison of the day-ahead hourly price (NP4-190-CD) with real-time 15-minute
+prices (NP6-905-CD) must establish all of the following first:
+
+1. **Same verified location:** the same settlement point name and type in both reports
+   (today: `HB_NORTH`, hub).
+2. **Compatible operating intervals:** evidence that the day-ahead `HourEnding hh:00` and the
+   real-time `DeliveryHour hh` with intervals 1–4 describe the same hour of the same
+   Operating Day. Neither report states a time zone.
+3. **Explicit DST handling:** the observed representation on both DST transition days
+   (DSTFlag, repeated or missing hours), with matching rules.
+4. **Verified price definitions:** day-ahead hub price (aggregated Shift Factors per hour)
+   vs. real-time hub price (time-weighted Hub Bus prices plus RTRDP, floored per 15
+   minutes).
+5. **Revision selection:** which revision of each value is used (e.g. latest as of a stated
+   time), recorded with document ids.
+6. **Complete subinterval coverage:** all four real-time intervals of the hour present and
+   valid. An hour with fewer is incomplete and is not compared.
+7. **A defined aggregation:** an arithmetic mean of four 15-minute prices is **not**
+   automatically an energy-weighted settlement price; the weighting must be stated and
+   justified.
+
+A comparison must never average the available intervals and label an incomplete hour
+complete, never present the difference as a trading result or backtest, and never imply that
+either price is final.
+

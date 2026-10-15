@@ -36,6 +36,7 @@ REQUIRED_DOCS = [
     "docs/decisions/0014-generation-by-energy-source.md",
     "docs/decisions/0015-timestamp-display-consistency.md",
     "docs/decisions/0016-ercot-day-ahead-hub-price.md",
+    "docs/decisions/0017-ercot-real-time-hub-price.md",
     "docs/testing-isolation.md",
     "docs/accessibility.md",
     "docs/review/human-review-checklist.md",

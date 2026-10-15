@@ -1,6 +1,6 @@
-# Human-review checklist: lessons 1–14, the glossary, and the responsibility records
+# Human-review checklist: lessons 1–15, the glossary, and the responsibility records
 
-**Status: not reviewed by a person.** All fourteen lessons, the glossary, the exercise
+**Status: not reviewed by a person.** All fifteen lessons, the glossary, the exercise
 wording, and the regulatory responsibility records were drafted by an AI agent (Claude). This checklist was also prepared by the
 agent; it lists what a reviewer should check and the potential issues the agent noticed.
 It is **not** a review. BL-3 stays open until a named person completes it.
@@ -315,6 +315,23 @@ Copy this block for each item you review. Leave fields blank until they are true
      energy market").
   4. Finality is shown as "not determined"; confirm the explanation of §4.5.3(6) is fair.
 
+## Lesson 15 — Reading an actual real-time settlement-point price · `real-time-price` · v1.0.0
+
+- Data: ERCOT NP6-905-CD real-time Settlement Point Prices, `HB_NORTH` (type HU) only;
+  calculation `rt_price_reading` v1.
+- Sources: `ercot-np6-905-cd`, `ercot-nodal-protocols` (§3.5.2.1(4), §6.3, §6.6.1),
+  `ercot-np4-197-m`, `ercot-prices` (agent-checked 2026-10-12).
+- Exercises: `highest-interval`, `negative-count`, `absent-interval`, `spp-vs-lmp`,
+  `not-invoice` (rtprice; answers from the stored intervals).
+- Agent-noticed items:
+  1. The beginner wording "time-weighted average of the hub's bus prices plus an adder" is a
+     simplification of §3.5.2.1(4). Confirm it is fair.
+  2. The `spp-vs-lmp` decoy calls SCED "five-minute"; the Protocols describe SCED running
+     every five minutes in places. Confirm the wording.
+  3. The settlement wording ("an invoice also depends on metered quantities, day-ahead
+     positions, ancillary services, and other charge types") is general. Check it.
+  4. DST intervals are unobserved; the lesson says so.
+
 ## Regulatory responsibility records (`content/responsibilities.yaml`, set v1.0.0)
 
 - 17 records, 11 sources, 4 open questions, 7 source gaps. Each record: claim paraphrase,
@@ -331,7 +348,7 @@ Copy this block for each item you review. Leave fields blank until they are true
 
 ## Glossary (`src/mambo_explorer/content/glossary.yaml`)
 
-80 terms. Check each definition for accuracy, beginner readability, and consistency with
+85 terms. Check each definition for accuracy, beginner readability, and consistency with
 the lessons that use it.
 
 - [ ] Observation terms: Absent row, BA, Day-ahead demand forecast, Demand, EIA, EIA-930,
@@ -342,6 +359,8 @@ the lessons that use it.
 - [ ] Basis terms (lesson 9): Basis, Fixed-for-floating hedge, Quantity mismatch,
       Reference location.
 - [ ] Shape terms (lesson 10): Flat-block hedge, Load shape, Time-shape component.
+- [ ] Real-time price terms (lesson 15): Price adder, Price floor, Real-time Settlement Point
+      Price, SCED, Settlement Interval.
 - [ ] Price terms (lesson 14): Day-Ahead Market, Delivery date, Price finality, Settlement
       Point Price, Trading hub.
 - [ ] Generation terms (lesson 13): Category sum, Energy source category, Fuel consumption,
@@ -358,3 +377,16 @@ the lessons that use it.
      Decide whether that is acceptable for beginners.
   2. "Offer" is defined as a synthetic cost per MWh, explicitly not a market bid. Confirm a
      reader cannot confuse it with real offers.
+
+## Assumption and aggregation records (Stages 23–24)
+
+Agent-authored records that govern optional diagnostics. Approvals are recorded separately
+with the CLI; ticking a box here records no approval.
+- [ ] M1 1.0.0 rule, scope, and unresolved definitions (`docs/assumption-register.md`).
+- [ ] AGG-A 1.0.0 (arithmetic mean) and AGG-B 1.0.0 (duration-weighted mean): formulas,
+      output names, allowed and prohibited uses, and limitations.
+- [ ] The persistent limitation text: "This is an analytical summary under review-approved
+      assumptions. It is not an ERCOT-defined hourly settlement price, settlement, or trading
+      backtest."
+- [ ] The aggregation-evidence classification (`docs/aggregation-evidence.md`), especially the
+      HRSAP finding (a credit formula, not a published price).

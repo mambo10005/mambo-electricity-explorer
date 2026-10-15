@@ -17,6 +17,7 @@ Review columns:
 | EIA (U.S. Energy Information Administration) Open Data API v2 | Federal statistics | 1 | API key (`EIA_API_KEY`), sent as a URL query parameter | Reviewed 2026-10-11, see below | Generally permitted, with exceptions for third-party material (see below) | EIA-930: revised without per-value flags (see below) | General terms reviewed; EIA-930 `region-data` cleared for local collection/use; other routes' source notes pending; publication review pending | Yes, locally: EIA-930 ERCO D/DF (live-verified 2026-10-11) |
 | ERCOT — NP6-345-CD Actual System Load by Weather Zone | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + download, no login (ERCOT Public API needs registration; not used) | Reviewed 2026-10-11, see below | Terms permit raw-data reuse in compilations, charts, and analyses; **project publication review pending** | No correction policy found; reposts handled as revisions | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-11) |
 | ERCOT — NP4-190-CD DAM Settlement Point Prices (HB_NORTH) | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + download, no login | Reviewed 2026-10-12, see below | Same ERCOT terms; **project publication review pending** | Corrections via NP4-196-M (not collected); reposts handled as revisions; finality rule recorded, not computed | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-12) |
+| ERCOT — NP6-905-CD real-time Settlement Point Prices (HB_NORTH) | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + per-interval download, no login | Reviewed 2026-10-12, see below | Same ERCOT terms; **project publication review pending** | Corrections via NP4-197-M (not collected); reposts become revisions; finality rule recorded, not computed | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-12) |
 | CAISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | PJM | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | MISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
@@ -351,6 +352,40 @@ file is committed; test fixtures are synthetic.
   HB_NORTH rows, all matching the archived ZIPs.
 - Repeat: 3 requests, 48 unchanged. `validate` ok.
 
+### ERCOT — NP6-905-CD real-time Settlement Point Prices (HB_NORTH) — 2026-10-12
+
+Scope reviewed: one report, one market stage (real-time), one location (`HB_NORTH`, type `HU`).
+Contract: `docs/datasets/ercot-np6-905-cd.md`. Decision: ADR 0017.
+
+**Pages and files read (2026-10-12):**
+- Product pages NP6-905-CD (report type 12301) and NP4-197-M (RTM Price Corrections, type
+  13045).
+- ERCOT market prices page.
+- Nodal Protocols Section 6 (Aug 28, 2026): §6.3 price correction and finality, §6.5.7.3.1
+  adders, §6.6.1 Real-Time Settlement Point Prices. Also §3.5.2.1(4) (Aug 1, 2026).
+  Downloaded to scratch, read locally, not committed.
+- Live listing and one document (schema), in scratch.
+
+| Item | Finding | Status |
+|---|---|---|
+| Product | real-time **Settlement Point Prices** "produced from SCED LMPs every 15 minutes" (not an LMP report) | Product page |
+| Schema | `DeliveryDate, DeliveryHour, DeliveryInterval, SettlementPointName, SettlementPointType, SettlementPointPrice, DSTFlag`; one interval per document; rows unique by (name, type) | Live file |
+| Price | North Hub RTSPP = Max[−$251, RTRDP + time-weighted Hub Bus prices]; adder included; $/MWh | Protocols §3.5.2.1(4), §6.6.1 |
+| Interval | 15 minutes; no time zone in the file; DST not observed | raw labels, no UTC |
+| History | display 7; live list 676 documents back to 2026-10-06 | 7-day public list |
+| Finality | final at 1600 on the 2nd Business Day (§6.3(7)); later Board review possible | not determined |
+| Corrections | NP4-197-M | not collected; reposts become revisions |
+
+**Local collection and use: CLEARED** on the same basis as the other ERCOT public reports.
+**Public redistribution: NOT REVIEWED** (PUB-01). No ERCOT file is committed.
+
+**Live verification (2026-10-12, scratch):**
+- An earlier attempt was rejected by the parser (a duplicate name with a different type);
+  fixed.
+- Collection: 5 requests, 4 intervals stored from 4,568 downloaded rows, 4/4 matching the
+  archives.
+- Repeat with `--include-stored`: 4 unchanged.
+
 ### EIA vs. ERCOT: unresolved differences (no join, no reconciliation yet)
 
 | Aspect | EIA-930 `ERCO` `D` | ERCOT NP6-345-CD `TOTAL` |
@@ -368,3 +403,13 @@ A future reconciliation would need all of the following:
 4. an ERCOT definition of TOTAL to compare with EIA-930 demand
 
 Until then the sources are shown separately and never compared numerically.
+
+### ERCOT — NP4-180-ER / NP6-785-ER historical hub and load-zone SPPs (investigation only) — 2026-10-13
+
+- **Use:** read for the Stage 22 interval-alignment investigation (ADR 0019). They are **not
+  collected** by the app, and no file is committed.
+- **Product pages:** public, report types 13060 and 13061, weekly, zip/xlsx, "User Guide N/A".
+- **Downloaded to scratch:** the 2025 and 2026 workbooks of each (4 documents, after 2 listing
+  requests). HB_NORTH labels only were extracted locally.
+- **Terms:** same basis as the other ERCOT public reports (no account, paced).
+- **Not reviewed:** public redistribution (PUB-01) and collection as a dataset.

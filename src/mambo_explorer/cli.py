@@ -12,6 +12,12 @@ Commands:
     health     read-only collection, freshness, and storage status
     learn-reset  optional backup-and-reset of local learning progress (dry run unless
                --execute; asks for typed confirmation; never shows contents)
+    assumption show|status|approve|revoke  the versioned M1 alignment assumption and its
+               local approval records (approve/revoke are dry runs unless --execute; every
+               reviewer field must be supplied, nothing is filled in)
+    aggregation list|show|status|approve|revoke|restore  versioned hourly real-time
+               aggregation records and their local approvals (same rules; approve also needs
+               --version, --scope, and --accept-limitations from `show`)
 
 --source defaults to eia. ERCOT (NP6-345-CD) uses ERCOT's public download, needs no
 credential, and never uses EIA_API_KEY. Nothing is deleted by default.
@@ -42,13 +48,14 @@ from mambo_explorer.eia.client import EIAClient, EIAError
 from mambo_explorer.ercot import collect as ercot
 from mambo_explorer.ercot import dataset as ercot_ds
 from mambo_explorer.ercot import prices as ercot_prices
+from mambo_explorer.ercot import rt_prices as ercot_rt
 from mambo_explorer.ercot.client import ErcotClient, ErcotError
 from mambo_explorer.refresh import RefreshLockError
 from mambo_explorer.refresh_config import RefreshConfigError
 from mambo_explorer.safe_zip import ArchiveError
 from mambo_explorer.storage import Store, WriterLockError
 
-SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp")
+SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp", "ercot-rt-spp")
 
 
 def _print(obj: object) -> None:
@@ -62,6 +69,8 @@ def _store(args, settings) -> Store:
         return generation.store(settings.data_dir)
     if args.source == "ercot-dam-spp":
         return ercot_prices.store(settings.data_dir)
+    if args.source == "ercot-rt-spp":
+        return ercot_rt.store(settings.data_dir)
     return Store(settings.data_dir)
 
 
@@ -89,6 +98,24 @@ def cmd_sources(args, settings) -> int:
                 "public_csv_documents": len(documents),
                 "publish_times": [d.publish_time_raw for d in documents],
                 "requests_used": client.stats.requests,
+            }
+        )
+        return 0
+    if args.source == "ercot-rt-spp":
+        _print(
+            {
+                "source": f"ERCOT {ercot_rt.DATASET} — {ercot_rt.REPORT_NAME}",
+                "report_type_id": ercot_rt.REPORT_TYPE_ID,
+                "product_page": ercot_rt.PRODUCT_PAGE,
+                "market_stage": ercot_rt.MARKET_STAGE,
+                "location": f"{ercot_rt.LOCATION} — {ercot_rt.LOCATION_NAME}",
+                "price": ercot_rt.PRICE_DEFINITION,
+                "interval_minutes": ercot_rt.INTERVAL_MINUTES,
+                "columns": list(ercot_rt.HEADER),
+                "units": ercot_rt.UNIT_TEXT,
+                "time_labels": ercot_rt.TIME_TEXT,
+                "finality": ercot_rt.FINALITY_TEXT,
+                "review": "docs/source-register.md — ERCOT NP6-905-CD review",
             }
         )
         return 0
@@ -125,7 +152,56 @@ def cmd_sources(args, settings) -> int:
     return 0
 
 
+def _collect_rt(args, settings) -> int:
+    """Real-time prices: snapshot (--latest) or bounded coverage/backfill (--coverage-from)."""
+    from mambo_explorer import refresh_config
+
+    if args.publish_date:
+        raise ercot_rt.SelectionError(
+            "--publish-date is not supported for ercot-rt-spp; use --coverage-from/--coverage-to"
+        )
+    coverage = args.coverage_from is not None
+    if args.coverage_to is not None and not coverage:
+        raise ercot_rt.SelectionError("--coverage-to needs --coverage-from")
+    selection = ercot_rt.Selection(
+        latest=args.latest
+        or (
+            ercot_rt.MAX_DOCUMENTS_PER_RUN - (args.recheck or 0)
+            if coverage
+            else ercot_rt.DEFAULT_LATEST
+        ),
+        include_stored=args.include_stored,
+        mode=ercot_rt.COVERAGE if coverage else ercot_rt.SNAPSHOT,
+        publish_from=args.coverage_from,
+        publish_to=args.coverage_to,
+        recheck=args.recheck or 0,
+    )
+    cap = refresh_config.load().host_budget("ercot.com")
+    if cap is not None and selection.request_budget > cap:
+        raise ercot_rt.SelectionError(
+            f"this run would budget {selection.request_budget} requests, above the shared "
+            f"ercot.com cap of {cap}; request fewer documents or rechecks"
+        )
+    target = ercot_rt.store(settings.data_dir)
+    print("Collection plan:")
+    _print({**selection.describe(), "preview": ercot_rt.preview(selection, target)})
+    if args.dry_run:
+        print("\nDry run: no requests sent, nothing written.")
+        return 0
+    summary = ercot_rt.collect(
+        selection, ErcotClient(max_requests=selection.request_budget), target
+    )
+    print("\nCollection committed:")
+    _print(summary)
+    if summary["documents_failed"] or summary["stopped_early"]:
+        print("\nPartial: some documents failed or were deferred; run again to resume.")
+        return 3
+    return 0
+
+
 def cmd_collect(args, settings) -> int:
+    if args.source == "ercot-rt-spp":
+        return _collect_rt(args, settings)
     if args.source == "ercot-dam-spp":
         selection = ercot_prices.Selection(
             latest=None if args.publish_date else (args.latest or ercot_prices.DEFAULT_LATEST),
@@ -230,6 +306,7 @@ def _refresh_parts(settings, config_path):
         "ercot": ercot.store(settings.data_dir),
         "eia-generation": generation.store(settings.data_dir),
         "ercot-dam-spp": ercot_prices.store(settings.data_dir),
+        "ercot-rt-spp": ercot_rt.store(settings.data_dir),
     }
     return config, stores
 
@@ -246,6 +323,7 @@ def cmd_refresh(args, settings) -> int:
         "eia-generation": lambda budget: EIAClient(settings.api_key, max_requests=budget),
         "ercot": lambda budget: ErcotClient(max_requests=budget),
         "ercot-dam-spp": lambda budget: ErcotClient(max_requests=budget),
+        "ercot-rt-spp": lambda budget: ErcotClient(max_requests=budget),
     }
     record = refresh.refresh(
         config,
@@ -278,6 +356,148 @@ def cmd_health(args, settings) -> int:
     return 0
 
 
+def cmd_aggregation(args, settings) -> int:
+    from dataclasses import asdict
+
+    from mambo_explorer.ercot import aggregation_policy as agp
+    from mambo_explorer.ercot import approvals as ap
+
+    if args.action == "list":
+        _print(
+            [
+                {
+                    "id": r.id,
+                    "version": r.version,
+                    "method": r.method,
+                    "output_name": r.output_name,
+                    "approval_status": ap.status(settings.data_dir, r).status,
+                }
+                for r in agp.RECORDS
+            ]
+            + [{"id": k, "approvable": False, "why": v} for k, v in agp.NOT_APPROVABLE.items()]
+        )
+        return 0
+    if not args.record_id:
+        print(
+            "error: this action needs a record id (see `mambo aggregation list`)", file=sys.stderr
+        )
+        return 1
+    try:
+        record = agp.record(args.record_id)
+    except KeyError:
+        print(f"error: no aggregation record {args.record_id!r}", file=sys.stderr)
+        return 1
+    if args.action == "show":
+        _print(
+            {
+                **{k: v for k, v in asdict(record).items()},
+                "scope_fingerprint": record.scope_fingerprint(),
+                "limitations_fingerprint": record.limitations_fingerprint(),
+            }
+        )
+        return 0
+    try:
+        if args.action == "status":
+            state = ap.status(settings.data_dir, record)
+            # reviewer identity is not printed; the local file holds it
+            _print(
+                {
+                    "record": f"{record.id} {record.version}",
+                    "approval_status": state.status,
+                    "approval_reference": state.reference,
+                    "superseded_records": ap.superseded_records(settings.data_dir, record),
+                    "records_file": str(ap.path(settings.data_dir)),
+                }
+            )
+            return 0
+        if args.action in ("approve", "restore"):
+            if args.version != record.version or args.scope != record.scope_fingerprint():
+                raise ap.ApprovalError(
+                    f"--version and --scope must match {record.id} {record.version} "
+                    f"({record.scope_fingerprint()}); read them with `show`"
+                )
+            if args.action == "restore" and not args.record:
+                raise ap.ApprovalError("restore needs --record (the revoked approval)")
+            event = ap.new_approval(
+                record,
+                reviewer=args.reviewer,
+                role=args.role,
+                evidence=args.evidence,
+                approved_on=args.approved_on,
+                accepted_limitations=args.accept_limitations,
+                restores=args.record if args.action == "restore" else None,
+            )
+        else:
+            if not args.record or not args.reason:
+                raise ap.ApprovalError("revoke needs --record and --reason")
+            event = ap.new_revocation(record, args.record, args.reason)
+        print(
+            f"{event.kind} {event.record_id} for {record.id} {record.version} (contents not shown)"
+        )
+        if not args.execute:
+            print("Dry run: nothing was recorded. Re-run with --execute to append this record.")
+            return 0
+        print(f"Appended to {ap.append(settings.data_dir, event)}")
+        return 0
+    except ap.ApprovalError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
+def cmd_assumption(args, settings) -> int:
+    from dataclasses import asdict
+
+    from mambo_explorer.ercot import approvals as ap
+    from mambo_explorer.ercot.m1_policy import current
+
+    record = current(args.assumption_id)
+    if args.action == "show":
+        _print(
+            {
+                **{k: v for k, v in asdict(record).items() if k != "schema"},
+                "schema_fingerprint": record.schema_fingerprint(),
+                "scope_fingerprint": record.scope_fingerprint(),
+            }
+        )
+        return 0
+    try:
+        if args.action == "status":
+            state = ap.status(settings.data_dir, record)
+            _print(
+                {
+                    "assumption": f"{record.id} {record.version}",
+                    "approval_status": state.status,
+                    "approval_reference": state.reference,
+                    "detail": state.detail,
+                    "superseded_records": ap.superseded_records(settings.data_dir, record),
+                    "official_semantics": record.official_status,
+                    "records_file": str(ap.path(settings.data_dir)),
+                }
+            )
+            return 0
+        if args.action == "approve":
+            event = ap.new_approval(
+                record,
+                reviewer=args.reviewer,
+                role=args.role,
+                evidence=args.evidence,
+                approved_on=args.approved_on,
+            )
+        else:
+            if not args.record or not args.reason:
+                raise ap.ApprovalError("revoke needs --record and --reason")
+            event = ap.new_revocation(record, args.record, args.reason)
+        _print(asdict(event))
+        if not args.execute:
+            print("Dry run: nothing was recorded. Re-run with --execute to append this record.")
+            return 0
+        print(f"Appended to {ap.append(settings.data_dir, event)}")
+        return 0
+    except ap.ApprovalError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
 def _date(text: str) -> date:
     return date.fromisoformat(text)
 
@@ -295,7 +515,8 @@ def build_parser() -> argparse.ArgumentParser:
             default="eia",
             help="eia (EIA-930 demand/forecast), ercot (ERCOT NP6-345-CD direct), or "
             "eia-generation (EIA-930 net generation by energy source), or ercot-dam-spp "
-            "(ERCOT NP4-190-CD DAM settlement point price, HB_NORTH)",
+            "(ERCOT NP4-190-CD DAM settlement point price, HB_NORTH), or ercot-rt-spp "
+            "(ERCOT NP6-905-CD real-time settlement point price, HB_NORTH)",
         )
         p.set_defaults(func=func)
         return p
@@ -328,6 +549,28 @@ def build_parser() -> argparse.ArgumentParser:
         "--publish-date",
         action="append",
         help="ERCOT PublishDate (YYYY-MM-DD) to fetch; repeatable",
+    )
+    ercot_group.add_argument(
+        "--include-stored",
+        action="store_true",
+        help="ercot-rt-spp: re-download already-stored intervals (revision check)",
+    )
+    ercot_group.add_argument(
+        "--coverage-from",
+        type=_date,
+        help="ercot-rt-spp coverage/backfill mode: first PublishDate label (YYYY-MM-DD, as "
+        "ERCOT writes it); takes the OLDEST uncollected listed documents first",
+    )
+    ercot_group.add_argument(
+        "--coverage-to",
+        type=_date,
+        help="ercot-rt-spp coverage mode: last PublishDate label (default: newest listed)",
+    )
+    ercot_group.add_argument(
+        "--recheck",
+        type=int,
+        help=f"ercot-rt-spp: already-collected documents to download again for reposts "
+        f"(0..{ercot_rt.MAX_RECHECK_PER_RUN}; default 0)",
     )
     p.epilog = (
         f"EIA: at most {MAX_DAYS_PER_RUN} days per run including lookback. "
@@ -369,6 +612,41 @@ def build_parser() -> argparse.ArgumentParser:
         "--backup-dir", help="where to write the backup (default: outside the repository)"
     )
     p.set_defaults(func=cmd_learn_reset)
+
+    p = sub.add_parser(
+        "assumption",
+        help="the versioned M1 alignment assumption and its local approval records",
+    )
+    p.add_argument("action", choices=("show", "status", "approve", "revoke"))
+    p.add_argument("--assumption-id", default="M1")
+    p.add_argument("--reviewer", help="approve: the reviewer's name, as they supplied it")
+    p.add_argument("--role", help="approve: the reviewer's role")
+    p.add_argument("--evidence", help="approve: where the approval is documented (a reference)")
+    p.add_argument("--approved-on", help="approve: the actual approval date (YYYY-MM-DD)")
+    p.add_argument("--record", help="revoke: the approval record id to revoke")
+    p.add_argument("--reason", help="revoke: why")
+    p.add_argument("--execute", action="store_true", help="append the record (default: dry run)")
+    p.set_defaults(func=cmd_assumption)
+
+    p = sub.add_parser(
+        "aggregation",
+        help="versioned hourly real-time aggregation records and their local approvals",
+    )
+    p.add_argument("action", choices=("list", "show", "status", "approve", "revoke", "restore"))
+    p.add_argument("record_id", nargs="?", help="aggregation record id, e.g. AGG-A")
+    p.add_argument("--version", help="approve/restore: the record version, as shown")
+    p.add_argument("--scope", help="approve/restore: the scope fingerprint, as shown")
+    p.add_argument(
+        "--accept-limitations", help="approve/restore: the limitations fingerprint, as shown"
+    )
+    p.add_argument("--reviewer", help="approve/restore: the reviewer's name, as they supplied it")
+    p.add_argument("--role", help="approve/restore: the reviewer's role")
+    p.add_argument("--evidence", help="approve/restore: where the approval is documented")
+    p.add_argument("--approved-on", help="approve/restore: the actual approval date (YYYY-MM-DD)")
+    p.add_argument("--record", help="revoke: the approval to revoke; restore: the revoked one")
+    p.add_argument("--reason", help="revoke: why")
+    p.add_argument("--execute", action="store_true", help="append the record (default: dry run)")
+    p.set_defaults(func=cmd_aggregation)
     return parser
 
 
@@ -392,6 +670,10 @@ def main(argv: list[str] | None = None) -> int:
         ArchiveError,
         RefreshConfigError,
         RefreshLockError,
+        ercot_prices.PriceFormatError,
+        ercot_prices.SelectionError,
+        ercot_rt.RtFormatError,
+        ercot_rt.SelectionError,
     ) as exc:
         print(f"error: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2

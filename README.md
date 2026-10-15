@@ -126,6 +126,42 @@ final. **Explore** shows the day; lesson 14, *Reading an actual day-ahead electr
 price*, explains it. Opt-in in the refresh plan (ADR 0016,
 `docs/datasets/ercot-np4-190-cd.md`).
 
+### ERCOT real-time price at the North Hub (no key needed)
+
+```powershell
+.venvs/py314/Scripts/mambo sources --source ercot-rt-spp               # reviewed contract (offline)
+.venvs/py314/Scripts/mambo collect --source ercot-rt-spp --dry-run     # scope and budget; sends nothing
+.venvs/py314/Scripts/mambo collect --source ercot-rt-spp --latest 4    # newest 4 intervals not stored
+# bounded backfill: the 16 oldest uncollected documents with these PublishDates (rerun to resume)
+.venvs/py314/Scripts/mambo collect --source ercot-rt-spp --coverage-from 2026-10-07 --coverage-to 2026-10-07 --dry-run
+```
+
+ERCOT NP6-905-CD real-time Settlement Point Prices (produced from SCED LMPs every 15
+minutes, including ERCOT's reliability deployment price adder, floored at −$251/MWh), stored
+for `HB_NORTH` only in `<MAMBO_DATA_DIR>/ercot-np6-905-cd/`. Each interval keeps ERCOT's
+DeliveryDate/DeliveryHour/DeliveryInterval/DSTFlag (no UTC). Lesson 15 explains it. Opt-in,
+under the shared ercot.com request cap (ADR 0017, `docs/datasets/ercot-np6-905-cd.md`).
+About 96 documents are published a day and the list keeps about 7 days. The collector does
+not keep complete history; coverage mode and bounded backfill work through a range one run
+at a time (ADR 0018, `docs/refresh-runbook.md`).
+
+Explore also has a read-only **interval-alignment diagnostic**. It shows how a day-ahead
+hour's labels relate to real-time interval labels, and it reads no prices. No mapping is
+accepted yet: ERCOT's official materials do not define the reports' labels. So it reports
+`unsupported_semantics`, plus a clearly labelled candidate check (ADR 0019,
+`docs/interval-alignment.md`). No DART spread or day-ahead/real-time comparison exists.
+Since Stage 23 the same panel can use **assumption M1**.
+- **What M1 is:** an operational assumption, not an ERCOT definition.
+- **Opt-in:** you must select it, and only after an approval has been recorded locally with
+  `mambo assumption approve … --execute` (ADR 0020, `docs/assumption-register.md`).
+- **Current state:** no approval is recorded, so it stays pending.
+
+Stage 24 adds an **aggregation investigation**: candidate ways to summarize an hour's four
+real-time prices, with formulas, units, and synthetic benchmarks. A governed hourly analytical
+summary is shown only after **both** M1 and an aggregation record (`mambo aggregation …`) are
+approved. Neither is, so it is withheld. It is never an ERCOT settlement price or a spread
+(ADR 0021).
+
 ### Refresh both sources and check health
 
 ```powershell
@@ -261,6 +297,7 @@ A test fails if `docs/dependency-licenses.md` no longer matches the lock.
 | [Source register](docs/source-register.md) | Data source access and licensing review |
 | [Calculations](docs/calculations.md) | Formulas, units, exclusions, and versions |
 | [ERCOT NP6-345-CD contract](docs/datasets/ercot-np6-345-cd.md) | Direct ERCOT report: schema, units, time and DST fields |
+| [ERCOT NP6-905-CD contract](docs/datasets/ercot-np6-905-cd.md) | Real-time hub price: product, price definition, 15-minute interval identity, finality |
 | [ERCOT NP4-190-CD contract](docs/datasets/ercot-np4-190-cd.md) | Day-ahead hub price: report, location evidence, units, labels, finality |
 | [EIA-930 generation contract](docs/datasets/eia930-fuel-type-data.md) | Net generation by energy source: route, codes, sign conventions, totals |
 | [Timestamp display](docs/timestamp-display.md) | Inventory of every time value shown, its kind, and its display convention; browser regression steps |

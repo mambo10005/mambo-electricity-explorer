@@ -107,7 +107,37 @@ non-trivial work.
     report's conventions; never call a price final; missing is not zero.
   - Never inject actual prices into calculators automatically, never use a day-ahead
     price as real-time, never infer K, never join with EIA data.
-  - Respect the shared `hosts` request cap for ercot.com.
+  - Respect the shared `hosts` request cap for ercot.com; never raise it silently.
+  - Real-time (ADR 0017): NP6-905-CD SPP (not LMP) at `HB_NORTH`/`HU`; keep
+    DeliveryDate/Hour/Interval/DSTFlag raw; never assume 96 intervals; never compare
+    with day-ahead until the prerequisites in `docs/calculations.md` are met.
+  - Coverage (ADR 0018): "collected" comes from committed observations, never the
+    inventory alone. Never claim complete history or a complete day from 96 intervals.
+    Fresh is not complete. Backfill stays bounded under the unchanged shared cap; never
+    loop until history is downloaded. A document leaving the list is not proof it is lost.
+  - Interval alignment (ADR 0019): no day-ahead/real-time mapping is accepted.
+    - `align()` returns `unsupported_semantics` until a candidate in
+      `ercot/alignment.py` is accepted, on official evidence or by a named reviewer.
+    - Never infer label semantics from field names, example files, or price similarity.
+    - Never hardcode four intervals outside a candidate's `expected_intervals`.
+    - Never compute a spread or an hourly real-time price.
+    - Never call a revision final.
+  - Assumption M1 (ADR 0020): used only through `assumed_alignment.align_with_basis`.
+    - Requires an explicit user selection, an active recorded approval for the same version
+      and scope (`ercot/approvals.py`), and a supported revision policy.
+    - Never activate it at startup.
+    - Never invent or infer a reviewer, date, or approval, and never commit approval records.
+    - Never mark M1 accepted in `alignment.CANDIDATES`, or the official semantics verified.
+    - The four-interval expectation lives only in `m1_policy.M1`.
+  - Hourly aggregation (ADR 0021): only through `aggregation.aggregate`.
+    - Requires active M1 and aggregation-record approvals, complete M1 alignment, and one
+      current alignment snapshot; withhold with named blockers otherwise.
+    - Never fall back to another method.
+    - Never call the result an ERCOT, settlement, or final price.
+    - Never compute a spread, DART, P&L, or backtest.
+    - Never weight by EIA demand, and never substitute 0.25 h without duration evidence.
+    - Never create a `SYNTHETIC-ENVIRONMENT` file or a synthetic approval in the real data
+      directory.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,

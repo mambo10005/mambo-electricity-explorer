@@ -14,6 +14,7 @@ Freshness is "unknown" when it cannot be determined.
 
 from __future__ import annotations
 
+import sqlite3
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
 
@@ -47,6 +48,9 @@ class SourceHealth:
     # From refresh logs: a refresh can fail before a collector starts (e.g. no credential),
     # which leaves no catalog run. None when no refresh has included this source.
     last_refresh: dict | None = None
+    # Real-time prices (Stage 21): published-document coverage, kept apart from freshness.
+    collection: dict = field(default_factory=dict)
+    completeness: str = ""
 
 
 def _from_us(value) -> datetime | None:
@@ -308,6 +312,8 @@ def source_health(
         out.append(eia_health(stores["eia-generation"], config, now, "eia-generation"))
     if "ercot-dam-spp" in stores:
         out.append(price_health(stores["ercot-dam-spp"], config, now))
+    if "ercot-rt-spp" in stores:
+        out.append(rt_price_health(stores["ercot-rt-spp"], config, now))
     for h in out:
         h.last_refresh = last_refresh(logs or [], h.source)
         if h.last_refresh and h.last_refresh["status"] == "failed":
@@ -421,3 +427,200 @@ def price_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHe
         ],
         **base,
     )
+
+
+def rt_price_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHealth:
+    """ERCOT NP6-905-CD real-time price at HB_NORTH, per 15-minute interval as published."""
+    from mambo_explorer.ercot import rt_prices as rt
+
+    s = config.rt_prices
+    history = refresh.run_history(store)
+    problems, storage = _problems(store, history)
+    base = dict(
+        source="ercot-rt-spp",
+        title=s.title,
+        last_attempt=_attempt(history["last_attempt"]),
+        last_success=_attempt(history["last_success"]),
+        threshold_hours=s.freshness_threshold_hours,
+        problems=problems,
+        storage=storage,
+    )
+    collection, completeness = rt_collection(store, s)
+    base.update(collection=collection, completeness=completeness)
+    if not store.committed_files("observations"):
+        return SourceHealth(
+            collected=False,
+            latest_label=None,
+            publication_time="nothing collected",
+            retrieval_time=None,
+            freshness=NO_DATA,
+            freshness_basis="nothing has been collected",
+            **base,
+        )
+    try:
+        with store.query() as con:
+            day, hour, interval, flag, published_raw, published, retrieved = con.execute(
+                "SELECT delivery_date_raw, delivery_hour, delivery_interval, dst_flag, "
+                "publish_time_raw, epoch_us(publication_time_utc), epoch_us(retrieved_at_utc) "
+                "FROM latest ORDER BY publication_time_utc DESC LIMIT 1"
+            ).fetchone()
+            days, intervals, nulls, negatives, revised = con.execute(
+                "SELECT count(DISTINCT delivery_date), count(*), "
+                "count(*) FILTER (WHERE value IS NULL), count(*) FILTER (WHERE value < 0), "
+                "count(*) FILTER (WHERE revision > 1) FROM latest"
+            ).fetchone()
+            per_day = con.execute(
+                "SELECT delivery_date_raw, count(*) FROM latest GROUP BY delivery_date_raw, "
+                "delivery_date ORDER BY delivery_date"
+            ).fetchall()
+            short_hours = con.execute(
+                "SELECT count(*) FROM (SELECT 1 FROM latest GROUP BY delivery_date_raw, "
+                "delivery_hour, dst_flag HAVING count(*) < 4)"
+            ).fetchone()[0]
+    except (duckdb.Error, OSError) as exc:
+        return _unreadable({**base, "publication_time": "unknown"}, exc)
+    published = _from_us(published)
+    age = now - published if isinstance(published, datetime) else None
+    return SourceHealth(
+        collected=True,
+        latest_label=(
+            f"DeliveryDate {day}, DeliveryHour {hour}, DeliveryInterval {interval}, "
+            f"DSTFlag {flag} (ERCOT labels; not converted)"
+        ),
+        publication_time=f"{published_raw} (ERCOT listing PublishDate)",
+        retrieval_time=_iso(retrieved),
+        freshness=_freshness(age, s.freshness_threshold_hours),
+        freshness_basis=(
+            "age of the newest stored interval's publication time, as ERCOT states it "
+            "(real-time intervals are published about every 15 minutes)"
+        ),
+        coverage={
+            rt.LOCATION: {
+                "delivery_dates_present": days,
+                "intervals_stored": intervals,
+                "intervals_per_delivery_date": ", ".join(f"{d}: {n}" for d, n in per_day),
+                # An hour with fewer than four stored intervals cannot support a comparison.
+                "hours_with_fewer_than_4_intervals": short_hours,
+                "null_values": nulls,
+                "negative_prices": negatives,
+                "revised_intervals": revised,
+            }
+        },
+        notes=_unchanged_note(history)
+        + [
+            "Finality: " + rt.FINALITY_TEXT,
+            "Intervals per delivery date are counted, not compared with 96: the count on "
+            "daylight-saving days is not assumed, and a missing interval may be unpublished, "
+            "not yet collected, or outside ERCOT's public list.",
+            f"ERCOT's public list keeps about {rt.PUBLIC_RETENTION_DAYS} days; older intervals "
+            "are not available through the access method this app implements.",
+            "Day-ahead freshness is judged the same way (publication time), so a day-ahead "
+            "price for a future delivery date is never called stale because its date has not "
+            "happened yet.",
+        ],
+        **base,
+    )
+
+
+def rt_collection(store: Store, s) -> tuple[dict, str]:
+    """Published-document coverage for real-time prices, from the inventory (read-only).
+
+    Separate from freshness: a fresh newest interval says nothing about the documents before
+    it. Completeness is only claimed for the documents ERCOT LISTED in a selected coverage
+    range, never from an assumed number of intervals per day.
+    """
+    from mambo_explorer.ercot import rt_inventory as inv
+    from mambo_explorer.ercot import rt_prices as rt
+    from mambo_explorer.ercot.client import Document
+
+    inventory = inv.Inventory(store)
+    try:
+        listing = inventory.last_listing()
+        if listing is None:
+            return {}, (
+                "Cannot be determined: no ERCOT listing has been recorded yet, so the "
+                "published documents are unknown."
+            )
+        rows = inv.classify(
+            inventory.documents(), inv.collected_doc_ids(store), inv.superseded_doc_ids(store)
+        )
+    except (duckdb.Error, OSError, sqlite3.Error) as exc:
+        return {}, f"Cannot be determined: the inventory could not be read ({type(exc).__name__})."
+    coverage = s.mode == rt.COVERAGE
+    start = s.coverage_from.isoformat() if coverage and s.coverage_from else None
+    end = s.coverage_to.isoformat() if coverage and s.coverage_to else None
+    scoped = [r for r in rows if inv.in_range(r, start, end)]
+    count = {k: sum(r["status"] == k for r in scoped) for k in inv.STATUSES}
+    done = count[inv.COLLECTED] + count[inv.SUPERSEDED]
+    pending = (inv.DISCOVERED, inv.DEFERRED, inv.FAILED)
+    listed_scoped = [r for r in scoped if r["listed"]]
+    listed_open = sum(r["status"] in pending for r in listed_scoped)
+    backlog = sum(r["listed"] and r["status"] in pending for r in rows)
+    dropped_open = sum(not r["listed"] and r["status"] in pending for r in rows)
+    collected_rows = [r for r in rows if r["status"] == inv.COLLECTED]
+    rechecked = sum(r["downloads"] >= 2 for r in collected_rows)
+    listed_docs = [
+        Document(r["doc_id"], "", r["publish_time_raw"], 0, r["friendly_name"])
+        for r in rows
+        if r["listed"]
+    ]
+    unavailable = None
+    if coverage:
+        unavailable = rt.Selection(
+            mode=rt.COVERAGE, publish_from=s.coverage_from, publish_to=s.coverage_to
+        ).unavailable(listed_docs)
+    collection = {
+        "Collection mode": s.mode,
+        "Selected range": (
+            f"PublishDate {start} through {end or 'the newest listed'} (ERCOT labels)"
+            if coverage
+            else "every listed document (snapshot mode: newest first)"
+        ),
+        "Last listing": f"{listing['listed_at_utc']} (UTC): {listing['documents']} documents, "
+        f"{listing['oldest_publish_raw']} to {listing['newest_publish_raw']}",
+        "Documents in range (seen in any listing)": str(len(scoped)),
+        "Collected": str(count[inv.COLLECTED]),
+        "Superseded by a later posting": str(count[inv.SUPERSEDED]),
+        "Failed (requested again after unseen ones)": str(count[inv.FAILED]),
+        "Deferred by a budget or document bound": str(count[inv.DEFERRED]),
+        "Never requested": str(count[inv.DISCOVERED]),
+        "Downloaded, but the HB_NORTH interval row is absent": str(count[inv.ROW_ABSENT]),
+        "Published but not collected (all listed documents)": str(backlog),
+        "No longer listed and not collected": f"{dropped_open} (not proof that ERCOT or another "
+        "authorized archive lost them; this access method no longer reaches them)",
+        "Revision recheck": (
+            f"{rechecked} of {len(collected_rows)} collected documents downloaded again at least "
+            f"once; {s.revision_lookback_documents} per refresh"
+            if s.revision_lookback_documents
+            else f"none allocated: revisions are not monitored ({rechecked} of "
+            f"{len(collected_rows)} collected documents were ever downloaded again by hand)"
+        ),
+        "Unavailable through this access method": unavailable or "nothing in the range",
+        "Intervals never listed": "not counted: an interval with no document in any listing is "
+        "not known to have been published",
+    }
+    if not coverage:
+        completeness = (
+            "Cannot be determined for a history: snapshot mode collects the newest documents. "
+            f"{backlog} published document(s) in the current list are not collected."
+        )
+    elif unavailable and "older than ERCOT's public list" in unavailable:
+        completeness = (
+            "Not complete: part of the selected range is older than ERCOT's public list and "
+            f"cannot be reached here; {listed_open} listed document(s) in the range are not "
+            "collected."
+        )
+    elif not listed_scoped:
+        completeness = "Cannot be determined: no listed document falls in the selected range."
+    elif listed_open == 0 and count[inv.ROW_ABSENT] == 0:
+        completeness = (
+            f"Complete for the documents ERCOT listed in the selected range: {done} collected "
+            f"(as of the listing at {listing['listed_at_utc']}). This counts documents, not a "
+            "verified number of intervals per day."
+        )
+    else:
+        completeness = (
+            f"Not complete: {listed_open} listed document(s) in the selected range are not "
+            f"collected and {count[inv.ROW_ABSENT]} downloaded document(s) lack the HB_NORTH row."
+        )
+    return collection, completeness

@@ -50,11 +50,121 @@ only HB_NORTH is stored. Planning counts DeliveryDates; the newest expected is t
 (the DAM posts the day before). A successful refresh never makes a price final (Protocols:
 final at 1000 on the second Business Day; not computed).
 
+**ERCOT real-time price dataset (`ercot-rt-spp`, Stages 20–21).** One document per
+15-minute interval (about 8 KB). The section is **disabled by default** and optional in plan
+files. Defaults: snapshot mode, window 4, catch-up cap 8 uncollected intervals, revision
+recheck 0, budget 10, collection interval 1 h, freshness 2 h by publication time.
+- **Planning:** at collection time from ERCOT's public list, not from a clock, because the
+  labels carry no time zone. Every listing is recorded in the published-document inventory
+  (ADR 0018).
+- **Modes (`mode`):**
+  - `snapshot` takes the newest uncollected documents.
+  - `coverage` takes the **oldest** uncollected documents whose PublishDate label is
+    between `coverage_from` and `coverage_to` (null: the newest listed), so repeated runs
+    work through a range.
+  - In both, documents that failed before are retried only after never-requested ones.
+- **Revision recheck:** `revision_lookback_documents` (0–3) re-downloads that many collected
+  documents per refresh, least recently downloaded first, budgeted on top of the catch-up.
+  With 0 (the default) the dry run says `revisions-not-monitored`.
+- **Re-check by hand:** `mambo collect --source ercot-rt-spp --latest N --include-stored`
+  re-downloads the newest N.
+- **Shared cap:** this dataset shares the ercot.com cap, which is **not raised**. With load
+  and day-ahead enabled (12 + 6 = 18, and both always plan a download because of their
+  revision lookback), real-time is skipped on every refresh. The dry run warns about it.
+
+### Real-time capacity audit (Stage 21)
+
+| Item | Value |
+|---|---|
+| Publication cadence | one document per 15-minute interval: about 4 per hour, about 96 per day (nominal; DST days not assumed). Live list 2026-10-12: 676 documents; 2026-10-13: 744, from 2026-10-06T00:02 |
+| Available-list horizon | about 7 days (product page display 7). Older documents are not reachable through this access method |
+| Listing cost | 1 request per run (the whole list, about 676 entries) |
+| Document cost | 1 request per document; a retry is another request (at most 2 per request), inside the same budget |
+| Documents per refresh | `max_catchup_documents` (8) + `revision_lookback_documents` (0) |
+| Configured refresh frequency | `collection_interval_hours`: 1 h. This is your intent; nothing runs unless you or a task run it. The optional Windows task (not registered) runs once a day at 07:15 |
+| Shared-host allocation | ercot.com cap 18: load 12, then day-ahead 6, then real-time 10 (in that order) |
+
+**Can the configured plan keep pace?**
+
+| Plan | Documents per day | Published per day | Verdict |
+|---|---|---|---|
+| Packaged plan with real-time enabled beside load and day-ahead | 0 | ~96 | No: real-time never fits the cap |
+| Real-time alone, refreshed every hour, every hour | up to 192 | ~96 | Only if every hourly refresh really runs. Missed runs (computer off or asleep) are caught up 8 documents at a time |
+| Real-time alone, once a day (the optional daily task) | 8 | ~96 | No: about 88 per day become backlog and leave the list after about 7 days |
+| Bounded backfill, one manual run | up to 16 (+ rechecks) | — | A range of one PublishDate (~96 documents) needs about 6 runs |
+
+The collector therefore **does not maintain complete history**. Every dry run carries a
+`capacity` block with this verdict and `complete_history_claimed: false`.
+
+### Bounded backfill and resume
+
+```powershell
+# 1. Preview: mode, range, budget, and what the last recorded listing implies (sends nothing)
+.venvs\py314\Scripts\mambo.exe collect --source ercot-rt-spp --coverage-from 2026-10-07 --coverage-to 2026-10-07 --dry-run
+# 2. One bounded run: the 16 oldest uncollected documents in the range (18 requests at most)
+.venvs\py314\Scripts\mambo.exe collect --source ercot-rt-spp --coverage-from 2026-10-07 --coverage-to 2026-10-07
+# 3. Repeat step 2 to resume; each run continues where the last stopped, without duplicates
+# Optional: spend part of the run on revision rechecks (documents + rechecks <= 16)
+.venvs\py314\Scripts\mambo.exe collect --source ercot-rt-spp --coverage-from 2026-10-07 --latest 14 --recheck 2
+```
+
+- **Bounds:** budget = 1 list + documents + rechecks + 1 retry (≤ 18). The run is rejected
+  if this exceeds the ercot.com cap of the plan in use (`MAMBO_REFRESH_CONFIG`).
+- **Pacing:** sequential downloads with a 1 s pause; no concurrency.
+- **Each run reports:**
+  - `request_breakdown`;
+  - the `listing` (new and no-longer-listed documents);
+  - per-document outcomes;
+  - `remaining_uncollected_in_range`;
+  - `scope.unavailable`: parts of the range older than the list, or not yet published.
+- **Exit codes:** 0 on success; 3 when a document failed or the run stopped at its budget
+  (what was downloaded is committed; run again to resume).
+- **Nothing loops:** each invocation is one bounded run.
+- **Refresh-based catch-up:** copy `docs/examples/refresh-rt-catchup.yaml` outside the
+  repository, set `coverage_from`, and run `mambo refresh --config <copy>`. It enables only
+  real-time prices: 15 documents + 1 recheck + 1 list + 1 retry = 18, the unchanged cap.
+
+### System Health definitions (real-time prices)
+
+- **Freshness:** the age of the newest stored interval's PublishDate against the threshold.
+  It says nothing about earlier intervals: **fresh does not mean complete**.
+- **Completeness:** a separate line.
+  - **Snapshot mode:** "cannot be determined for a history", with the published but
+    uncollected count.
+  - **Coverage mode:** "complete for the documents ERCOT listed in the selected range" only
+    when every listed document in the range is collected and the range is inside the list.
+    This is a document count, not a verified number of intervals.
+  - **Otherwise:** "not complete", with the reason.
+- **Collection coverage table:**
+  - mode, range, and last listing;
+  - documents in range;
+  - collected, superseded, failed, deferred, never requested, and interval-row-absent;
+  - published but not collected (all listed documents);
+  - no longer listed and not collected (not proof of loss);
+  - revision-recheck coverage;
+  - the unavailable part of the range.
+  - Intervals that never appeared in a listing are **not counted**: they are not known to
+    have been published.
+- **Coverage (observations):** intervals per DeliveryDate (never compared with 96) and
+  hours with fewer than 4 stored intervals. Such hours cannot support any future
+  comparison.
+
 **Shared host limits (`hosts`).** `hosts: {ercot.com: {max_requests_per_refresh: 18}}`
 caps requests to one host across all its datasets in one refresh (load 12 + prices 6 by
 default). A later dataset that would exceed the cap is skipped with a `host-budget`
 finding, and a dataset budget larger than its host cap is rejected. Dry runs show
-`host_requests_budgeted`.
+`host_requests_budgeted` and, since Stage 21, `host_allocation`:
+- **Order:** the order given with `--source`, else the fixed order eia, ercot,
+  eia-generation, ercot-dam-spp, ercot-rt-spp. Nothing is reordered automatically.
+- **Per dataset:** its budget, whether it plans downloads on every refresh
+  (`always_collects`; ERCOT load and day-ahead do whenever their revision lookback is 1 or
+  more), and whether it fits.
+- **`warnings`:** names a dataset that can never run because earlier ones always reserve the
+  cap first.
+
+Every HTTP attempt counts against these budgets: listings, downloads, and retries alike. The
+real-time summary splits them as `request_breakdown` (list, download, other,
+retries_included, total).
 
 **Generation dataset (`eia-generation`, Stage 16).** A third section with the same
 settings as `eia` (window, lookback, catch-up cap, budget, threshold), **disabled by
@@ -64,6 +174,24 @@ budget is separate from the demand budget; both are EIA API requests, and the re
 output shows the combined figure as `eia_api_requests_budgeted` so you can see it before
 a run. Its collection success, coverage, and health come from its own store: a successful
 demand refresh never implies generation was refreshed.
+
+## Assumption and aggregation approvals (Stages 23–24)
+
+These commands never collect, and approvals never come from a refresh.
+- **Dry runs:** every `approve`, `revoke`, and `restore` is a dry run without `--execute`.
+- **Storage:** records are appended to `<MAMBO_DATA_DIR>/assumptions/approvals.jsonl`
+  (gitignored).
+- **Details:** `docs/assumption-register.md`.
+
+```powershell
+.venvs/py314/Scripts/mambo assumption status                 # M1 approval state
+.venvs/py314/Scripts/mambo aggregation list                  # AGG-A, AGG-B, non-approvable candidates
+.venvs/py314/Scripts/mambo aggregation show AGG-A            # fingerprints needed to approve
+.venvs/py314/Scripts/mambo aggregation status AGG-A
+```
+
+Aggregation and alignment snapshots are written only from the diagnostic page's buttons. They
+go to `<MAMBO_DATA_DIR>/alignment/` and `<MAMBO_DATA_DIR>/aggregation/` and are never deleted.
 
 ## What a refresh does
 
