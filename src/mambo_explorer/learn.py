@@ -11,7 +11,13 @@ from datetime import UTC, datetime, timedelta
 
 import streamlit as st
 
-from mambo_explorer import basis_exercises, model_exercises, routes, settlement_exercises
+from mambo_explorer import (
+    basis_exercises,
+    model_exercises,
+    routes,
+    settlement_exercises,
+    shape_exercises,
+)
 from mambo_explorer import calculations as calc
 from mambo_explorer.config import ConfigError, load_settings
 from mambo_explorer.eia import dataset as ds
@@ -533,6 +539,12 @@ def render_learn() -> None:
 
         st.header("Basis-exposure calculator (synthetic)")
         basis_result = render_basis_calculator(f"learn_{lesson.id}", runs)
+    shape_result = None
+    if "time_shape" in meta["calculators"]:
+        from mambo_explorer.shape_ui import render_shape_calculator
+
+        st.header("Time-shape calculator (synthetic)")
+        shape_result = render_shape_calculator(f"learn_{lesson.id}")
 
     st.subheader("Exercises")
     for spec in meta["exercises"]:
@@ -542,6 +554,8 @@ def render_learn() -> None:
             exercise = settlement_exercises.generate(spec, settlement_result)
         elif spec["kind"] == "basis":
             exercise = basis_exercises.generate(spec, basis_result)
+        elif spec["kind"] == "shape":
+            exercise = shape_exercises.generate(spec, shape_result)
         else:
             exercise = generate(spec, obs, sel)
         _exercise(lesson, spec, exercise, progress)

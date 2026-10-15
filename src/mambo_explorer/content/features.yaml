@@ -140,6 +140,11 @@ features:
     section: finance
     status: done
     ui: true
+  - id: FIN-05
+    name: "Time-shape exposure under a flat-block hedge: multi-interval cash-flow calculator and lesson (synthetic)"
+    section: finance
+    status: done
+    ui: true
   - id: COMP-01
     name: "Regulatory authorities and effective-dated rules"
     section: compliance

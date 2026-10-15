@@ -23,7 +23,7 @@ Review columns:
 | NYISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | ISO-NE | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Data review pending. Three public pages are cited (paraphrased) in lesson 8; see "Reference documents" | No (no data ingested) |
 | Non-ISO balancing authorities | Utilities / BAs | Decided by U-7 | Review pending | Review pending | Review pending | Review pending | Pending | No |
-| FERC | Regulator | After operators | Review pending | Review pending | Review pending | Review pending | Data review pending. Glossary cited (paraphrased) in lesson 9; see "Reference documents" | No (no data ingested) |
+| FERC | Regulator | After operators | Review pending | Review pending | Review pending | Review pending | Data review pending. Glossary cited (paraphrased) in lesson 9; see "Reference documents". On 2026-10-11 (Stage 13) the glossary page showed a human-verification page and was not re-checked | No (no data ingested) |
 | NERC and regional entities | Reliability | After operators | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | State PUCs/PSCs | Regulators | After operators | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | CFTC | Regulator | After operators | Review pending | Review pending | Review pending | Review pending | Pending. Glossary not checked: the site showed a human-verification page (2026-10-11) | No |
@@ -42,6 +42,7 @@ from these organizations is collected.
 | ISO New England, [bill item: Real-Time (RT) Energy](https://www.iso-ne.com/markets-operations/settlements/understand-bill/item-descriptions/rt-energy) | Lesson 8 | Net deviation per location at the RT LMP, five-minute intervals; invoices include other allocations | 2026-10-11 |
 | PJM, [Manual 11, Revision 137](https://www.pjm.com/-/media/DotCom/documents/manuals/m11.pdf) | Lesson 6 | PJM LMP = system energy price + congestion price + loss price (Section 1 overview) | 2026-10-11 |
 | FERC, [market-assessment glossary](https://www.ferc.gov/industries-data/market-assessments/overview/glossary) | Lesson 9, `basis.py` | Basis (price difference between otherwise identical products in different markets), fixed-for-floating swaps, hedging. Natural-gas context; concepts only | 2026-10-11 (browser) |
+| EIA, [Today in Energy: Texas Heat Wave, August 2011](https://www.eia.gov/todayinenergy/detail.php?id=3010) (2011-09-09) | Lesson 10, `shape.py` | A 16-hour weekday on-peak block (ERCOT, 2011) in which afternoon super-peak hours traded far above morning hours, and block prices averaged high and low hours. Context only; no numbers used | 2026-10-11 |
 | EIA, [Form EIA-930 instructions](https://www.eia.gov/survey/form/eia_930/instructions.pdf) | Lesson 1 | "Hourly integrated values in megawatts by hour ending time" (General Instructions, p. 3) | 2026-10-11 |
 
 ## Review record

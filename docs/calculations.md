@@ -319,3 +319,47 @@ floating P_H.
 prices from one run, at two different buses, with the Stage 11 checks applied to each. Two
 modeled prices from different runs are refused. K is always synthetic.
 
+## `time_shape` v1.0.0 — Stage 13 (teaching cash flows; ADR 0011)
+
+`shape.evaluate(Inputs)`: one location, intervals t with elapsed duration d_t (h),
+physical energy q_t (MWh), and spot price p_t; a flat-block hedge of B MW at fixed price K.
+
+| Quantity | Formula | Unit |
+|---|---|---|
+| Hedge energy | h_t = B × d_t | MWh |
+| Physical cost | q_t × p_t | synthetic $ |
+| Hedge receipt | h_t × (p_t − K) | synthetic $ (negative = buyer pays) |
+| Net cost | physical − receipt | synthetic $ (negative = credit) |
+| Mismatch | r_t = q_t − h_t (positive = underhedged) | MWh |
+| D, Q, R | Σ d_t, Σ q_t, Σ r_t | h, MWh, MWh |
+| Average price | p̄ = Σ d_t·p_t / D (duration-weighted) | synthetic $/MWh |
+| Decomposition 1 | Σ h_t·K + Σ r_t·p_t | synthetic $ |
+| Decomposition 2 | B·D·K + R·p̄ + Σ r_t·(p_t − p̄) | synthetic $ |
+
+- **Checks.** Both decompositions are computed independently and must reproduce the net
+  cost. They are verified on a 432-point bounded grid: 2- and 3-interval cases, unequal
+  durations, zero and large energies, negative and extreme prices, B from 0 to 750 MW, and
+  K from −1,000 to 10,000. The duration-weighted p̄ is asserted separately.
+- **Accounting split.** The time-shape component Σ r_t·(p_t − p̄) is an accounting split
+  under this choice of p̄. When Q = B·D the aggregate mismatch is zero, but the time-shape
+  component need not be.
+
+**Benchmarks** (hand-derived in `tests/test_shape.py`; B = 100 MW, K = 40, two 1-hour
+intervals unless stated):
+
+| Scenario | q (MWh) | p | Physical | Receipt | Net | B·D·K | R·p̄ | Time-shape |
+|---|---|---|---|---|---|---|---|---|
+| peaky (required) | 50, 150 | 20, 80 | 13,000 | 2,000 | 11,000 | 8,000 | 0 | 3,000 |
+| reversed | 150, 50 | 20, 80 | 7,000 | 2,000 | 5,000 | 8,000 | 0 | −3,000 |
+| flat match | 100, 100 | 20, 80 | 10,000 | 2,000 | 8,000 | 8,000 | 0 | 0 |
+| constant prices | 50, 150 | 50, 50 | 10,000 | 2,000 | 8,000 | 8,000 | 0 | 0 |
+| no hedge (B = 0) | 50, 150 | 20, 80 | 13,000 | 0 | 13,000 | 0 | 10,000 | 3,000 |
+| underhedge (B = 50) | 50, 150 | 20, 80 | 13,000 | 1,000 | 12,000 | 4,000 | 5,000 | 3,000 |
+| overhedge (B = 150) | 50, 150 | 20, 80 | 13,000 | 3,000 | 10,000 | 12,000 | −5,000 | 3,000 |
+| negative price | 50, 150 | −10, 30 | 4,000 | −6,000 | 10,000 | 8,000 | 0 | 2,000 |
+| hedge only | 0, 0 | 20, 80 | 0 | 2,000 | −2,000 | 8,000 | −10,000 | 0 |
+| unequal durations (1 h, 3 h) | 50, 300 | 20, 60 | 19,000 | 4,000 | 15,000 | 16,000 | −2,500 | 1,500 |
+
+In the last row p̄ = (1·20 + 3·60)/4 = 50. An unweighted mean (40) would split the same
+net into −2,000 and 1,000.
+

@@ -162,8 +162,13 @@ It also has a **basis-exposure calculator** and lesson 9, *Why a hedge at anothe
 leaves basis exposure*: a physical purchase at one location plus a simplified pay-fixed,
 receive-floating hedge referencing another, split into fixed-price, location-basis, and
 quantity-mismatch parts (ADR 0010). Two prices can be imported together from one verified
-run; the fixed price is always synthetic. Forwards, full swaps, futures, options, PPAs,
-credit, and collateral are not implemented.
+run; the fixed price is always synthetic.
+
+A **time-shape calculator** and lesson 10, *Why matching total energy does not remove shape
+exposure*, apply a flat MW hedge to synthetic intervals with varying use and prices, and
+split the total into a fixed hedge part, an aggregate energy mismatch, and a time-shape
+part (ADR 0011). Forwards, full swaps, futures, block products, options, PPAs, credit,
+and collateral are not implemented.
 
 ## 5. Launch
 

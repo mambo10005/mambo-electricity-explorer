@@ -81,6 +81,9 @@ non-trivial work.
 - Basis/hedge is a teaching cash flow (ADR 0010): never call it a real contract or
   valuation; K is always synthetic; two modeled location prices only from one run
   (`basis.modeled_pair`).
+- Time shape is a teaching cash flow (ADR 0011): intervals are elapsed durations, never
+  calendar times or DST; the time-shape component is an accounting split, not a
+  standard metric; never stitch OPF runs into a time series.
 - `focus.css` is the only CSS the app adds (ADR 0008): focus-only, stable selectors,
   no generated classes, no script. New CSS needs an ADR.
 - Theme colors live in `.streamlit/config.toml`; re-measure rendered contrast
