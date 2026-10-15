@@ -28,6 +28,15 @@ features:
     name: "Effective-dated lessons and rules"
     section: learn
     status: planned
+  - id: LEARN-03
+    name: "Beginner lessons on demand and forecasts (4 lessons, exercises, local progress)"
+    section: learn
+    status: done
+    ui: true
+  - id: CALC-01
+    name: "Shared calculation services (power/energy, summary, coverage, forecast error)"
+    section: platform
+    status: done
   - id: DATA-01
     name: "EIA connector (EIA-930 ERCOT demand and forecast)"
     section: sources

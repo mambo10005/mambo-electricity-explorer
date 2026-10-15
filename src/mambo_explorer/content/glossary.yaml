@@ -1,0 +1,84 @@
+# Glossary for beginner lessons. Every lesson's glossary_terms must exist here.
+# Agent-drafted 2026-10-11; not human-reviewed (same status as the lessons).
+terms:
+  - term: MW
+    expansion: megawatt
+    definition: >-
+      A unit of power: how fast electricity is being produced or used at a moment.
+      1 MW = 1,000 kilowatts.
+  - term: MWh
+    expansion: megawatt-hour
+    definition: >-
+      A unit of energy: an amount of electricity. One MWh is what 1 MW delivers
+      over one hour.
+  - term: Power
+    definition: The rate of producing or using electricity, measured in MW.
+  - term: Energy
+    definition: >-
+      An amount of electricity over a period of time, measured in MWh. Energy =
+      average power × duration.
+  - term: Demand
+    definition: >-
+      In EIA-930, the hourly total actual demand that a balancing authority reports
+      for its area (data type "D"). It excludes electricity known to be used to
+      store energy. It is a system-level total, not a reading of individual
+      customer meters.
+  - term: Day-ahead demand forecast
+    expansion: data type "DF"
+    definition: >-
+      The balancing authority's own forecast of hourly demand, prepared the day
+      before and reported to EIA. This application does not make forecasts.
+  - term: BA
+    expansion: balancing authority
+    definition: >-
+      The organization that balances electricity supply and demand in real time
+      within an area of the grid and reports EIA-930 data.
+  - term: ERCOT
+    expansion: Electric Reliability Council of Texas
+    definition: >-
+      The grid operator for most of Texas. Its EIA-930 respondent code is "ERCO".
+  - term: EIA
+    expansion: U.S. Energy Information Administration
+    definition: The federal statistical agency that publishes the EIA-930 data used here.
+  - term: EIA-930
+    expansion: Form EIA-930, Hourly and Daily Balancing Authority Operations Report
+    definition: >-
+      The EIA survey through which balancing authorities report hourly demand,
+      forecasts, generation, and interchange.
+  - term: UTC
+    expansion: Coordinated Universal Time
+    definition: >-
+      The time standard used for the source's period labels. It does not shift
+      for daylight saving time.
+  - term: Period label
+    definition: >-
+      The text the source attaches to each hourly value, such as 2026-10-04T05.
+      This app compares and counts labels exactly as given. It does not convert
+      them into interval start and end times, because the API does not state that
+      convention.
+  - term: Absent row
+    definition: >-
+      No record exists for a label in the collected data. It is not the same as
+      a reported value of zero, and it does not by itself tell you why.
+  - term: Null value
+    definition: A record exists, but its value field is empty.
+  - term: Forecast error
+    definition: >-
+      error = actual − forecast. Positive means demand came in above the forecast;
+      negative means below.
+  - term: MAE
+    expansion: mean absolute error
+    definition: The average size of the errors, ignoring their sign. Same unit as the data.
+  - term: RMSE
+    expansion: root mean square error
+    definition: >-
+      The square root of the average squared error. Large misses count more
+      than in MAE. Same unit as the data.
+  - term: Mean error
+    definition: >-
+      The average error with its sign kept. Positive and negative errors can
+      cancel, so it shows bias, not size.
+  - term: Revision
+    definition: >-
+      A later published value for the same series and period. This app keeps
+      every revision and uses the latest one.

@@ -21,6 +21,8 @@ REQUIRED_DOCS = [
     "docs/decisions/0003-dependency-locking.md",
     "docs/decisions/0004-eia-collection-and-storage.md",
     "docs/dependency-licenses.md",
+    "docs/calculations.md",
+    "docs/lesson-authoring.md",
     ".github/pull_request_template.md",
 ]
 

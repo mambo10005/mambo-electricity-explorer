@@ -48,10 +48,12 @@ def test_real_catalog_authorizes_charts_only_where_a_feature_is_done(chart_page)
     from guards import section_is_implemented
 
     assert section_is_implemented("explore")  # EXPLORE-02 is done
+    assert section_is_implemented("learn")  # LEARN-03 is done
     assert_no_unauthorized_data(chart_page, "explore")
+    assert_no_unauthorized_data(chart_page, "learn")
     # Includes Sources and System Health, which hold done backend features
     # (DATA-01, STORE-01/02) but whose pages are not built.
-    others = ("learn", "replay", "model-labs", "finance", "compliance", "sources", "system-health")
+    others = ("replay", "model-labs", "finance", "compliance", "sources", "system-health")
     assert not any(section_is_implemented(k) for k in others)
 
 

@@ -139,9 +139,10 @@ def render_explore() -> None:
         "Data label: **observed**. Both series are values reported to and published by EIA. "
         "The forecast was made by the balancing authority, not by this application."
     )
-    # Blue vs. orange: distinguishable in light and dark themes and for common color-vision
+    # Blue vs. dark orange: >= 3:1 contrast on both theme backgrounds (WCAG 1.4.11; see
+    # tests/test_accessibility.py) and distinguishable for common color-vision
     # deficiencies (Streamlit's default palette draws both series in similar blues).
-    st.line_chart(chart, x="Period label (UTC)", color=["#1f77b4", "#ff7f0e"])
+    st.line_chart(chart, x="Period label (UTC)", color=["#1f77b4", "#d95f02"])
 
     expected = ((end_day - start_day).days + 1) * 24
     by_metric = {row[0]: row for row in stats}

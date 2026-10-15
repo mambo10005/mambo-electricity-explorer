@@ -5,6 +5,7 @@ import streamlit as st
 
 from mambo_explorer.catalog import data_labels, features, learning_sequence
 from mambo_explorer.explore import render_explore
+from mambo_explorer.learn import render_learn
 from mambo_explorer.navigation import section_by_key
 
 NOT_IMPLEMENTED = "Not implemented"
@@ -65,7 +66,7 @@ def render_section(key: str) -> None:
 
 # Sections with a real implementation; every other section renders the generic
 # "Not implemented" page. Tests render through this same dispatcher.
-IMPLEMENTED = {"explore": render_explore}
+IMPLEMENTED = {"explore": render_explore, "learn": render_learn}
 
 
 def render_page(key: str) -> None:

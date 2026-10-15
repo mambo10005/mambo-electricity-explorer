@@ -62,6 +62,24 @@ mambo collect --EIAClient--> api.eia.gov (key in URL; never logged)
 Explore page --DuckDB (UTC, no extension downloads)--> `latest` view over committed files only
 ```
 
+## Learning engine (Stage 4)
+
+```
+src/mambo_explorer/
+  calculations.py   Pure calculations: power_energy, series_summary, coverage,
+                    forecast_error; snapshot_id; load_observations (latest view)
+  lessons.py        Load + validate lessons (front matter schema, review rules, prereqs)
+  exercises.py      Exercise generators; answers from calculations; deterministic per snapshot
+  progress.py       Local progress/bookmarks: <MAMBO_DATA_DIR>/learn/progress.json
+  learn.py          Learn page: status table, lesson, panels, exercises, glossary, sources
+  content/lessons/  01..04 *.md (YAML front matter + Beginner / Technical detail)
+  content/glossary.yaml
+```
+
+Pages never compute numbers themselves. Every value shown in a lesson panel or used
+as an exercise answer comes from a `CalcResult`, which keeps its selection, unit,
+formula version, exclusions, and revision references (docs/calculations.md).
+
 ## Local quality workflow (Stage 2)
 
 ```
