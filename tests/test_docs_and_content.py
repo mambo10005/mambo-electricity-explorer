@@ -23,6 +23,8 @@ REQUIRED_DOCS = [
     "docs/dependency-licenses.md",
     "docs/calculations.md",
     "docs/lesson-authoring.md",
+    "docs/datasets/ercot-np6-345-cd.md",
+    "docs/decisions/0005-ercot-direct-connector.md",
     ".github/pull_request_template.md",
 ]
 
@@ -77,10 +79,21 @@ def _register_row(prefix: str) -> list[str]:
     return [c.strip() for c in line.strip().strip("|").split("|")]
 
 
-def test_source_register_order_eia_then_ercot_none_connected():
+def test_source_register_order_and_local_only_connections():
     eia, ercot = _register_row("EIA"), _register_row("ERCOT")
     assert eia[2] == "1" and ercot[2].startswith("2")
-    assert eia[-1].startswith("Yes, locally") and ercot[-1] == "No"
+    assert eia[-1].startswith("Yes, locally") and ercot[-1].startswith("Yes, locally")
+    # Local use is recorded separately from publication, which stays pending for both.
+    assert "publication review pending" in eia[7] and "publication review pending" in ercot[7]
+
+
+def test_ercot_review_separates_local_use_from_publication():
+    register = _read("docs/source-register.md")
+    assert "### ERCOT NP6-345-CD Actual System Load by Weather Zone" in register
+    assert "**Local collection and use: CLEARED**" in register
+    assert "**Public redistribution: NOT REVIEWED FOR THIS PROJECT.**" in register
+    assert "No account was created and no terms were accepted" in register
+    assert "never compared numerically" in register
 
 
 def test_eia_review_recorded_without_blanket_unrestricted_claim():

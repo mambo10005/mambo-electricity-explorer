@@ -32,3 +32,17 @@ def test_chart_line_colors_meet_non_text_contrast_in_both_themes():
     for color in colors:
         for theme, background in BACKGROUNDS.items():
             assert contrast(color, background) >= 3.0, (color, theme)
+
+
+def test_ercot_palette_meets_non_text_contrast_in_both_themes():
+    from mambo_explorer.ercot_explore import PALETTE
+
+    assert len(set(PALETTE)) == len(PALETTE)
+    for color in PALETTE:
+        for theme, background in BACKGROUNDS.items():
+            assert contrast(color, background) >= 3.0, (color, theme)
+
+
+def test_ercot_chart_has_text_alternative():
+    source = (SRC / "ercot_explore.py").read_text("utf-8")
+    assert "alt=(" in source and "table below" in source

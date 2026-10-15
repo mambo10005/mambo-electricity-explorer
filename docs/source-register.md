@@ -15,7 +15,7 @@ Review columns:
 | Source | Kind | Planned order | Access | Terms | Redistribution | Revisions | Review status | Connected |
 |--------|------|---------------|--------|-------|----------------|-----------|---------------|-----------|
 | EIA (U.S. Energy Information Administration) Open Data API v2 | Federal statistics | 1 | API key (`EIA_API_KEY`), sent as a URL query parameter | Reviewed 2026-10-11, see below | Generally permitted, with exceptions for third-party material (see below) | EIA-930: revised without per-value flags (see below) | General terms reviewed; EIA-930 `region-data` cleared for local collection/use; other routes' source notes pending; publication review pending | Yes, locally: EIA-930 ERCO D/DF (live-verified 2026-10-11) |
-| ERCOT | ISO/RTO | 2 (PRD R-29) | Review pending | Review pending | Review pending | Review pending | Pending | No |
+| ERCOT — NP6-345-CD Actual System Load by Weather Zone | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + download, no login (ERCOT Public API needs registration; not used) | Reviewed 2026-10-11, see below | Terms permit raw-data reuse in compilations, charts, and analyses; **project publication review pending** | No correction policy found; reposts handled as revisions | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-11) |
 | CAISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | PJM | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | MISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
@@ -175,3 +175,93 @@ Nothing is published.
   are still not derived.
 - No revisions observed yet. Detecting them needs re-collection over the
   days when EIA's documented resubmissions happen (up to 3 or 30 days later).
+
+### ERCOT NP6-345-CD Actual System Load by Weather Zone — 2026-10-11
+
+**Pages read (2026-10-11, no login).**
+
+- Product page / EMIL: https://www.ercot.com/mp/data-products/data-product-details?id=NP6-345-CD
+  (EMIL last updated 2-24-2026)
+- Public report list: https://www.ercot.com/misapp/GetReports.do?reportTypeId=13101
+- Terms of Use: https://www.ercot.com/help/terms (last updated 07/20/2023)
+- API / Data Portal terms: https://www.ercot.com/help/terms/data-portal (no date shown)
+- Public API docs:
+  https://developer.ercot.com/applications/pubapi/user-guide/registration-and-authentication/
+  and https://developer.ercot.com/applications/pubapi/known-limits/
+- CDR XSD: https://www.ercot.com/files/docs/2026/07/10/Current-Day-Reporting-CDR-XSD.txt
+- Nodal Protocols §6.3.2(4) (April 1, 2026)
+
+Failed: developer.ercot.com `/pubapi/user-guide/` and `/pubapi/faq/` (404);
+lists.ercot.com DST notice (302).
+
+**Access.**
+- The Public API requires an ERCOT API Explorer account, an
+  `Ocp-Apim-Subscription-Key`, and an Azure B2C ID token. Unauthenticated requests
+  return 401.
+- The API terms say: "Users must create an account to access the ERCOT API… Accounts
+  registered by 'bots' or other automated methods are not permitted."
+- **No account was created and no terms were accepted.**
+- The ercot.com public listing and download work without login. These URLs are the
+  ones ERCOT's own product page uses; they are not documented as a developer API
+  (ADR 0005).
+
+**Terms (Terms of Use, last updated 07/20/2023). Quotes, not legal advice.**
+- §5: "The publicly available contents of this website may be used, reproduced, and
+  redistributed, provided that the contents are not modified and that you maintain
+  all copyright and other notices… raw data provided in public portions of this
+  website may be used, reproduced, and redistributed in compilations, charts, and
+  analyses without maintaining such notices."
+- §6: "Use of this website in a manner that negatively affects the performance of this
+  website or other ERCOT systems is prohibited."
+- §2: content "AS IS", no warranties.
+- §9: no use of the ERCOT logo or name without permission.
+- §10: the terms may change without notice.
+
+**Local collection and use: CLEARED** for this report via the public download.
+Conditions:
+- low volume: at most 7 documents and 10 requests per run, with a 1 s pause
+- no implied endorsement, and no ERCOT logo
+- recheck the terms before any change in collection pattern
+
+**Public redistribution: NOT REVIEWED FOR THIS PROJECT.** §5 is permissive for raw data
+in compilations, charts, and analyses, but publication (PUB-01) still needs the owner's
+review, an attribution style, and a recheck of the terms on the publication date. Public
+accessibility is not treated as permission. **No ERCOT file is committed to the
+repository.** The test fixtures are synthetic.
+
+**Dataset facts and gaps:** see `docs/datasets/ercot-np6-345-cd.md`.
+- Unverified: units, time zone of the labels, DST representation, and the TOTAL
+  definition.
+- Posting: daily for the previous OperDay ("no later than 0600"). The live listing
+  showed PublishDate 05:50 −05:00.
+
+**Live verification (2026-10-11, no credential, 1 + 4 + 4 requests):**
+- Listing: 32 public CSV documents, published 2026-09-10 to 2026-10-11.
+- `collect --latest 3`: documents 1284301100, 1284697188, and 1285079459 (OperDays
+  10/08, 10/09, and 10/10/2026), each 24 rows.
+  - 648 values; all `DSTFlag = N`; 0 null values
+  - max |zone sum − TOTAL| = 0.02
+- Every stored value matches the archived ZIP CSVs (648/648). The archive sha256 values
+  match the catalog.
+- The repeat collection was idempotent: 648 unchanged, 0 new, 0 revised.
+- `validate`: ok.
+- The EIA store was unchanged: identical catalog sha256 and the same counts before
+  and after.
+
+### EIA vs. ERCOT: unresolved differences (no join, no reconciliation yet)
+
+| Aspect | EIA-930 `ERCO` `D` | ERCOT NP6-345-CD `TOTAL` |
+|---|---|---|
+| Quantity | BA "actual demand"; excludes electricity used to store energy (Form EIA-930) | "actual hourly load … ERCOT total"; inclusions not documented |
+| Units | `megawatthours` (EIA: hourly integrated values) | not stated |
+| Time labels | UTC `period` labels; hour-ending not stated for the API field | OperDay + HourEnding (01–24) + DSTFlag; time zone not stated |
+| Revisions | resubmitted within 3 or 30 days; no per-value flag | no correction policy found |
+| Publication time | not provided | listing PublishDate (with offset) |
+
+A future reconciliation would need all of the following:
+1. documented units for NP6-345-CD
+2. a documented time zone, and the DST representation observed on a transition day
+3. EIA's label convention confirmed for the API field
+4. an ERCOT definition of TOTAL to compare with EIA-930 demand
+
+Until then the sources are shown separately and never compared numerically.

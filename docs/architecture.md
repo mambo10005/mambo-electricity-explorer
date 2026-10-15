@@ -62,6 +62,22 @@ mambo collect --EIAClient--> api.eia.gov (key in URL; never logged)
 Explore page --DuckDB (UTC, no extension downloads)--> `latest` view over committed files only
 ```
 
+## ERCOT direct connector (Stage 5, ADR 0005)
+
+```
+src/mambo_explorer/
+  safe_zip.py          In-memory ZIP reading with path, member, and size limits (no extraction)
+  ercot/dataset.py     NP6-345-CD contract: header, zones, schema, identity, strict CSV parser
+  ercot/client.py      Public listing + download; budget, timeouts, retries, pauses, validation
+  ercot/collect.py     Selection (latest N / publish dates), normalize, revisions, collect()
+  ercot_explore.py     Explore view for ERCOT (source selector in explore.py)
+```
+
+`Store(data_dir, namespace, schema, identity)`: each source gets its own directory,
+SQLite catalog, writer lock, Parquet schema, and identity. EIA uses the defaults
+(`eia930`). ERCOT uses `ercot-np6-345-cd`, with identity
+(source, dataset, entity, metric, oper_day, hour_ending, dst_flag).
+
 ## Learning engine (Stage 4)
 
 ```
