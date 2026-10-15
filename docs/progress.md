@@ -2,6 +2,26 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-12 — Stage 18: timestamp position audit (#35)
+
+Stacked on Stage 17 (PR #34) ← … ← #2. None merged. Real `data/` and progress unchanged.
+
+- **Discrepancy explained.** Stage 17's "ticks 2026-03-07 00:00/03:00/06:00" were
+  `ticks.slice(0, 3)` — the first three ticks of a 48-hour axis starting 2026-03-07T00 —
+  reported beside the tooltip and table for 2026-03-08T08. They never described that
+  point's position. Evidence error, not a code defect; the Stage 17 progress entry and
+  PR #34 description are corrected.
+- **Position verified** in UTC, America/Los_Angeles, and Asia/Seoul with a synthetic
+  diagnostic (`scripts/diagnostics/time_position_app.py`, explicit UTC ticks on 07–10 UTC
+  and a UTC-midnight set, line and stacked bars) and the production lesson 2 and
+  generation charts: each hovered mark sits on its own tick (or at its interpolated
+  position) within −0.5 px, tooltips and table rows name the same observation, marks are
+  chronological. Details in `docs/timestamp-display.md`, "Position evidence".
+- **Code:** only an optional `tick_labels` argument on `utc_label_chart` for the
+  diagnostic; production tick density unchanged (test-enforced). New offline tests check
+  serialized instants against independently built UTC instants, explicit UTC tick values,
+  the fixture domain, and chronological order.
+
 ## 2026-10-12 — Stage 17: timestamp-display consistency (#33)
 
 Stacked on Stage 16 (PR #32) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
@@ -25,7 +45,9 @@ Stacked on Stage 16 (PR #32) ← … ← #2. None merged. mambo-power unchanged 
 - **Browser evidence (Playwright, synthetic scratch store, emulated zones UTC,
   America/Los_Angeles, Asia/Seoul):** for label 2026-03-08T08 (00:00 in LA) on lesson 2,
   every zone showed axis ticks "2026-03-07 00:00, 03:00, …", tooltip "Period label (UTC)
-  2026-03-08T08 / 41,234.00", and table row "2026-03-08T08 41234 megawatthours 1"; the
+  2026-03-08T08 / 41,234.00", and table row "2026-03-08T08 41234 megawatthours 1" (the
+  quoted ticks were the axis's first three, not the point's position — corrected in
+  Stage 18); the
   same held for the DST-transition label 2026-03-08T10 in LA, UTC midnight 2026-03-08T00
   in Seoul, lesson 3's error chart, and the generation bars for 2026-03-07T15 (00:00 in
   Seoul). Dark theme at 640 CSS px and light at 375 px: no page overflow; the data-table
