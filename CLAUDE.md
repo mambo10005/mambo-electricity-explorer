@@ -72,6 +72,11 @@ non-trivial work.
     (averages over the change, per-direction feasibility).
 - Tests never touch the real `./data` (`tests/conftest.py` enforces it). Never call
   `monkeypatch.undo()` in a test: it also drops the `MAMBO_DATA_DIR` override.
+- Browser and harness servers get a scratch `MAMBO_DATA_DIR` and
+  `MAMBO_FORBIDDEN_DATA_DIRS=<repo>/data` (`docs/testing-isolation.md`).
+- Never run `mambo learn-reset --execute`; the owner decides about their progress.
+- `focus.css` is the only CSS the app adds (ADR 0008): focus-only, stable selectors,
+  no generated classes, no script. New CSS needs an ADR.
 - Theme colors live in `.streamlit/config.toml`; re-measure rendered contrast
   (`docs/accessibility.md`) when it or Streamlit changes.
 - Tested Python versions (3.11, 3.14) are recorded separately from the

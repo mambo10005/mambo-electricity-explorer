@@ -13,6 +13,8 @@ DONE_FEATURES = {
     "QA-01",
     "QA-02",
     "QA-03",
+    "QA-04",
+    "QA-05",
     "DATA-01",
     "DATA-04",
     "MODEL-02",

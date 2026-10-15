@@ -8,7 +8,7 @@ objectives:
   - Say what a power flow does with a dispatch it is given, and what an optimal power flow chooses.
   - Explain why a dispatch that respects every limit is not automatically the cheapest one.
   - Tell a limit that power flow only reports apart from a limit that optimal power flow enforces.
-content_version: 1.0.0
+content_version: 1.0.1
 effective_date: null
 authored_by: Claude (AI agent)
 authored_at: 2026-10-11
@@ -34,7 +34,7 @@ glossary_terms: [MW, Synthetic, Modeled, Dispatch, Power flow, Optimal power flo
 limitations:
   - Every number in this lesson is modeled on a synthetic three-bus network with synthetic offers. Nothing is calibrated to ERCOT or any real market.
   - The model is lossless (DC approximation). It ignores voltages, reactive power, losses, start-up costs, and time.
-  - Real system operators use much larger and more detailed models and market rules. This lesson does not describe how any operator dispatches.
+  - This lesson does not describe how any real system operator dispatches or what model it uses.
   - Agent-authored; not yet reviewed by a person.
 implementation_status: implemented
 ---
@@ -71,8 +71,8 @@ Two lessons follow from the comparison:
   calculation; it tells you the dispatch would overload a line. The optimal power flow
   never picks such a dispatch.
 
-Every result here is **modeled**, not observed. The model is a teaching tool. It is not
-the model any real system operator runs.
+Every result here is **modeled**, not observed. The model is a teaching tool; this
+lesson does not describe how any real system operator dispatches.
 
 ## Technical detail
 

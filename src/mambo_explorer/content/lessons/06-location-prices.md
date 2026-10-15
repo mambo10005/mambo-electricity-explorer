@@ -9,14 +9,18 @@ objectives:
   - Interpret a modeled nodal price as the verified marginal cost of serving one more MW at a bus, under this formulation.
   - Explain why a nodal price can differ from every generator's offer.
   - Tell apart a cost rate, a one-hour interval cost, a price, and a line-limit sensitivity.
-content_version: 1.0.1
+content_version: 1.1.0
 effective_date: null
 authored_by: Claude (AI agent)
 authored_at: 2026-10-11
 reviewed_by: null
 reviewed_at: null
 review_status: unreviewed
-sources: []
+sources:
+  - id: pjm-manual-11
+    title: "PJM Manual 11: Energy & Ancillary Services Market Operations, Revision 137 (effective 2026-07-28), Section 1 overview (LMP components)"
+    url: https://www.pjm.com/-/media/DotCom/documents/manuals/m11.pdf
+    accessed: 2026-10-11
 dataset_bindings: []
 calculation_ids: [dc_opf]
 data_panels: []
@@ -46,7 +50,7 @@ exercises:
 glossary_terms: [MW, MWh, Synthetic, Modeled, Offer, Binding constraint, Congestion, Modeled nodal price, Marginal cost, Cost rate, Line-limit sensitivity]
 limitations:
   - The offers are synthetic assumptions, not bids from any real generator. The network is synthetic.
-  - Modeled nodal prices here come from a lossless DC model with linear offers. Real ISO prices also reflect losses, many more constraints, ancillary services, market rules, and scarcity pricing. This lesson does not explain the components of any actual ISO price.
+  - Modeled nodal prices here come from a lossless DC model with linear offers, so they can have no loss component. This lesson does not explain how any actual ISO or RTO computes its prices; the one actual-market statement it makes is cited.
   - Each price is shown only if this run's check verified it, and the check concerns only the tested ±0.1 MW demand perturbations at each bus.
   - Agent-authored; not yet reviewed by a person.
 implementation_status: implemented
@@ -107,5 +111,13 @@ exercises check this from the runs instead of quoting numbers. Step C stays in o
 regime (the same binding set), which is why the linear prediction holds. A larger
 relaxation could unbind the line and the prediction would stop holding.
 
-Under this lossless DC formulation there is no loss component. Real ISO prices include
-one, and many other effects; see the limitations below.
+**What is verified here, and what is not.** Everything above is a statement about this
+synthetic teaching model, checked by the app on each run. It is not evidence about any
+actual market.
+
+**One sourced statement about an actual market.** PJM's market manual defines each of its
+locational marginal prices as the sum of three components: a system energy price, a
+congestion price, and a loss price (PJM Manual 11, cited below). This lossless model has
+no loss price, so its prices split into only an energy part and a congestion part. That
+is a difference in formulation, not a claim about how large PJM's loss component is, and
+other ISOs and RTOs define their prices in their own rules.

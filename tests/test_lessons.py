@@ -24,6 +24,7 @@ PREREQUISITES = {
     "unverified-marginal": ["location-prices"],
 }
 MODEL_LESSONS = ["pf-vs-dispatch", "location-prices", "unverified-marginal"]
+MODEL_SOURCES = {"location-prices": {"pjm-manual-11"}}
 VALID = """---
 lesson_id: sample
 title: Sample
@@ -80,9 +81,15 @@ def test_lessons_declare_required_fields_and_sources():
     for lesson in load_lessons():
         meta = lesson.meta
         assert re.fullmatch(r"\d+\.\d+\.\d+", str(meta["content_version"]))
-        assert all(s["url"].startswith("https://www.eia.gov/") for s in meta["sources"])
-        # Model lessons cite no external source: their numbers come only from model runs.
-        assert bool(meta["sources"]) != (lesson.id in MODEL_LESSONS), lesson.id
+        # Observation lessons cite EIA. Model lessons take their numbers only from model
+        # runs and cite a source only for a statement about an actual market (Stage 10:
+        # lesson 6 cites PJM Manual 11 for the LMP components).
+        allowed = MODEL_SOURCES.get(lesson.id, set()) if lesson.id in MODEL_LESSONS else None
+        if allowed is None:
+            assert meta["sources"], lesson.id
+            assert all(s["url"].startswith("https://www.eia.gov/") for s in meta["sources"])
+        else:
+            assert {s["id"] for s in meta["sources"]} == allowed, lesson.id
         assert meta["exercises"] and meta["limitations"] and meta["objectives"]
         if any(e["kind"] == "data" for e in meta["exercises"]):
             assert meta["dataset_bindings"][0]["entity"] == "ERCO"

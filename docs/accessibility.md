@@ -46,24 +46,84 @@ the hover shade itself, so a new version needs re-measuring).
 - Text, table, caption, and radio colors come from Streamlit's light/dark defaults. Stage 8
   measured them at 12.5:1 or more in the light theme.
 
-## Keyboard (Stages 7–9)
+## Keyboard focus indicator (Stage 10, ADR 0008)
 
-Checked with the keyboard only: switching labs, choosing teaching cases (type to filter,
-Enter), running models (Enter on the focused button), answering exercises (arrow keys, Tab
-to **Check answer**, Enter), and following Learn ↔ Model Labs links.
+Streamlit 1.65 has no focus setting. Its own ring (primary at 50% alpha) measured 2.14:1
+(light) and 1.77:1 (dark) against the page. `src/mambo_explorer/focus.css` adds a 3 px solid
+**#3B82F6** outline, offset 2 px, on `:focus-visible` only. Chip remove buttons get a 2 px
+white outline inset 2 px instead.
 
-## Narrow viewport
+**Ring contrast against the adjacent background.** Measured in Chrome, with keyboard
+focus (`:focus-visible` confirmed on every control):
 
-At 375 px there is no horizontal page scroll and no table wider than the viewport:
-the economic-dispatch lab (Stage 7, dark), lessons 5–7 (Stage 8, dark), and lesson 7 with
-the Stage 9 finite-change tables (light).
+| Controls | Background next to the ring | Light | Dark |
+|---|---|---|---|
+| Buttons (primary, secondary, form submit, header, toolbar), links, expander summaries, radios, checkboxes/toggles, sliders, select box, multiselect, ERCOT/EIA viewer radio | page #FFFFFF / #0E1117 | 3.68 | 5.14 |
+| Sidebar navigation links, select/multiselect chevron buttons, date-input fields | sidebar or input #F0F2F6 / #262730 | 3.28 | 4.03 |
+| Chart toolbar buttons | #131720 (dark) | 3.68 (page) | 4.88 |
+| Multiselect chip remove buttons (white inset ring) | chip #2563EB | 5.17 | 5.17 |
 
-## Open items (BL-6)
+**Focused vs. unfocused.** Unfocused, the ring pixels show the adjacent background. Focused,
+they are the ring color. So the change between states has the same ratios as the table.
+This is a different measurement from button-text contrast, recorded separately below.
 
-1. **Focus ring contrast.** Streamlit's built-in ring is the primary color at 50% alpha:
-   2.14:1 (light) and 1.77:1 (dark) against the page. The old default was similar (1.88 and
-   2.21). Primary buttons also darken on focus, but a secondary button's focus change is a
-   subtle overlay. Improving this needs CSS overrides, which this stage avoided.
-2. **Light-theme secondary button hover/active** overlays were not measured.
-3. **Link colors** were not measured.
-4. **No screen-reader session** has been run.
+**Controls checked** (Learn, Model Labs, Explore with synthetic scratch observations, both
+themes):
+- sidebar links, header and menu buttons, heading anchor links, Markdown links;
+- lesson-list radios, lab-choice radios, viewer source radios, exercise radios;
+- bookmark and technical-detail toggles;
+- 7 sliders;
+- case and entity select boxes, the ERCOT series multiselect and its chip buttons;
+- date-input fields;
+- expanders;
+- primary, secondary and form-submit buttons, and chart toolbar buttons.
+
+Each control was focused programmatically after a keyboard event (which makes Chrome
+apply `:focus-visible`). Real Tab and Shift+Tab presses were also used on Model Labs
+(radios, heading links, sliders), and the ring appeared on each control reached. The
+injected style adds 0 px of layout and no script.
+
+## Button text and links (measured)
+
+| Element | Theme | State | Text | Background | Ratio |
+|---|---|---|---|---|---|
+| Primary buttons | light and dark | default, `:active` | #FFFFFF | #2563EB | 5.17 |
+| Primary buttons | light and dark | `:hover`, `:focus-visible` | #FFFFFF | #1043B1 | 8.54 |
+| Secondary / Check answer | dark | default / hover / active | #FAFAFA | #131720 (+ 15% / 25% overlay) | 17.18 / 12.99 / 10.32 |
+| Secondary / Check answer | light | default | #31333F | #FFFFFF | 12.53 |
+| Secondary / Check answer | light | `:hover` (real pointer hover, Stage 10) | #31333F | rgba(151,166,195,0.15) over #FFFFFF | 11.14 |
+| Secondary / Check answer | light | `:active` (stylesheet rule) | #31333F | rgba(151,166,195,0.25) over #FFFFFF | 10.27 |
+| Markdown links (underlined) | light | — | #0054A3 | #FFFFFF | 7.51 |
+| Markdown links (underlined) | dark | — | #3D9DF3 | #0E1117 | 6.58 |
+
+Link color against surrounding body text is low (1.67:1 in light), so links rely on their
+underline, which Streamlit renders in both themes.
+
+## Zoom and narrow viewports
+
+- **200% zoom** (a 1280 px window → 640 CSS px), checked in Model Labs with results, lesson
+  6 with model runs, and Explore (EIA and ERCOT): no horizontal page scroll and no table
+  wider than the viewport. The focus ring renders at 200%.
+- **320 CSS px** (the reflow width, e.g. a 640 px window at 200%): no horizontal page
+  scroll. Three economic-dispatch result tables (dispatch, line flows, checks) are wider
+  than 320 px and scroll inside their own containers.
+- **375 px**: lessons 5–7 and the lab (Stages 7–9).
+
+## Keyboard (Stages 7–10)
+
+Checked with the keyboard only:
+- switching labs and choosing teaching cases (type to filter, Enter);
+- running models (Enter on the focused button);
+- answering exercises (arrow keys, Tab to **Check answer**, Enter);
+- following Learn ↔ Model Labs links;
+- tabbing across every control above.
+
+## Not verified (BL-6)
+
+1. **Screen readers.** No screen-reader session was run. Windows Narrator is present on this
+   machine, but this environment cannot operate it or hear its output. NVDA and JAWS are
+   not installed. The accessibility tree (names and roles) was inspected, which is not a
+   substitute.
+2. Data tables at 320 CSS px scroll horizontally inside their containers (the three lab
+   result tables above).
+3. Nothing here is a WCAG conformance claim. Only the items measured above were measured.

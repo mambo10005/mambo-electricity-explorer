@@ -7,6 +7,8 @@ Commands:
     validate   check stored files against the catalog; report orphans/interrupted runs
     status     recent collection runs
     storage    storage diagnostics
+    learn-reset  optional backup-and-reset of local learning progress (dry run unless
+               --execute; asks for typed confirmation; never shows contents)
 
 --source defaults to eia. ERCOT (NP6-345-CD) uses ERCOT's public download, needs no
 credential, and never uses EIA_API_KEY. Nothing is deleted by default.
@@ -142,6 +144,25 @@ def cmd_storage(args, settings) -> int:
     return 0
 
 
+def cmd_learn_reset(args, settings) -> int:
+    from mambo_explorer import progress_reset as pr
+
+    try:
+        p = pr.plan(settings.data_dir, Path(args.backup_dir) if args.backup_dir else None)
+        if not args.execute:
+            for line in pr.describe(p):
+                print(line)
+            if p.exists:
+                print("Dry run: nothing was changed. Re-run with --execute to back up and reset.")
+            return 0
+        for line in pr.execute(p, input):
+            print(line)
+        return 0
+    except pr.ResetError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
 def _date(text: str) -> date:
     return date.fromisoformat(text)
 
@@ -206,6 +227,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--limit", type=int, default=10)
 
     add("storage", "storage diagnostics", cmd_storage)
+
+    p = sub.add_parser(
+        "learn-reset",
+        help="optional backup-and-reset of local learning progress (dry run by default)",
+    )
+    p.add_argument("--execute", action="store_true", help="back up, verify, then reset")
+    p.add_argument(
+        "--backup-dir", help="where to write the backup (default: outside the repository)"
+    )
+    p.set_defaults(func=cmd_learn_reset)
     return parser
 
 

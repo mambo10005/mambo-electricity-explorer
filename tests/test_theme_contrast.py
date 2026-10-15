@@ -18,9 +18,14 @@ MEASURED_STREAMLIT = "1.65.0"
 WHITE = (255, 255, 255)
 PAGE = {"light": (255, 255, 255), "dark": (14, 17, 23)}  # rendered .stApp backgrounds
 HOVER_FOCUS = (16, 67, 177)  # rendered primary-button background on :hover / :focus-visible
-# Rendered secondary/form-submit buttons: (text, background). Measured in dark only; the
-# light theme's hover/active overlays were not measured in Stage 9 (docs/accessibility.md).
-SECONDARY = {"dark": ((250, 250, 250), (19, 23, 32))}
+# Rendered secondary/form-submit buttons: (text, background, hover/active overlay color).
+# Dark measured in Stage 9; light hover measured in Stage 10 (a real pointer hover).
+SECONDARY = {
+    "dark": ((250, 250, 250), (19, 23, 32), (172, 177, 195)),
+    "light": ((49, 51, 63), (255, 255, 255), (151, 166, 195)),
+}
+# Rendered link text (Markdown links are underlined in both themes): (text, page background).
+LINKS = {"light": ((0, 84, 163), (255, 255, 255)), "dark": ((61, 157, 243), (14, 17, 23))}
 
 
 def _rgb(hex_color: str) -> tuple[int, int, int]:
@@ -76,8 +81,7 @@ def test_primary_is_distinguishable_from_the_page(mode):
 
 @pytest.mark.parametrize("mode", sorted(SECONDARY))
 def test_secondary_buttons_keep_text_contrast_in_every_state(mode):
-    text, bg = SECONDARY[mode]
-    overlay = (172, 177, 195)
+    text, bg, overlay = SECONDARY[mode]
     for alpha in (0.0, 0.15, 0.25):  # default, :hover/:focus-visible, :active overlays
         assert ratio(text, _over(overlay, alpha, bg)) >= 4.5
 
@@ -86,3 +90,9 @@ def test_measurements_are_for_the_installed_streamlit():
     assert version("streamlit") == MEASURED_STREAMLIT, (
         "Streamlit changed: re-measure rendered button colors (docs/accessibility.md)"
     )
+
+
+@pytest.mark.parametrize("mode", sorted(LINKS))
+def test_link_text_contrast(mode):
+    text, bg = LINKS[mode]
+    assert ratio(text, bg) >= 4.5

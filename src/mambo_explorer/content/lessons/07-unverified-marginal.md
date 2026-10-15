@@ -9,7 +9,7 @@ objectives:
   - Recognize when one direction of a small demand change is infeasible.
   - Tell a non-unique dispatch apart from an infeasible run.
   - Explain why dispatch uniqueness and price verification are separate questions.
-content_version: 1.1.0
+content_version: 1.1.1
 effective_date: null
 authored_by: Claude (AI agent)
 authored_at: 2026-10-11
@@ -119,7 +119,8 @@ marginal rate. When the breakpoint lies inside a change, that change's average i
 weighted blend of the slopes on either side.
 
 The solver still reports a dual for every bus, and at a breakpoint it is a legitimate
-number: a subgradient that lies between the two averages in these cases. It is withheld
+number. This lesson's interpretation is that it is a subgradient; what the app checks numerically is
+that it lies between the two averages in these cases. It is withheld
 not because it is meaningless, but because no single number can equal both directions, so
 it cannot be presented as *the* marginal cost.
 

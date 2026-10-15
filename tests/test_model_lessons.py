@@ -134,7 +134,9 @@ def test_model_lessons_bind_registered_runs_and_generators():
         meta = lessons[lesson_id].meta
         assert meta["model_bindings"] and meta["model_panels"]
         assert set(meta["model_bindings"]) <= set(mc.LESSON_RUNS)
-        assert meta["dataset_bindings"] == [] and meta["sources"] == []
+        assert meta["dataset_bindings"] == []
+        expected_sources = {"pjm-manual-11"} if lesson_id == "location-prices" else set()
+        assert {s["id"] for s in meta["sources"]} == expected_sources
         for ex in meta["exercises"]:
             assert ex["kind"] == "model" and ex["generator"] in mx.GENERATORS
             assert set(mx.REQUIRES[ex["generator"]]) <= set(meta["model_bindings"])
@@ -229,13 +231,18 @@ def test_model_lesson_wording_is_precise():
     lessons = {le.id: le for le in load_lessons()}
     text = {k: (lessons[k].beginner + lessons[k].technical) for k in MODEL_LESSONS}
     flat = {k: " ".join(v.split()) for k, v in text.items()}
-    assert "not the model any real system operator runs" in flat["pf-vs-dispatch"]
+    assert "does not describe how any real system operator dispatches" in flat["pf-vs-dispatch"]
+    # Stage 10: no uncited claims about actual operators or ISO prices remain.
+    for k in MODEL_LESSONS:
+        for removed in ("Real ISO prices", "Real system operators use", "scarcity pricing"):
+            assert removed not in flat[k], (k, removed)
     assert "Feasible does not mean cheapest" in flat["pf-vs-dispatch"]
     assert "a unique two-sided marginal price was not verified" in flat["unverified-marginal"]
     assert "concerns only the tested perturbations" in flat["unverified-marginal"]
     assert "not because it is meaningless" in flat["unverified-marginal"]
     assert "does not establish uniqueness" in flat["unverified-marginal"]
-    assert "no loss component" in flat["location-prices"]
+    assert "has no loss price" in flat["location-prices"]
+    assert "PJM Manual 11" in flat["location-prices"]  # the one sourced market statement
     for k in MODEL_LESSONS:
         assert "meaningless" not in flat[k].replace("not because it is meaningless", "")
 

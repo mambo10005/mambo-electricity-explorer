@@ -64,7 +64,11 @@ beginner section by default and the technical section behind a toggle.
    the shared terms in `modeling/sensitivity.py` (average incremental/decremental
    cost rate, per-direction feasibility). Never call them one-sided local marginal
    rates, and never say both directions failed when only one did.
-10. New calculations go in `calculations.py` with tests and an entry in
+10. **Model lessons keep three kinds of statement apart:** what the teaching model
+    verifies (no source needed), statements about actual markets (each needs a cited
+    source in `sources`, paraphrased, not quoted at length), and limitations. Never
+    generalize about "real ISOs" or "real operators" without a source.
+11. New calculations go in `calculations.py` with tests and an entry in
    `docs/calculations.md`. New exercise generators go in `exercises.py`, and they
    compute answers with those same calculations.
 
