@@ -433,7 +433,11 @@ def test_guard_aggregation_never_reads_day_ahead_prices():
 
 
 def test_guard_no_implicit_aggregation_or_finance_import():
-    allowed = {"aggregation_view.py", "alignment_view.py", "cli.py"}
+    # Stage 25 (ADR 0022): the governed comparison consumes approved aggregation results
+    allowed = {
+        "aggregation_view.py", "alignment_view.py", "cli.py", "comparison.py",
+        "comparison_policy.py", "comparison_view.py",
+    }  # fmt: skip
     for path in SRC.rglob("*.py"):
         rel = path.relative_to(SRC).as_posix()
         if rel in AGG_MODULES:

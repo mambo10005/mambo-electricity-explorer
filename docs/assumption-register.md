@@ -156,3 +156,51 @@ evidence: `docs/aggregation-evidence.md`.
 - **Synthetic approvals** (tests and scratch checks) are marked `synthetic`. They count only
   where the data directory contains a `SYNTHETIC-ENVIRONMENT` file; never create that file in
   the real data directory.
+
+## Comparison records (Stage 25, ADR 0022)
+
+Source of truth: `src/mambo_explorer/ercot/comparison_policy.py`. `mambo comparison list` and
+`mambo comparison show <id>` print the records and their fingerprints. Evidence:
+`docs/comparison-evidence.md`.
+
+| Field | CMP-A 1.0.0 | CMP-B 1.0.0 |
+|---|---|---|
+| Formula (version) | D = S_RT − P_DAM (CA.1) | D = P_DAM − S_RT (CB.1) |
+| Sign | RT minus DAM: positive when the RT summary is higher | DAM minus RT: positive when the DAM price is higher |
+| Coefficients (RT, DAM) | (+1, −1) | (−1, +1) |
+| Inputs | one selected NP4-190-CD SPP and one `aggregation_approved_complete` RT summary of the same M1-aligned hour, from current snapshots, under one revision policy | same |
+| Location / datasets | HB_NORTH (hub) in NP4-190-CD and HB_NORTH/HU in NP6-905-CD | same |
+| Depends on | M1 1.0.0 (scope fingerprint) | same |
+| Accepted aggregations | AGG-A 1.0.0 and AGG-B 1.0.0 (scope fingerprints) | same |
+| Revision policies | latest-retrieved, first-retrieved | same |
+| Output name / units | "Analytical DAM-to-RT price difference (RT summary minus DAM)", $/MWh | "Analytical DAM-to-RT price difference (DAM minus RT summary)", $/MWh |
+| Allowed use | showing, for one governed hour, how far the approved RT summary lies above or below the DAM SPP | same |
+| Prohibited | DART or any ERCOT-defined quantity; settlement; P&L or savings; hedge value; exposure; forecast error; trading signal or backtest; final-price comparison; Finance input | same |
+| Evidence | OFF-3, OFF-8, OFF-13, OFF-14, OFF-15 | same |
+| Official status | no ERCOT-defined day-ahead/real-time price difference | same |
+| Reviewer / role / date / evidence | **none recorded** | **none recorded** |
+| Approval status | **missing**, so the value is withheld | **missing**, so the value is withheld |
+
+**Re-review triggers:**
+- a new M1, AGG, or CMP version;
+- ERCOT defining a comparison or report labels;
+- a header, identity, unit, or scope change;
+- any proposal to add quantities, percentages, or cross-hour aggregation.
+
+**Not approvable here:** the absolute difference and the percentage difference.
+
+**Four separate statuses:** authorization to build is given (Stage 25 request); reported
+acceptance: none; recorded approval: none; official definition: none exists.
+
+```powershell
+.venvs/py314/Scripts/mambo comparison list
+.venvs/py314/Scripts/mambo comparison show CMP-A
+.venvs/py314/Scripts/mambo comparison approve CMP-A --version 1.0.0 --scope <fp> `
+    --accept-limitations <fp> --m1-version 1.0.0 --aggregations AGG-A@1.0.0,AGG-B@1.0.0 `
+    --location HB_NORTH --reviewer "<name>" --role "<role>" --evidence "<where>" `
+    --approved-on YYYY-MM-DD            # dry run; add --execute to record
+.venvs/py314/Scripts/mambo comparison status CMP-A        # never prints the reviewer
+.venvs/py314/Scripts/mambo comparison revoke CMP-A --record APR-CMP-A-xxxxxxxx --reason "<why>" --execute
+```
+
+A comparison needs **three** active approvals: M1, the AGG record used, and the chosen CMP record.

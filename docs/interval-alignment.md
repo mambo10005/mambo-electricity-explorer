@@ -241,3 +241,10 @@ Ways to unblock prerequisite 2 (owner's choice; none attempted):
     credit formula (OFF-12).
 - **What they don't change:** neither defines the report labels, and neither is a published
   hourly price.
+
+## 12. Stage 25: governed comparison (ADR 0022)
+
+- **Where the alignment is used:** an M1-aligned hour may be compared with the DAM price only
+  through `comparison.compare`. That needs active M1, AGG, and CMP approvals and current
+  alignment and aggregation snapshots (`docs/comparison-evidence.md`).
+- **What it does not change:** the official label semantics, which remain unresolved.

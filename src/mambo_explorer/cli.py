@@ -15,6 +15,9 @@ Commands:
     assumption show|status|approve|revoke  the versioned M1 alignment assumption and its
                local approval records (approve/revoke are dry runs unless --execute; every
                reviewer field must be supplied, nothing is filled in)
+    comparison list|show|status|approve|revoke|restore  versioned day-ahead/real-time
+               comparison records (approve also needs --m1-version, --aggregations,
+               --location HB_NORTH)
     aggregation list|show|status|approve|revoke|restore  versioned hourly real-time
                aggregation records and their local approvals (same rules; approve also needs
                --version, --scope, and --accept-limitations from `show`)
@@ -357,9 +360,35 @@ def cmd_health(args, settings) -> int:
 
 
 def cmd_aggregation(args, settings) -> int:
+    from mambo_explorer.ercot import aggregation_policy as agp
+
+    return _governed_records(args, settings, agp, "aggregation", lambda r: {"method": r.method})
+
+
+def cmd_comparison(args, settings) -> int:
+    from mambo_explorer.ercot import approvals as ap
+    from mambo_explorer.ercot import comparison_policy as cmp
+
+    def extra(record) -> None:
+        """Approve/restore: the reviewer restates M1, aggregations, and location explicitly."""
+        m1 = record.depends_on.split(":")[0].split("@")[1]
+        aggs = sorted(a.split(":")[0].replace("@", " ") for a in record.aggregations)
+        given = sorted(x.strip().replace("@", " ") for x in (args.aggregations or "").split(","))
+        if args.m1_version != m1 or given != aggs or args.location != "HB_NORTH":
+            raise ap.ApprovalError(
+                f"--m1-version {m1}, --aggregations {','.join(a.replace(' ', '@') for a in aggs)}, "
+                "and --location HB_NORTH must be stated explicitly (see `show`)"
+            )
+
+    return _governed_records(
+        args, settings, cmp, "comparison", lambda r: {"sign": r.sign_convention}, extra
+    )
+
+
+def _governed_records(args, settings, module, label, describe, extra=None) -> int:
+    """Shared list/show/status/approve/revoke/restore for versioned governed records."""
     from dataclasses import asdict
 
-    from mambo_explorer.ercot import aggregation_policy as agp
     from mambo_explorer.ercot import approvals as ap
 
     if args.action == "list":
@@ -368,24 +397,22 @@ def cmd_aggregation(args, settings) -> int:
                 {
                     "id": r.id,
                     "version": r.version,
-                    "method": r.method,
+                    **describe(r),
                     "output_name": r.output_name,
                     "approval_status": ap.status(settings.data_dir, r).status,
                 }
-                for r in agp.RECORDS
+                for r in module.RECORDS
             ]
-            + [{"id": k, "approvable": False, "why": v} for k, v in agp.NOT_APPROVABLE.items()]
+            + [{"id": k, "approvable": False, "why": v} for k, v in module.NOT_APPROVABLE.items()]
         )
         return 0
     if not args.record_id:
-        print(
-            "error: this action needs a record id (see `mambo aggregation list`)", file=sys.stderr
-        )
+        print(f"error: this action needs a record id (see `mambo {label} list`)", file=sys.stderr)
         return 1
     try:
-        record = agp.record(args.record_id)
+        record = module.record(args.record_id)
     except KeyError:
-        print(f"error: no aggregation record {args.record_id!r}", file=sys.stderr)
+        print(f"error: no {label} record {args.record_id!r}", file=sys.stderr)
         return 1
     if args.action == "show":
         _print(
@@ -418,6 +445,8 @@ def cmd_aggregation(args, settings) -> int:
                 )
             if args.action == "restore" and not args.record:
                 raise ap.ApprovalError("restore needs --record (the revoked approval)")
+            if extra:
+                extra(record)
             event = ap.new_approval(
                 record,
                 reviewer=args.reviewer,
@@ -647,6 +676,31 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--reason", help="revoke: why")
     p.add_argument("--execute", action="store_true", help="append the record (default: dry run)")
     p.set_defaults(func=cmd_aggregation)
+
+    p = sub.add_parser(
+        "comparison",
+        help="versioned day-ahead/real-time comparison records and their local approvals",
+    )
+    p.add_argument("action", choices=("list", "show", "status", "approve", "revoke", "restore"))
+    p.add_argument("record_id", nargs="?", help="comparison record id, e.g. CMP-A")
+    p.add_argument("--version", help="approve/restore: the record version, as shown")
+    p.add_argument("--scope", help="approve/restore: the scope fingerprint, as shown")
+    p.add_argument(
+        "--accept-limitations", help="approve/restore: the limitations fingerprint, as shown"
+    )
+    p.add_argument("--m1-version", help="approve/restore: the M1 version the comparison uses")
+    p.add_argument(
+        "--aggregations", help="approve/restore: the accepted records, e.g. AGG-A@1.0.0,AGG-B@1.0.0"
+    )
+    p.add_argument("--location", help="approve/restore: the location scope (HB_NORTH)")
+    p.add_argument("--reviewer", help="approve/restore: the reviewer's name, as they supplied it")
+    p.add_argument("--role", help="approve/restore: the reviewer's role")
+    p.add_argument("--evidence", help="approve/restore: where the approval is documented")
+    p.add_argument("--approved-on", help="approve/restore: the actual approval date (YYYY-MM-DD)")
+    p.add_argument("--record", help="revoke: the approval to revoke; restore: the revoked one")
+    p.add_argument("--reason", help="revoke: why")
+    p.add_argument("--execute", action="store_true", help="append the record (default: dry run)")
+    p.set_defaults(func=cmd_comparison)
     return parser
 
 

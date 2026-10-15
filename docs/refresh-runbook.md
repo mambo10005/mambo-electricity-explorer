@@ -188,7 +188,12 @@ These commands never collect, and approvals never come from a refresh.
 .venvs/py314/Scripts/mambo aggregation list                  # AGG-A, AGG-B, non-approvable candidates
 .venvs/py314/Scripts/mambo aggregation show AGG-A            # fingerprints needed to approve
 .venvs/py314/Scripts/mambo aggregation status AGG-A
+.venvs/py314/Scripts/mambo comparison list                   # CMP-A, CMP-B, non-approvable
+.venvs/py314/Scripts/mambo comparison status CMP-A
 ```
+
+A refresh never computes a comparison: comparison code is imported only by the diagnostic page
+and the CLI (guard test). Comparison snapshots go to `<MAMBO_DATA_DIR>/comparison/`.
 
 Aggregation and alignment snapshots are written only from the diagnostic page's buttons. They
 go to `<MAMBO_DATA_DIR>/alignment/` and `<MAMBO_DATA_DIR>/aggregation/` and are never deleted.

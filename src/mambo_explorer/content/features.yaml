@@ -145,6 +145,11 @@ features:
     section: explore
     status: done
     ui: true
+  - id: EXPLORE-11
+    name: "Governed single-hour comparison investigation: CMP-A (RT summary minus DAM) and CMP-B (DAM minus RT summary) records with local approvals, candidate formulas and signs, synthetic benchmarks, withheld or approved result, comparison snapshots (no comparison approved)"
+    section: explore
+    status: done
+    ui: true
   - id: EXPLORE-08
     name: "Day-ahead vs real-time price comparison (DART) at HB_NORTH"
     section: explore

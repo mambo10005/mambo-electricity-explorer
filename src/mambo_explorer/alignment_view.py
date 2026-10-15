@@ -224,7 +224,10 @@ def _aggregation(data_dir, res, dam, rtl, hour, approval) -> None:
         res.alignment_basis, res.dam_identity, res.revision_policy, stored_dam, stored_rt, approval
     )
     agv.render_investigation(data_dir, approval)
-    agv.render_actual(data_dir, res, ctx, approval)
+    agg_result, align_state = agv.render_actual(data_dir, res, ctx, approval)
+    from mambo_explorer import comparison_view as cmv
+
+    cmv.render_comparison(data_dir, res, agg_result, align_state, approval)
 
 
 BASIS_LABELS = {

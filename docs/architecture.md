@@ -121,6 +121,11 @@ src/mambo_explorer/
   ercot/aggregation.py  candidate formulas (Decimal), governed aggregate() with blockers,
                        aggregation snapshots; never reads day-ahead prices
   aggregation_view.py  "Aggregation investigation" section of the alignment diagnostic
+  ercot/comparison_policy.py  Stage 25: versioned comparison records CMP-A (RT − DAM) and
+                       CMP-B (DAM − RT), sign metadata, accepted AGG records (ADR 0022)
+  ercot/comparison.py  candidate formulas, governed compare() with blockers, DAM lookup of
+                       the selected revision, comparison snapshots; no quantities
+  comparison_view.py   "Comparison investigation" section (one hour; mode off by default)
   ercot/assumed_alignment.py  opt-in alignment by basis (authoritative-only | review-approved
                        assumption), outcomes, snapshots with staleness (ADR 0020)
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)

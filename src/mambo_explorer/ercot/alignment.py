@@ -309,6 +309,53 @@ EVIDENCE: tuple[Evidence, ...] = (
         "published hourly price; it does not define the report labels.",
     ),
     Evidence(
+        "OFF-13",
+        "official",
+        "ERCOT Nodal Protocols Section 4: Settlement for PTP Obligations Bought in DAM",
+        PROTOCOLS,
+        "§4.6.3(1)",
+        "Section 4, version dated August 1, 2026",
+        None,
+        None,
+        RETRIEVED,
+        "DARTOBLAMT = DAOBLPR × RTOBL with DAOBLPR = DASPP(sink) − DASPP(source): the letters "
+        "DART appear only as a variable prefix, and the price difference is between two "
+        "locations' day-ahead SPPs (sink minus source), not between day-ahead and real-time.",
+        "No ERCOT definition of a day-ahead/real-time price difference or of the term DART was "
+        "found in the reviewed sections.",
+    ),
+    Evidence(
+        "OFF-14",
+        "official",
+        "ERCOT Nodal Protocols Section 16: Forward Adjustment Factors (credit)",
+        PROTOCOLS,
+        "§16.11.4.3.3(1)(e)-(g)",
+        "Section 16, version dated August 1, 2026",
+        None,
+        None,
+        RETRIEVED,
+        "HDSAP averages historic North Hub DASPPs; RFAF = PRFAP / HRSAP and DFAF = PDFAP / HDSAP: "
+        "day-ahead and real-time averages are kept separate and used as ratios to futures "
+        "prices for credit exposure, not differenced.",
+        "Credit calculation; defines no day-ahead/real-time comparison.",
+    ),
+    Evidence(
+        "OFF-15",
+        "official",
+        "ERCOT Nodal Protocols Section 7: PTP Obligations Settled in Real-Time",
+        PROTOCOLS,
+        "§7.9.2.1(2)",
+        "Section 7, version dated December 5, 2025",
+        None,
+        None,
+        RETRIEVED,
+        'A DAM-acquired PTP Obligation is paid or charged "the difference in Real-Time '
+        "Settlement Point Prices between the sink Settlement Point and the source Settlement "
+        'Point": an official signed convention (sink minus source) for a locational '
+        "difference.",
+        "Locational, not day-ahead versus real-time; shows ERCOT states a sign explicitly.",
+    ),
+    Evidence(
         "GAP-1",
         "inaccessible",
         "ERCOT list notice W-A092311-05 (2011), reportedly on DST flags",

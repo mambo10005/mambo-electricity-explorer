@@ -390,3 +390,9 @@ with the CLI; ticking a box here records no approval.
       backtest."
 - [ ] The aggregation-evidence classification (`docs/aggregation-evidence.md`), especially the
       HRSAP finding (a credit formula, not a published price).
+- [ ] CMP-A 1.0.0 and CMP-B 1.0.0 (Stage 25): formulas, sign explanations, output names,
+      prohibited interpretations, and the persistent notice: "This is an analytical price
+      comparison under review-approved assumptions. It is not an ERCOT settlement,
+      profit-and-loss result, trading backtest, or forecast evaluation."
+- [ ] The comparison-evidence classification (`docs/comparison-evidence.md`), especially that
+      DART is not ERCOT-defined in the reviewed sources.

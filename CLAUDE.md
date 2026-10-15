@@ -138,6 +138,14 @@ non-trivial work.
     - Never weight by EIA demand, and never substitute 0.25 h without duration evidence.
     - Never create a `SYNTHETIC-ENVIRONMENT` file or a synthetic approval in the real data
       directory.
+  - Price comparison (ADR 0022): only through `comparison.compare`.
+    - Requires an explicit mode, three active approvals (M1, the AGG record used, CMP-A or
+      CMP-B), complete alignment and aggregation, current snapshots, and the selected DAM
+      revision.
+    - Never choose a sign by default, and never fall back between CMP-A and CMP-B.
+    - Never label the result DART, settlement, P&L, savings, exposure, or forecast error.
+    - Never multiply it by a quantity, never compute a percentage in production, and never
+      run it from refresh, collection, or Finance.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,

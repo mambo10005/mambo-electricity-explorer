@@ -26,3 +26,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | [0019](0019-interval-alignment-evidence.md) | Evidence-based alignment of ERCOT day-ahead hours and real-time intervals (no mapping accepted) | Accepted |
 | [0020](0020-assumption-governed-alignment.md) | Assumption-governed day-ahead/real-time interval alignment (M1, opt-in, approval-gated) | Accepted |
 | [0021](0021-governed-hourly-rt-aggregation.md) | Governed hourly real-time price aggregation (investigation; no method active) | Accepted |
+| [0022](0022-governed-price-comparison.md) | Governed comparison of a day-ahead SPP with an approved RT analytical summary (no comparison active) | Accepted |
