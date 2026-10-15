@@ -2,6 +2,50 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 7: independently verified DC OPF and economic-dispatch lab (#13)
+
+Stacked on Stage 6 (PR #12) ← #10 ← #8 ← #6 ← #4 ← #2. None merged. mambo-power is still
+pinned to 26be8c1 (unmodified); highspy is 1.15.1.
+
+- **Formulation audit (ADR 0007),** traced in `opf/dc_opf.py` and `opf/__init__.py`:
+  - MW dispatch variables; objective Σ c1·p (+c2·p² if present)
+  - one balance row; PTDF flow rows with fixed-load constants
+  - reference bus only through PTDF; pu → MW before the LP
+  - raw HiGHS row and column duals; `lmp = λ + μ·PTDF`
+- **Units:** the objective is a cost *rate* in $/h. The lab uses an explicit 1-hour
+  interval: interval cost ($) = rate × 1 h.
+- **Hand-derived benchmarks:** uncongested (3000 $/h, all 20), capacity-limited
+  (3500, all 30), congested (90/60 MW, 3600, prices 20/30/40, AC dual −40), infeasible,
+  breakpoint (one-sided 30/20), congestion breakpoint, and equal offers (non-unique
+  dispatch). All match.
+- **Price verification:**
+  - Two-sided demand perturbations at every bus at 0.01, 0.1, and 1 MW equal the reported
+    prices within 1e-6 $/MWh, inside the same active set.
+  - The rating relaxation equals the flow dual.
+  - At breakpoints the one-sided rates differ, and the solver's single dual lies between
+    them.
+- **Adapter** (`run_dc_opf`, extending the existing adapter):
+  - status, finiteness, balance
+  - flows recomputed with the verified DC power flow
+  - bounds, ratings, recomputed objective
+  - KKT stationarity, signs, and complementary slackness
+  - price decomposition at every bus, with PTDF measured by the DC power flow
+  - per-run two-sided ±0.1 MW price check; prices are withheld at breakpoints, for
+    unservable perturbations, or on a mismatch
+  - non-unique dispatch detection
+  - Tampered dispatch or prices fail the run with no outputs.
+- **Lab:** a lab selector (power flow stays the default) and an economic-dispatch lab
+  with teaching-case presets. Results are invalidated on any input change, infeasible
+  runs show no numbers, and runs persist locally (`kind = opf.dc`).
+- **Found in the browser and fixed:**
+  - a pair of "$" in markdown rendered as LaTeX and erased the cost units (escaped, with a
+    regression test proven to fail without the fix)
+  - escaping the slider labels put "\$" into aria-label (reverted: one "$" cannot pair)
+  - the 6-column dispatch table and the saved-runs table overflowed at 375 px (narrowed)
+- **Tests:** 340 offline tests. Gate 8/8 on CPython 3.11.16 and 3.14.2.
+- **Processes:** baseline none. Owned servers were restarted 4 times, by PID only; all
+  stopped, 0 remain, ports free.
+
 ## 2026-10-11 — Stage 6: verified mambo-power integration and first teaching lab (#11)
 
 Stacked on Stage 5 (PR #10) ← #8 ← #6 ← #4 ← #2. None merged.

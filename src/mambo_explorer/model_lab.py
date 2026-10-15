@@ -145,21 +145,37 @@ def _show(record: adapter.RunRecord) -> None:
         )
 
 
+LABS = {
+    "pf": "DC power flow (you set the dispatch)",
+    "opf": "Economic dispatch: DC optimal power flow (the model chooses the dispatch)",
+}
+
+
 def render_model_lab() -> None:
     section = section_by_key("model-labs")
     st.title(section.title)
-    st.markdown(
-        "A **DC power flow** teaching lab. You set a generator, a demand, and one line. The "
-        "model computes how power splits across the lines. The network is **synthetic** "
-        "(three buses), and every result is **modeled**, not an observation of any real "
-        "market or grid."
-    )
     try:
         settings = load_settings()
         runs = RunStore(settings.data_dir)
     except ConfigError as exc:
         st.error(f"Unsafe data directory configuration: {exc}. Runs cannot be saved.")
         runs = None
+    lab = st.radio("Lab", list(LABS), format_func=LABS.get, key="lab_choice")
+    if lab == "opf":
+        from mambo_explorer.opf_lab import render_opf_lab
+
+        render_opf_lab(runs)
+        return
+    _render_pf_lab(runs)
+
+
+def _render_pf_lab(runs) -> None:
+    st.markdown(
+        "A **DC power flow** teaching lab. You set a generator, a demand, and one line. The "
+        "model computes how power splits across the lines. The network is **synthetic** "
+        "(three buses), and every result is **modeled**, not an observation of any real "
+        "market or grid."
+    )
 
     st.header("The synthetic network")
     st.markdown(
@@ -200,7 +216,7 @@ def render_model_lab() -> None:
     st.markdown("\n".join(f"- {item}" for item in OMISSIONS))
     if runs is not None:
         with st.expander("Saved runs on this computer"):
-            recent = runs.recent(10)
+            recent = runs.recent(10, kind="pf.dc")
             if not recent:
                 st.markdown("No saved runs yet.")
             else:

@@ -26,6 +26,7 @@ REQUIRED_DOCS = [
     "docs/datasets/ercot-np6-345-cd.md",
     "docs/decisions/0005-ercot-direct-connector.md",
     "docs/decisions/0006-mambo-power-adapter.md",
+    "docs/decisions/0007-verified-dc-opf.md",
     "docs/capability-register.md",
     "docs/backlog.md",
     ".github/pull_request_template.md",

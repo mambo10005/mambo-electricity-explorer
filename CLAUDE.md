@@ -57,7 +57,8 @@ non-trivial work.
 - mambo-power is used only through `modeling/adapter.py`, pinned to a full commit
   (ADR 0006).
   - Expose a capability only after independent benchmarks.
-  - Never call OPF duals LMPs until verified (capability register).
+  - OPF prices are shown only through `run_dc_opf`'s per-run verification (ADR 0007).
+    Never present them as ISO prices.
   - Never modify the package repository.
 - Lessons follow `docs/lesson-authoring.md`.
   - Never mark content `human-reviewed` unless a named person reviewed it.

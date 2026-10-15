@@ -62,6 +62,16 @@ mambo collect --EIAClient--> api.eia.gov (key in URL; never logged)
 Explore page --DuckDB (UTC, no extension downloads)--> `latest` view over committed files only
 ```
 
+## Economic dispatch (Stage 7, ADR 0007)
+
+```
+src/mambo_explorer/
+  modeling/opf_network.py  SYNTHETIC dispatch network: linear offers, capacities, ratings, 1-h interval
+  modeling/adapter.py      + run_dc_opf: opf.solve_dc_opf, primal/KKT/decomposition checks,
+                           two-sided price sensitivities, non-unique dispatch detection
+  opf_lab.py               Economic-dispatch lab (teaching-case presets, verified prices only)
+```
+
 ## Modeling (Stage 6, ADR 0006)
 
 ```

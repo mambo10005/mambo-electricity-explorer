@@ -4,11 +4,12 @@ A local-first, novice-oriented platform for learning and analyzing the U.S.
 electricity system from actual observations and reproducible modeling. See
 [docs/PRD.md](docs/PRD.md).
 
-**Status:** Stage 6. The application shell, the quality workflow, ERCOT's hourly actual
+**Status:** Stage 7. The application shell, the quality workflow, ERCOT's hourly actual
 demand and published day-ahead forecast (EIA-930) in a local store and on the Explore
 page, four beginner lessons on the Learn page that use those observations, and a direct
 ERCOT connector (actual load by weather zone) shown separately on Explore, and a Model Labs
-DC power flow lab on a synthetic three-bus network using mambo-power (pinned commit). Navigation and documentation
+DC power flow lab and an economic-dispatch (DC optimal power flow) lab on synthetic three-bus
+networks using mambo-power (pinned commit). Navigation and documentation
 exist. Modeling and the finance and compliance features are **not implemented**,
 and every section except Explore shows only its planned scope. One bounded live
 collection (7 days + 2-day lookback, 5 requests) was verified on 2026-10-11. The test
@@ -105,7 +106,14 @@ Results are labeled *modeled* and are checked independently. They are shown only
 they match the current inputs. Runs are saved to `<MAMBO_DATA_DIR>/model-runs/`
 (gitignored).
 
-Only DC power flow is verified and exposed. See `docs/capability-register.md`.
+The **economic-dispatch** lab (same page, "Lab" selector) lets the model choose the
+cheapest dispatch for synthetic offers. It reports:
+- the cost as a $/h rate and over an explicit 1-hour interval
+- binding line limits
+- **modeled** nodal prices, shown only when each run's price check verifies them
+
+Prices are withheld at breakpoints. Only DC power flow and linear-cost DC OPF are verified
+and exposed. See `docs/capability-register.md` and ADR 0007.
 
 ## 4. Learn
 

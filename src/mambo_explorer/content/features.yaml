@@ -96,6 +96,11 @@ features:
     section: model-labs
     status: done
     ui: true
+  - id: MODEL-03
+    name: "Economic-dispatch lab: independently verified DC OPF (synthetic 3-bus)"
+    section: model-labs
+    status: done
+    ui: true
   - id: FIN-01
     name: "Financial and long-term contract library"
     section: finance
