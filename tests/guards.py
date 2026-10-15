@@ -1,8 +1,10 @@
 """Guards against fake results. Shared by the app tests and the guard self-tests.
 
-A section is authorized to show data elements (charts, maps, metrics) only once at
-least one of its features in content/features.yaml is `done`. Until then, any data
-element on that page is treated as a fabricated result. The Home page is never a data
+A section is authorized to show data elements (charts, maps, metrics) only once one
+of its features in content/features.yaml is `done` AND marked `ui: true` (it delivers
+the page). Done backend features filed under a section, such as a connector under
+Sources, do not authorize charts there. Until then, any data element on that page is
+treated as a fabricated result. The Home page is never a data
 page and is always held to the strict rule.
 """
 
@@ -27,7 +29,9 @@ def data_elements(at: AppTest) -> dict[str, int]:
 
 def section_is_implemented(section: str, features: list[dict] | None = None) -> bool:
     features = load_features() if features is None else features
-    return any(f["section"] == section and f["status"] == "done" for f in features)
+    return any(
+        f["section"] == section and f["status"] == "done" and f.get("ui") is True for f in features
+    )
 
 
 def assert_no_data_elements(at: AppTest) -> None:

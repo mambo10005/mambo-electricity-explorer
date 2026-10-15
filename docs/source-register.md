@@ -14,7 +14,7 @@ Review columns:
 
 | Source | Kind | Planned order | Access | Terms | Redistribution | Revisions | Review status | Connected |
 |--------|------|---------------|--------|-------|----------------|-----------|---------------|-----------|
-| EIA (U.S. Energy Information Administration) Open Data API v2 | Federal statistics | 1 | API key (`EIA_API_KEY`), sent as a URL query parameter | Reviewed 2026-10-11, see below | Generally permitted, with exceptions for third-party material (see below) | Not yet reviewed | Terms reviewed; per-dataset source notes pending | No |
+| EIA (U.S. Energy Information Administration) Open Data API v2 | Federal statistics | 1 | API key (`EIA_API_KEY`), sent as a URL query parameter | Reviewed 2026-10-11, see below | Generally permitted, with exceptions for third-party material (see below) | EIA-930: revised without per-value flags (see below) | General terms reviewed; EIA-930 `region-data` cleared for local collection/use; other routes' source notes pending; publication review pending | Yes, locally: EIA-930 ERCO D/DF (live-verified 2026-10-11) |
 | ERCOT | ISO/RTO | 2 (PRD R-29) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | CAISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | PJM | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
@@ -100,3 +100,78 @@ marked as such and is not legal advice.
 
 **Not yet reviewed:** how EIA publishes revisions (Revisions column), and
 the source notes of each route we plan to use.
+
+### EIA-930 hourly demand and forecast (`electricity/rto/region-data`) — 2026-10-11
+
+Scope reviewed: one balancing authority (ERCOT) and two metrics: actual demand
+and the day-ahead demand forecast.
+
+**Pages read (2026-10-11).** "Page states" below means a verbatim or near-verbatim
+statement on one of these pages. "Unverified" means it needs a keyed API call
+that has not been made yet.
+
+- API v2 documentation: https://www.eia.gov/opendata/documentation.php
+- Hourly Electric Grid Monitor, about the data: https://www.eia.gov/electricity/gridmonitor/about
+- Form EIA-930 instructions (OMB 1905-0129): https://www.eia.gov/survey/form/eia_930/instructions.pdf
+- EIA-930 reference tables ("updated 10/11/2026"): https://www.eia.gov/electricity/930-content/EIA930_Reference_Tables.xlsx
+- API browser for the route: https://www.eia.gov/opendata/browser/electricity/rto/region-data
+- An unauthenticated request to `https://api.eia.gov/v2/electricity/rto/region-data/`
+  returned **HTTP 403 `API_KEY_MISSING`**. Metadata and facet lists need a key.
+
+| Item | Finding | Status |
+|---|---|---|
+| Route | `electricity/rto/region-data`, "Hourly Demand, Demand Forecast, Generation, and Interchange". Facets `respondent`, `type`. Data from 2019-01-01T00. | Seen in EIA's own API-browser traffic. Not fetched by us. |
+| Entity | `ERCO` = "Electric Reliability Council of Texas, Inc." (BAs sheet of the reference tables; also on the about page). | Verified from official reference tables. Live facet check pending (`mambo sources --remote`). |
+| Metrics | `D` = Demand ("actual demand"), `DF` = Day-ahead demand forecast ("should always be positive"). | Form instructions and grid monitor. Live facet check pending. |
+| Units | `megawatthours`; aggregation SUM. "BAs report all data as hourly integrated values … time-weighted hourly averaged values." | Hourly average MW equals MWh over that hour. |
+| Interval | Frequency `hourly` = "one data point for each hour in UTC time", format `YYYY-MM-DD"T"HH24`. EIA-930 uses "the hour ending time reporting convention". | **Hour-ending is not stated for the API `period` field.** The app does not derive interval start/end (columns stay null) until a keyed response confirms it. |
+| start/end | "only return data after a specific point … end … the latest date". Hourly inclusivity not stated. | The collector validates that every row falls inside the window, and the Explore page counts absent hours. |
+| Paging | At most 5,000 rows per JSON response. `offset`/`length` paging. `total` reported as a string. Sort syntax `sort[0][column]`. | Implemented with deterministic sort (period, respondent, type). Truncation fails the run. |
+| Values | Returned as strings since API v2.1.6. | Parsed without imputation; `value_raw` kept. |
+| Missing values | Not documented for the API. "We publish hourly BA data exactly as reported without imputation." | **Live 2026-10-11: missing hours appear as absent rows** (24 DF hours absent, 0 nulls). Null and empty values are still handled and flagged. The Explore page counts absent hours. |
+| Imputation | EIA imputes only in U.S./regional and daily aggregates, not on hourly BA values. | No imputation in this app. |
+| Revisions | Demand is collected hourly "and again at 7:00 a.m. the next day … values may or not be the same". Revisions are resubmitted within 3 days (expected) or 30 days (errors > 10 MWh). No per-value publication time or preliminary/final flag found. | Revision history kept. Default 2-day lookback. `publication_time_utc` stays null. |
+| Field names | Docs example: `response.{total,dateFormat,frequency,data}` plus a `request` echo whose example `params` include `api_key`. | **Live-verified 2026-10-11:** rows have `period`, `respondent`, `respondent-name`, `type`, `type-name`, `value`, `value-units`. For this route the `request.params` echo had **no `api_key`**, but archives stay redacted in case that changes. |
+| Caveats | The day-ahead forecast is "generated in the normal course of business" by the BA. Daylight-saving transition days "are often misreported" (ERCO reports in Central time). "We advise caution when using these data." | Shown as limitations in the app. |
+| Dataset terms | "We collect the data from the electricity balancing authorities." "All information reported on Form EIA-930 is public information and may be publicly released in company identifiable form." No dataset-specific copyright or third-party notice found. | See clearance below. |
+
+**Local collection and use: CLEARED** for this route, entity, and these two
+metrics. The basis is the general EIA terms (above), the EIA-930 public-information
+statement, and no third-party notice. Conditions:
+- attribute EIA
+- no endorsement claims
+- keep under the published rate guidance
+- never log or display the key-bearing URL
+
+**Public redistribution: NOT YET REVIEWED.** The terms are permissive, but
+publishing (PUB-01) also needs:
+- an attribution format decided for derived views
+- a recheck of the terms on the publication date (they carry no effective date)
+- a decision on publishing archives that contain EIA's request echo
+
+Nothing is published.
+
+**Live verification (2026-10-11, owner-provided key, 5 requests in total):**
+
+- `mambo sources --remote` (3 requests) confirmed:
+  - route `region-data`
+  - frequency `hourly`
+  - `ERCO` = "Electric Reliability Council of Texas, Inc."
+  - `D` = "Demand", `DF` = "Day-ahead demand forecast"
+- `mambo collect` (1 request) for UTC days 2026-10-04..10, plus a 2-day
+  lookback (periods 2026-10-02T00..2026-10-10T23):
+  - 408 rows: `D` 216/216, `DF` 192/216
+  - `DF` absent for `2026-10-05T06`..`2026-10-06T05`
+  - values were strings, units all `megawatthours`, `apiVersion` 2.1.14
+  - no warnings; no key in the response
+- All 408 stored observations matched the archived response exactly
+  (`value_raw` and unit). The archive sha256 matches the catalog.
+- An immediate repeat collection (1 request) found 0 new, 0 revised, and 408
+  unchanged rows. `mambo validate`: ok.
+- **Period convention still not stated by the API.** The absent forecast
+  block is exactly one Central-time day *if* periods are hour-ending
+  (06 UTC = hour ending 01:00 CDT). That is consistent with the EIA-930
+  documentation but is not an explicit API statement, so interval boundaries
+  are still not derived.
+- No revisions observed yet. Detecting them needs re-collection over the
+  days when EIA's documented resubmissions happen (up to 3 or 30 days later).

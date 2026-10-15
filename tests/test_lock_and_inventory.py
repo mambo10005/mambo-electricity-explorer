@@ -1,9 +1,10 @@
 """Offline checks on the lock file and the dependency license inventory.
 
 `uv lock --check` (run by scripts/quality.py) proves the lock matches pyproject.toml;
-these tests cover what uv does not: deferred dependencies and inventory drift.
+these tests cover what uv does not: unused dependencies and inventory drift.
 """
 
+import re
 import tomllib
 from pathlib import Path
 
@@ -20,10 +21,24 @@ def _locked() -> set[tuple[str, str]]:
     return {(p["name"], p["version"]) for p in lock["package"] if p["name"] != PROJECT}
 
 
-def test_storage_dependencies_not_declared_before_their_milestone():
-    declared = " ".join(_pyproject()["project"]["dependencies"]).lower()
-    assert "duckdb" not in declared
-    assert "pyarrow" not in declared
+# Import name for each declared runtime dependency.
+IMPORT_NAMES = {
+    "streamlit": "streamlit",
+    "pyyaml": "yaml",
+    "duckdb": "duckdb",
+    "pyarrow": "pyarrow",
+}
+
+
+def test_every_declared_runtime_dependency_is_used_in_src():
+    """Replaces the Stage 2 guard that forbade duckdb/pyarrow before they were used."""
+    dependencies = _pyproject()["project"]["dependencies"]
+    declared = {re.split(r"[<>=!~ ]", d, maxsplit=1)[0].lower() for d in dependencies}
+    assert declared == set(IMPORT_NAMES)
+    source = "\n".join(p.read_text("utf-8") for p in (REPO / "src").rglob("*.py"))
+    for name in declared:
+        module = IMPORT_NAMES[name]
+        assert re.search(rf"^\s*(import|from) {module}\b", source, re.MULTILINE), name
 
 
 def test_dev_tools_are_a_dependency_group_not_a_published_extra():

@@ -1,7 +1,7 @@
 # Architecture — mambo-electricity-explorer
 
-**Status:** Stage 1. Only the application shell exists. Everything under
-"Planned components" is unimplemented.
+**Status:** Stage 3. The shell, the quality workflow, and EIA-930 collection,
+storage, and Explore exist. Everything under "Planned components" is unimplemented.
 
 ## Fixed constraints
 
@@ -33,8 +33,34 @@ tests/                  Offline pytest suite, including Streamlit AppTest
 How it fits together: `app.py` builds one `st.Page` per section from
 `navigation.SECTIONS`. Each section page calls `pages.render_section(key)`,
 which shows the summary, a "Not implemented" warning, planned scope, and the
-tracked features from `features.yaml`. The home page reads all three YAML
-files. No page reads data or environment variables.
+tracked features from `features.yaml`. Explore is the exception (`pages.render_page`
+dispatches it to `explore.py`). The home page reads all three YAML
+files. Only Explore reads observations, and no page ever collects data.
+
+## EIA collection and storage (Stage 3, ADR 0004)
+
+```
+src/mambo_explorer/
+  config.py        MAMBO_DATA_DIR safety checks; EIA_API_KEY; optional gitignored .env
+  eia/dataset.py   Reviewed EIA-930 facts (route, ERCO, D/DF, units, interval convention)
+  eia/client.py    Bounded API v2 client: timeouts, retries, budget, strict validation
+  eia/redact.py    Credential redaction (raw, %-encoded, +-encoded, query, JSON echo)
+  collect.py       Plan (bounded days + lookback), normalize, revisions, collect()
+  storage.py       Parquet + SQLite catalog + DuckDB views; lock; validate/recover
+  cli.py           `mambo sources|collect|validate|status|storage`
+  explore.py       Explore page (reads committed observations only)
+```
+
+Data flow (implemented):
+
+```
+mambo collect --EIAClient--> api.eia.gov (key in URL; never logged)
+     |                          | validated, sanitized pages
+     v                          v
+ SQLite runs: started --> raw/run=.../page-*.json --> observations/entity=.../metric=.../run=....parquet
+     +-------- one transaction: register files + sha256, status=committed <----+
+Explore page --DuckDB (UTC, no extension downloads)--> `latest` view over committed files only
+```
 
 ## Local quality workflow (Stage 2)
 
@@ -52,9 +78,7 @@ tests/guards.py              Fake-result guards, keyed to features.yaml status
 
 | Component | Responsibility | Feature | Notes |
 |-----------|----------------|---------|-------|
-| Connectors | One module per source, fetching into raw Parquet | DATA-01..03 | EIA first (R-25) |
-| Observation store | Append-only Parquet + DuckDB views | STORE-01 | PRD P-1, P-2 |
-| Metadata store | SQLite: sources, series, jobs, revisions, model runs | STORE-02 | |
+| Connectors | One module per source | DATA-02..03 | EIA-930 built (DATA-01 in progress, live unverified); ERCOT next (R-29) |
 | Content | Markdown lessons with effective-dated front matter | LEARN-01..02, COMP-01 | PRD P-4 |
 | Model adapter | Validated interface to mambo-power | MODEL-01 | PRD P-5, U-2 |
 | Replay | Assembles one operating day from stored observations | REPLAY-01 | |

@@ -19,15 +19,16 @@ Direct dependencies are declared only once code uses them:
 | pyyaml | `>=6.0.3,<7` | 6.0.3 | MIT | Packaged YAML content |
 | pytest (dev group) | `>=9.1,<10` | 9.1.1 | MIT | Tests |
 | ruff (dev group) | `==0.17.0` | 0.17.0 | MIT | Lint/format; pinned exactly so rule changes don't appear without notice |
+| duckdb | `>=1.5.6,<2` | 1.5.6 | MIT (classifier; wheel ships no license file) | Observation queries (Stage 3) |
+| pyarrow | `>=25.0.1,<26` | 25.0.1 | Apache-2.0 | Parquet writing (Stage 3) |
 | hatchling (build) | `>=1.25` | — | MIT | Build backend, src layout |
 
 Versions were verified by installing into a fresh venv on Python 3.14.2
 (Windows 11) on 2026-10-11. Licenses come from the installed package metadata.
 
-**Deferred:** `duckdb` and a direct `pyarrow` dependency are added in the
-stage that first reads or writes observations (STORE-01). Streamlit already
-pulls in pyarrow transitively. Nothing in this repository should depend on
-that until it is declared.
+`duckdb` and `pyarrow` were deferred until first use and added in Stage 3
+(STORE-01). A test now checks that every declared runtime dependency is imported
+in `src/`.
 
 SQLite comes from the Python standard library (`sqlite3`).
 

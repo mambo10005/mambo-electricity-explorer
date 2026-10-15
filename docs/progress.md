@@ -2,6 +2,67 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 3: first bounded EIA collection, storage, and chart (#5)
+
+Stacked on Stage 2 (PR #4), which is stacked on Stage 1 (PR #2). None merged.
+
+- **Dataset review** (source register):
+  - EIA-930 `electricity/rto/region-data`; `ERCO` verified in EIA's official
+    reference tables; metrics `D`/`DF`; units `megawatthours`.
+  - Hour-ending is documented for EIA-930 but **not for the API `period`
+    field**, so interval boundaries are not derived.
+  - Cleared for local collection and use. Public redistribution not yet reviewed.
+  - Without a key, EIA metadata returns HTTP 403, so live facet verification
+    is pending.
+- **Dependencies:** `duckdb 1.5.6` and `pyarrow 25.0.1` declared and locked.
+  The license inventory has 46 packages. A new test replaces the Stage 2 ban:
+  every declared runtime dependency must be imported in `src/`.
+- **Connector:**
+  - bounded queries, deterministic pagination, strict validation
+  - timeouts, bounded retries with backoff, a request budget
+  - redaction of raw, encoded, query, and echoed keys; errors raised `from None`
+- **Storage:**
+  - Parquet partitioned by entity/metric/run, a SQLite run catalog, DuckDB
+    `observations`/`latest` views
+  - idempotent re-ingest; revisions with lineage
+  - atomic file writes plus a one-transaction commit; single-writer lock
+  - `validate` for recovery (reports by default; quarantine moves, never deletes)
+- **CLI** (`mambo`): `sources [--remote]`, `collect [--dry-run]`, `validate`,
+  `status`, `storage`.
+- **Explore page:**
+  - ERCOT actual demand vs. the BA-published day-ahead forecast
+  - date range, completeness and missing-value indicators, observation table
+  - source, units, and interval text; last collection and a stale warning
+  - limitations
+  - instructions instead of a chart when no data exists
+- **Tests:** 118 offline tests. The gate passes 8/8 on CPython 3.11.16 and
+  3.14.2. All fixtures are **synthetic**, generated in `tests/eia_fixtures.py`.
+- **Browser (Chrome, desktop):**
+  - Populated state, using a scratch store seeded with *synthetic* rows: the
+    chart draws two lines with a gap at the missing hour, and the table expands.
+  - Empty state: instructions, no chart or table, no store created.
+  - Fixed during the check: legend labels were truncated, and both series were
+    drawn in near-identical blues.
+- **Live (2026-10-11):** a key appeared in the gitignored `.env` partway
+  through the stage. All live commands ran through a guard that suppresses
+  output containing any form of the key; no leak was detected.
+  - Metadata verified with 3 requests.
+  - One bounded collection (1 request): 408 rows. Demand complete; 24
+    forecast hours absent from the source.
+  - All 408 stored rows match the archived response.
+  - The repeat collection was idempotent (408 unchanged).
+  - Field names confirmed. Missing data appears as absent rows. The period
+    convention is still not stated by the API.
+  - DATA-01 → `done`.
+  - Explore browser-checked with the real data: two lines, the forecast gap
+    shown, the absent-hours warning shown.
+- **Guard fix:** the Stage 2 chart guard counted *any* done feature as unlocking
+  its section. That meant done backend features would have authorized charts on
+  the "Not implemented" Sources and System Health pages. Features that deliver a
+  page are now marked `ui: true`, and only those unlock charts. A test also
+  checks that the page dispatcher matches these flags.
+- Next: beginner lessons using these observations.
+
 ## 2026-10-11 — Stage 2: reproducible local quality workflow (#3)
 
 Stacked on Stage 1 (PR #2, unmerged).

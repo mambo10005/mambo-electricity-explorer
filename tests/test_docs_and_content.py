@@ -18,6 +18,9 @@ REQUIRED_DOCS = [
     "docs/decisions/README.md",
     "docs/decisions/0001-license.md",
     "docs/decisions/0002-application-stack.md",
+    "docs/decisions/0003-dependency-locking.md",
+    "docs/decisions/0004-eia-collection-and-storage.md",
+    "docs/dependency-licenses.md",
     ".github/pull_request_template.md",
 ]
 
@@ -75,7 +78,7 @@ def _register_row(prefix: str) -> list[str]:
 def test_source_register_order_eia_then_ercot_none_connected():
     eia, ercot = _register_row("EIA"), _register_row("ERCOT")
     assert eia[2] == "1" and ercot[2].startswith("2")
-    assert eia[-1] == "No" and ercot[-1] == "No"
+    assert eia[-1].startswith("Yes, locally") and ercot[-1] == "No"
 
 
 def test_eia_review_recorded_without_blanket_unrestricted_claim():
@@ -83,7 +86,8 @@ def test_eia_review_recorded_without_blanket_unrestricted_claim():
     assert "### EIA Open Data API — 2026-10-11" in register
     for topic in ("Attribution", "No implied endorsement", "Access restrictions", "Protected"):
         assert topic in register, topic
-    assert "per-dataset source notes pending" in _register_row("EIA")[7]
+    status = _register_row("EIA")[7]
+    assert "cleared for local collection/use" in status and "publication review pending" in status
     assert "unrestricted" not in register.lower().replace("not everything is unrestricted", "")
 
 
@@ -118,3 +122,11 @@ def test_data_labels():
         "modeled",
         "synthetic",
     ]
+
+
+def test_eia930_review_separates_collection_clearance_from_publication():
+    register = _read("docs/source-register.md")
+    assert "### EIA-930 hourly demand and forecast" in register
+    assert "**Local collection and use: CLEARED**" in register
+    assert "**Public redistribution: NOT YET REVIEWED.**" in register
+    assert "Hour-ending is not stated for the API `period` field" in register
