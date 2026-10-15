@@ -156,8 +156,14 @@ The **Finance** page has one teaching tool: an energy-settlement calculator (day
 schedule × day-ahead price + deviation × real-time price) with **synthetic** inputs, and
 lesson 8, *From scheduled energy to settlement*. It is not an invoice or any market's
 settlement engine (ADR 0009). You can optionally import one **verified** modeled price
-from Model Labs; it stays labeled *modeled*. Futures, options, PPAs, hedging, credit, and
-collateral are not implemented.
+from Model Labs; it stays labeled *modeled*.
+
+It also has a **basis-exposure calculator** and lesson 9, *Why a hedge at another location
+leaves basis exposure*: a physical purchase at one location plus a simplified pay-fixed,
+receive-floating hedge referencing another, split into fixed-price, location-basis, and
+quantity-mismatch parts (ADR 0010). Two prices can be imported together from one verified
+run; the fixed price is always synthetic. Forwards, full swaps, futures, options, PPAs,
+credit, and collateral are not implemented.
 
 ## 5. Launch
 

@@ -78,6 +78,9 @@ non-trivial work.
 - Settlement is a teaching formula (ADR 0009): never present it as an ISO settlement or
   invoice, never generalize one operator's rules, never use EIA forecasts as schedules,
   and import only verified modeled prices (`settlement.modeled_price`).
+- Basis/hedge is a teaching cash flow (ADR 0010): never call it a real contract or
+  valuation; K is always synthetic; two modeled location prices only from one run
+  (`basis.modeled_pair`).
 - `focus.css` is the only CSS the app adds (ADR 0008): focus-only, stable selectors,
   no generated classes, no script. New CSS needs an ADR.
 - Theme colors live in `.streamlit/config.toml`; re-measure rendered contrast

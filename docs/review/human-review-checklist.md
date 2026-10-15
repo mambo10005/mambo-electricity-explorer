@@ -1,6 +1,6 @@
-# Human-review checklist: lessons 1–8 and the glossary
+# Human-review checklist: lessons 1–9 and the glossary
 
-**Status: not reviewed by a person.** All eight lessons, the glossary, and the exercise
+**Status: not reviewed by a person.** All nine lessons, the glossary, and the exercise
 wording were drafted by an AI agent (Claude). This checklist was also prepared by the
 agent; it lists what a reviewer should check and the potential issues the agent noticed.
 It is **not** a review. BL-3 stays open until a named person completes it.
@@ -192,11 +192,29 @@ Copy this block for each item you review. Leave fields blank until they are true
   4. Forecast-vintage limitation: the lesson says EIA demand forecasts are not day-ahead
      cleared quantities. Confirm.
 
+## Lesson 9 — Why a hedge at another location leaves basis exposure · `basis-exposure` · v1.0.0
+
+- Calculator: `basis_exposure` v1.0.0 (`basis.py`); synthetic inputs, optional import of two
+  verified prices from one run (two different buses); K always synthetic.
+- Sources: `ferc-glossary` (FERC market-assessment glossary: Basis, Swaps, Hedging;
+  agent-checked 2026-10-11 in a browser).
+- Exercises: `net-cost`, `hedge-cash-flow`, `basis-component`, `mismatch-component`,
+  `hedge-effect` (basis; answers from the calculator's current inputs).
+- Agent-noticed items:
+  1. The FERC glossary's examples are natural gas. Confirm that applying the *concepts* to
+     an electricity teaching scenario, with the lesson saying so, is acceptable.
+  2. The CFTC glossary (a more direct source for "basis") could not be checked: the site
+     showed a human-verification page. Decide whether to add it after a person checks it.
+  3. The basis sign (delivery minus reference) and the pay-fixed/receive-floating direction
+     are the app's teaching conventions. Confirm the lesson labels them clearly.
+  4. "A financial position with no energy" (Q = 0, H > 0): confirm the wording does not
+     imply advice or a legal classification.
+
 ---
 
 ## Glossary (`src/mambo_explorer/content/glossary.yaml`)
 
-41 terms. Check each definition for accuracy, beginner readability, and consistency with
+45 terms. Check each definition for accuracy, beginner readability, and consistency with
 the lessons that use it.
 
 - [ ] Observation terms: Absent row, BA, Day-ahead demand forecast, Demand, EIA, EIA-930,
@@ -204,6 +222,8 @@ the lessons that use it.
       Power, Revision, RMSE, UTC.
 - [ ] Settlement terms (lesson 8): Day-ahead schedule, Deviation, Energy settlement,
       Price exposure, Two-settlement system, Volume exposure.
+- [ ] Basis terms (lesson 9): Basis, Fixed-for-floating hedge, Quantity mismatch,
+      Reference location.
 - [ ] Model terms: Average change rate, Binding constraint, Breakpoint, Congestion, Cost rate,
       Dispatch, Line rating, Line-limit sensitivity, Marginal cost, Modeled, Modeled nodal
       price, Offer, Optimal power flow, Power flow, Reference bus, Synthetic.

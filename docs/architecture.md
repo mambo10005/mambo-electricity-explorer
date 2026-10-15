@@ -114,7 +114,10 @@ src/mambo_explorer/
                     verified modeled-price import (ADR 0009)
   settlement_ui.py  calculator shared by the Finance page and lesson 8
   settlement_exercises.py  exercises from the calculator's current result
-  finance.py        Finance page (FIN-03 only)
+  basis.py          Stage 12: basis-exposure teaching cash flows, decomposition,
+                    same-run modeled price pairs (ADR 0010)
+  basis_ui.py, basis_exercises.py  calculator (Finance, lesson 9) and exercises
+  finance.py        Finance page (FIN-03, FIN-04 only)
   model_exercises.py  Stage 8: exercise answers from verified model records; snapshot
                     = inputs, pin, check versions, statuses; result refs = run ids
   model_lessons.py  Stage 8: lesson model section (explicit run button, panels,

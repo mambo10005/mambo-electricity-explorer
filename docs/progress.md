@@ -2,6 +2,42 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-11 — Stage 12: locational basis exposure and a simplified hedge (#23)
+
+Stacked on Stage 11 (PR #22) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
+`data/` unchanged (gate check); user progress not reset.
+
+- **Concepts sourced** from FERC's market-assessment glossary (basis, fixed-for-floating
+  swaps, hedging; natural-gas context), checked in a browser. The CFTC glossary showed a
+  human-verification page and was not used.
+- **Calculation `basis_exposure` v1.0.0** (ADR 0010): basis = P_L − P_H; physical Q·P_L; hedge
+  receipt H·(P_H − K) (negative = buyer pays); net Q·P_L − H·(P_H − K) (negative = credit)
+  = Q·K + Q·basis + (Q − H)·(P_H − K), computed independently and checked; verified on a
+  2,000-point bounded grid plus the matched-hedge identities. Nine hand-derived benchmarks
+  including negative prices, Q = 0 with H > 0 (a financial position), and a case where the
+  hedge raises cost.
+- **Same-run pair import:** two verified prices from one run at two different buses (Stage 11
+  checks per bus); different runs refused; K never modeled; Stage 11's stage restriction
+  unchanged (tested).
+- **Lesson 9** (financial-contracts-and-risk stage; after lessons 6 and 8; agent-authored,
+  unreviewed) and a second Finance section (FIN-04). Forwards, swaps, futures, options, and
+  PPAs remain unimplemented.
+- **Found and fixed:** with the default H = Q, the mismatch exercise's options collapsed (all
+  zero) and it became unavailable; a decoy that stays distinct was added, and the default is
+  now underhedged (H = 80) so every component is visible.
+- **Browser:**
+  - after lesson 7 only the 1 verified run was offered (5 withheld + infeasible excluded);
+  - a same-bus import was refused with values unchanged;
+  - after lesson 6 the pair import (run cb07445a, C/A) by keyboard gave P_L 40, P_H 20,
+    basis 20, net 5,600 = 4,000 + 2,000 − 400, a case where the hedge raised cost;
+  - editing P_H relabeled only P_H as synthetic;
+  - focus ring on every Finance control ≥ 3.28 (light) / ≥ 4.03 (dark);
+  - lesson 9 exercise answered by keyboard;
+  - no overflow at 375 px (dark) or 200% zoom.
+
+  Owned PIDs only; all stopped; real data unchanged.
+- **Tests:** 551 passed, 1 skipped on CPython 3.11.16 and 3.14.2; gate 9/9.
+
 ## 2026-10-11 — Stage 11: introductory energy settlement (#21)
 
 Stacked on Stage 10 (PR #20) ← … ← #2. None merged. mambo-power unchanged at 26be8c1. Real
