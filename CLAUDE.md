@@ -84,6 +84,15 @@ non-trivial work.
 - Time shape is a teaching cash flow (ADR 0011): intervals are elapsed durations, never
   calendar times or DST; the time-shape component is an accounting split, not a
   standard metric; never stitch OPF runs into a time series.
+- Compliance content is educational (ADR 0012).
+  - Records live in `content/responsibilities.yaml`, one paraphrased claim per source
+    section.
+  - Say "relevant source to investigate"; never conclude applicability from a title,
+    label, or location.
+  - Unknown dates are null. A retrieval date is never an effective date, and a
+    proposal never has one.
+  - Never bypass a human-verification page; record the gap instead.
+  - Never attribute a synthetic requirement to a real authority.
 - `focus.css` is the only CSS the app adds (ADR 0008): focus-only, stable selectors,
   no generated classes, no script. New CSS needs an ADR.
 - Theme colors live in `.streamlit/config.toml`; re-measure rendered contrast

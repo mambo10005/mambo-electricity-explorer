@@ -13,7 +13,9 @@ import streamlit as st
 
 from mambo_explorer import (
     basis_exercises,
+    compliance_exercises,
     model_exercises,
+    responsibilities,
     routes,
     settlement_exercises,
     shape_exercises,
@@ -402,6 +404,28 @@ def _exercise(lesson: Lesson, spec: dict, exercise, progress: Progress | None) -
             )
 
 
+def _claims_table(claims: list[str]) -> None:
+    """Claim-to-source map for lessons backed by responsibility records (ADR 0012)."""
+    cat = responsibilities.load()
+    st.subheader("Claims and their sources")
+    st.caption(
+        "Each claim is paraphrased from one official source section. A claim names a source to "
+        "investigate; it never says a rule applies to you."
+    )
+    rows = []
+    for claim in claims:
+        r = cat.record(claim)
+        rows.append(
+            {
+                "Claim (paraphrased)": r["supported_responsibility"],
+                "Source": cat.sources[r["source_reference"]]["title"],
+                "Section": r["source_section"],
+                "Source label": cat.statuses[r["status"]].split(" (")[0],
+            }
+        )
+    st.table(rows, hide_index=True)
+
+
 # --- page ------------------------------------------------------------------------------------
 
 
@@ -556,6 +580,8 @@ def render_learn() -> None:
             exercise = basis_exercises.generate(spec, basis_result)
         elif spec["kind"] == "shape":
             exercise = shape_exercises.generate(spec, shape_result)
+        elif spec["kind"] == "compliance":
+            exercise = compliance_exercises.generate(spec)
         else:
             exercise = generate(spec, obs, sel)
         _exercise(lesson, spec, exercise, progress)
@@ -574,6 +600,8 @@ def render_learn() -> None:
                 )
             )
         )
+    if meta["claims"]:
+        _claims_table(meta["claims"])
     st.subheader("Sources and freshness")
     if meta["sources"]:
         st.markdown(

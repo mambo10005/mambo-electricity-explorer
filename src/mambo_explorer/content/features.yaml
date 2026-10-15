@@ -149,6 +149,19 @@ features:
     name: "Regulatory authorities and effective-dated rules"
     section: compliance
     status: planned
+  - id: COMP-02
+    name: "Regulatory responsibility explorer: source-backed educational records by activity (no applicability determination)"
+    section: compliance
+    status: done
+    ui: true
+  - id: COMP-03
+    name: "Introductory compliance lessons: who sets the rules; from a requirement to evidence"
+    section: compliance
+    status: done
+  - id: COMP-04
+    name: "Operational compliance: applicability assessment, filings, certification, deadlines, evidence management"
+    section: compliance
+    status: planned
   - id: PUB-01
     name: "Optional static public publication"
     section: platform

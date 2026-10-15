@@ -1,0 +1,555 @@
+# Regulatory responsibility records (Stage 14, ADR 0012). Educational and versioned.
+#
+# Each record maps ONE paraphrased claim to ONE official source section. Records say which
+# source is relevant to investigate for an activity. They never decide whether a rule
+# applies to anyone. Validated by responsibilities.py on every load and in tests.
+#
+# Dates: published_date and effective_date are null unless the source itself states them.
+# retrieved_at is when this project read the source; it is never an effective date. A
+# non-null effective_date needs effective_date_basis quoting where the date came from.
+# A proposed change never has an effective date.
+#
+# Agent-drafted 2026-10-11 from the sources below; NOT reviewed by a person.
+set_version: 1.0.0
+retrieved_at: 2026-10-11
+
+statuses:
+  - key: binding-requirement
+    label: Binding requirement (statute, regulation, or final rule)
+  - key: approved-tariff-or-rule
+    label: Approved tariff or market rule
+  - key: official-guidance
+    label: Official guidance or description (not itself a binding rule)
+  - key: educational-summary
+    label: Educational summary written for this app
+  - key: proposed-change
+    label: Proposed change (not effective)
+
+activities:
+  - key: wholesale-transactions
+    title: Wholesale transactions
+    description: Sales of electricity for resale, and the markets where they happen.
+  - key: retail-service
+    title: Retail service
+    description: Selling or delivering electricity to end-use customers.
+  - key: reliability
+    title: Reliability
+    description: Standards for planning and operating the bulk-power system.
+  - key: emergency-reporting
+    title: Emergency reporting
+    description: Reporting electric emergencies, incidents, and disturbances.
+  - key: procurement
+    title: Procurement
+    description: Obtaining enough capacity or energy to serve customers.
+  - key: financial-derivatives
+    title: Financial derivatives
+    description: Futures, swaps, and similar financial contracts linked to electricity.
+
+authorities:
+  - id: ferc
+    name: Federal Energy Regulatory Commission (FERC)
+    organization_type: federal-regulator
+  - id: ero
+    name: Electric reliability organization (ERO), named as NERC in FERC's documents
+    organization_type: electric-reliability-organization
+  - id: regional-entities
+    name: Regional entities (as defined in FPA section 215)
+    organization_type: regional-entity
+  - id: doe
+    name: U.S. Department of Energy (DOE), including the Energy Information Administration
+    organization_type: federal-department
+  - id: cpuc
+    name: California Public Utilities Commission (CPUC)
+    organization_type: state-regulator
+  - id: caiso
+    name: California Independent System Operator (CAISO)
+    organization_type: system-operator
+  - id: ercot
+    name: Electric Reliability Council of Texas (ERCOT)
+    organization_type: system-operator
+  - id: iso-ne
+    name: ISO New England (ISO-NE)
+    organization_type: system-operator
+  - id: cftc
+    name: Commodity Futures Trading Commission (CFTC)
+    organization_type: federal-derivatives-regulator
+
+organization_types:
+  federal-regulator: Federal regulator
+  electric-reliability-organization: Electric reliability organization
+  regional-entity: Regional entity
+  federal-department: Federal department or agency
+  state-regulator: State regulator (California example)
+  system-operator: System or market operator
+  federal-derivatives-regulator: Federal derivatives regulator
+
+sources:
+  - id: fpa-201
+    title: 16 U.S.C. 824 (Federal Power Act section 201)
+    publisher: U.S. Government Publishing Office (GovInfo)
+    document_type: statute
+    url: https://www.govinfo.gov/content/pkg/USCODE-2023-title16/html/USCODE-2023-title16-chap12-subchapII-sec824.htm
+  - id: fpa-215
+    title: 16 U.S.C. 824o (Federal Power Act section 215, electric reliability)
+    publisher: U.S. Government Publishing Office (GovInfo)
+    document_type: statute
+    url: https://www.govinfo.gov/content/pkg/USCODE-2023-title16/html/USCODE-2023-title16-chap12-subchapII-sec824o.htm
+  - id: cfr-18-40-1
+    title: 18 CFR 40.1 (Applicability of reliability standards)
+    publisher: Electronic Code of Federal Regulations (eCFR)
+    document_type: regulation
+    url: https://www.ecfr.gov/current/title-18/chapter-I/subchapter-B/part-40/section-40.1
+  - id: fr-2026-05711
+    title: "FERC Order No. 918, CIP-003-11 (Federal Register 2026-05711, final rule)"
+    publisher: Federal Register via GovInfo
+    document_type: final-rule
+    url: https://www.govinfo.gov/content/pkg/FR-2026-03-24/html/2026-05711.htm
+  - id: fr-2025-18396
+    title: "FERC proposed rule, CIP-003-11 (Federal Register 2025-18396)"
+    publisher: Federal Register via GovInfo
+    document_type: proposed-rule
+    url: https://www.govinfo.gov/content/pkg/FR-2025-09-23/html/2025-18396.htm
+  - id: fr-2023-18729
+    title: "DOE/EIA notice on Form DOE-417 (Federal Register 2023-18729)"
+    publisher: Federal Register via GovInfo
+    document_type: notice
+    url: https://www.govinfo.gov/content/pkg/FR-2023-08-30/html/2023-18729.htm
+  - id: cea-2
+    title: 7 U.S.C. 2 (Commodity Exchange Act section 2)
+    publisher: U.S. Government Publishing Office (GovInfo)
+    document_type: statute
+    url: https://www.govinfo.gov/content/pkg/USCODE-2023-title7/html/USCODE-2023-title7-chap1-sec2.htm
+  - id: cpuc-about
+    title: CPUC, About the CPUC
+    publisher: California Public Utilities Commission
+    document_type: official-page
+    url: https://www.cpuc.ca.gov/about-cpuc
+  - id: cpuc-ra
+    title: CPUC, Resource Adequacy homepage
+    publisher: California Public Utilities Commission
+    document_type: official-page
+    url: https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-power-procurement/resource-adequacy-homepage
+  - id: ercot-about
+    title: ERCOT, About ERCOT
+    publisher: Electric Reliability Council of Texas
+    document_type: official-page
+    url: https://www.ercot.com/about
+  - id: iso-ne-tariff
+    title: ISO-NE, Transmission, Markets, and Services Tariff (index page)
+    publisher: ISO New England
+    document_type: tariff-index
+    url: https://www.iso-ne.com/participate/rules-procedures/tariff
+
+records:
+  # --- wholesale transactions -------------------------------------------------------------
+  - id: ferc-wholesale-sales
+    authority_id: ferc
+    organization_type: federal-regulator
+    activity: wholesale-transactions
+    status: binding-requirement
+    jurisdiction_scope: United States; federal law (Part II of the Federal Power Act)
+    supported_responsibility: >-
+      This part of the Federal Power Act covers the transmission of electric energy in
+      interstate commerce and the sale of electric energy at wholesale in interstate
+      commerce. It defines a wholesale sale as a sale to any person for resale.
+    explicit_limitations:
+      - The section does not, by itself, settle whether a particular sale is in interstate commerce.
+      - How these provisions apply inside ERCOT was not established from the sources retrieved here.
+      - ferc.gov returned an access error, so FERC's own explanations were not read.
+    source_reference: fpa-201
+    source_section: 16 U.S.C. 824(b)(1) and (d)
+    source_version: United States Code, 2023 edition (latest amendment cited there, Pub. L. 114-94, 2015)
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+  - id: iso-ne-market-rule-1
+    authority_id: iso-ne
+    organization_type: system-operator
+    activity: wholesale-transactions
+    status: approved-tariff-or-rule
+    jurisdiction_scope: New England only
+    supported_responsibility: >-
+      ISO-NE's tariff sets rates, terms, and conditions for its services. Section III,
+      Market Rule 1, governs the New England wholesale electricity markets. The page
+      describes the tariff as created and authorized by FERC.
+    explicit_limitations:
+      - Only the tariff's index page was read, not the text of Market Rule 1.
+      - Section dates listed on the page were not confirmed as effective dates, so none is recorded.
+      - Other regions have their own tariffs; nothing here describes them.
+    source_reference: iso-ne-tariff
+    source_section: Tariff index page, Section III (Market Rule 1)
+    source_version: Index page as retrieved; Section I listed as 10/07/2025 and Section IV.A as 01/01/2026
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [ferc-wholesale-sales]
+  - id: ercot-wholesale-settlement
+    authority_id: ercot
+    organization_type: system-operator
+    activity: wholesale-transactions
+    status: official-guidance
+    jurisdiction_scope: The ERCOT region of Texas (about 90% of Texas electric load, by ERCOT's description)
+    supported_responsibility: >-
+      ERCOT describes itself as scheduling power on the grid it manages and performing
+      financial settlement for the competitive wholesale bulk-power market. It says it is
+      subject to oversight by the Public Utility Commission of Texas and the Texas
+      Legislature.
+    explicit_limitations:
+      - This is ERCOT's own description, not a statute or rule.
+      - The page does not mention FERC or NERC; this record draws no conclusion about their roles in ERCOT.
+      - The Public Utility Commission of Texas website returned an error, so its own description was not read.
+    source_reference: ercot-about
+    source_section: About ERCOT
+    source_version: Page as retrieved (no date shown)
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+
+  # --- retail service ---------------------------------------------------------------------
+  - id: ferc-not-other-sales
+    authority_id: ferc
+    organization_type: federal-regulator
+    activity: retail-service
+    status: binding-requirement
+    jurisdiction_scope: United States; federal law (Part II of the Federal Power Act)
+    supported_responsibility: >-
+      The same section says this part of the Act does not apply to any other sale of
+      electric energy beyond the wholesale and interstate matters it names, except as
+      specifically provided.
+    explicit_limitations:
+      - It does not say which state body, if any, oversees a particular retail sale.
+      - Other parts of federal law were not reviewed here.
+    source_reference: fpa-201
+    source_section: 16 U.S.C. 824(b)(1)
+    source_version: United States Code, 2023 edition
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [ferc-wholesale-sales, cpuc-utility-service]
+  - id: cpuc-utility-service
+    authority_id: cpuc
+    organization_type: state-regulator
+    activity: retail-service
+    status: official-guidance
+    jurisdiction_scope: California only (a state example; other states differ)
+    supported_responsibility: >-
+      The CPUC describes its mission as making sure Californians have safe, reliable
+      utility service at reasonable rates.
+    explicit_limitations:
+      - California-specific. Other states have their own commissions and laws.
+      - Which retail providers fall under the CPUC (for example, publicly owned utilities) was not checked.
+      - A mission statement is not a rule; the CPUC's decisions and statutes were not read.
+    source_reference: cpuc-about
+    source_section: About the CPUC
+    source_version: Page as retrieved (no date shown)
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+  - id: ercot-retail-switching
+    authority_id: ercot
+    organization_type: system-operator
+    activity: retail-service
+    status: official-guidance
+    jurisdiction_scope: The ERCOT region of Texas
+    supported_responsibility: >-
+      ERCOT describes administering retail switching for about 8 million premises in
+      competitive choice areas.
+    explicit_limitations:
+      - Processing switches is an operational role, not setting retail rates or rules.
+      - The Public Utility Commission of Texas's retail role was not read from its own site (error).
+    source_reference: ercot-about
+    source_section: About ERCOT
+    source_version: Page as retrieved (no date shown)
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+
+  # --- reliability ------------------------------------------------------------------------
+  - id: ferc-reliability-oversight
+    authority_id: ferc
+    organization_type: federal-regulator
+    activity: reliability
+    status: binding-requirement
+    jurisdiction_scope: United States bulk-power system, other than Alaska and Hawaii
+    supported_responsibility: >-
+      FERC certifies an electric reliability organization, may approve the reliability
+      standards it proposes, and reviews penalties it imposes. Users, owners, and operators
+      of the bulk-power system must comply with approved reliability standards.
+    explicit_limitations:
+      - The section gives no authority to order construction of generation or transmission.
+      - It does not apply in Alaska or Hawaii.
+      - Which entities a given standard covers is set by that standard (see 18 CFR 40.1).
+    source_reference: fpa-215
+    source_section: 16 U.S.C. 824o(b)(1), (c), (d)(2), (e), (i)(2), (k)
+    source_version: United States Code, 2023 edition
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+  - id: standards-name-their-subset
+    authority_id: ferc
+    organization_type: federal-regulator
+    activity: reliability
+    status: binding-requirement
+    jurisdiction_scope: United States bulk-power system, other than Alaska and Hawaii
+    supported_responsibility: >-
+      FERC's reliability regulations apply to users, owners, and operators of the
+      bulk-power system, and each reliability standard must identify the subset of them it
+      applies to.
+    explicit_limitations:
+      - A job title, market label, or location alone does not show which subset an organization belongs to.
+      - No individual standard's applicability section was read here.
+    source_reference: cfr-18-40-1
+    source_section: 18 CFR 40.1(a) and (b)
+    source_version: eCFR text as of 2026-10-01
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [ferc-reliability-oversight]
+  - id: ero-develops-standards
+    authority_id: ero
+    organization_type: electric-reliability-organization
+    activity: reliability
+    status: binding-requirement
+    jurisdiction_scope: United States bulk-power system, other than Alaska and Hawaii
+    supported_responsibility: >-
+      The FERC-certified electric reliability organization proposes reliability standards
+      for FERC approval and may impose penalties for violations, subject to FERC review.
+      FERC's 2025 proposed rule names NERC as that organization.
+    explicit_limitations:
+      - nerc.com returned no readable content, so NERC's own documents were not read.
+      - Its role is described here only from the statute and the Federal Register.
+    source_reference: fpa-215
+    source_section: 16 U.S.C. 824o(c), (d), (e)
+    source_version: United States Code, 2023 edition
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [ferc-reliability-oversight, cip-003-11-proposal]
+  - id: regional-entity-enforcement
+    authority_id: regional-entities
+    organization_type: regional-entity
+    activity: reliability
+    status: binding-requirement
+    jurisdiction_scope: Regions delegated under FPA section 215 (not identified individually here)
+    supported_responsibility: >-
+      The statute defines a regional entity as one with enforcement authority delegated
+      under its enforcement provisions.
+    explicit_limitations:
+      - No individual regional entity was verified; the Texas Reliability Entity site returned no readable content.
+      - Which regional entity covers a given area was not determined.
+    source_reference: fpa-215
+    source_section: 16 U.S.C. 824o(a)(7) and (e)(4)
+    source_version: United States Code, 2023 edition
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+  - id: cip-003-11-proposal
+    authority_id: ferc
+    organization_type: federal-regulator
+    activity: reliability
+    status: proposed-change
+    jurisdiction_scope: Entities identified in Reliability Standard CIP-003-11 (not read here)
+    supported_responsibility: >-
+      In September 2025 FERC proposed to approve Reliability Standard CIP-003-11 (Cyber
+      Security, Security Management Controls), submitted by NERC to address the risk of a
+      coordinated cyberattack on low-impact facilities.
+    explicit_limitations:
+      - A proposal is not an effective requirement.
+      - The proposal was later finalized in a separate document (see the related final-rule record).
+    source_reference: fr-2025-18396
+    source_section: Summary and DATES (Docket RM25-8-000)
+    source_version: Federal Register document 2025-18396
+    published_date: 2025-09-23
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [cip-003-11-final]
+  - id: cip-003-11-final
+    authority_id: ferc
+    organization_type: federal-regulator
+    activity: reliability
+    status: binding-requirement
+    jurisdiction_scope: Entities identified in Reliability Standard CIP-003-11 (not read here)
+    supported_responsibility: >-
+      In Order No. 918 FERC approved Reliability Standard CIP-003-11, its implementation
+      plan, and its effective date. The previous version, CIP-003-10, is retired when
+      CIP-003-11 takes effect.
+    explicit_limitations:
+      - The date recorded is the final rule's effective date. The standard's own enforceable date follows its implementation plan, which was not read.
+      - The standard's text and applicability section were not read.
+    source_reference: fr-2026-05711
+    source_section: Summary and DATES (Docket RM25-8-000)
+    source_version: Federal Register document 2026-05711 (Order No. 918)
+    published_date: 2026-03-24
+    effective_date: 2026-05-26
+    effective_date_basis: "Federal Register DATES: the action is effective May 26, 2026 (the final rule, not necessarily the standard)."
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [cip-003-11-proposal]
+
+  # --- emergency reporting ----------------------------------------------------------------
+  - id: doe-417-collection
+    authority_id: doe
+    organization_type: federal-department
+    activity: emergency-reporting
+    status: proposed-change
+    jurisdiction_scope: The 50 states, D.C., Puerto Rico, the U.S. Virgin Islands, and other U.S. territories (per the notice)
+    supported_responsibility: >-
+      DOE uses Form DOE-417 (Electric Emergency Incident and Disturbance Report) to monitor
+      electric emergency incidents and disturbances and to support post-incident reviews.
+      In 2023 it asked for comments on a three-year extension with changes, including
+      changes it said keep the form aligned with NERC standards CIP-008-6 and EOP-004-6.
+    explicit_limitations:
+      - The notice proposed changes; whether and when they took effect was not verified.
+      - It does not list who must file, and it does not say whether filing is mandatory; neither was determined here.
+      - DOE's current form and instructions pages were unreachable (missing page or DNS failure).
+    source_reference: fr-2023-18729
+    source_section: Summary and supplementary information (OMB control number 1901-0288)
+    source_version: Federal Register document 2023-18729
+    published_date: 2023-08-30
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+
+  # --- procurement ------------------------------------------------------------------------
+  - id: cpuc-resource-adequacy
+    authority_id: cpuc
+    organization_type: state-regulator
+    activity: procurement
+    status: official-guidance
+    jurisdiction_scope: California load-serving entities under CPUC jurisdiction
+    supported_responsibility: >-
+      The CPUC's Resource Adequacy program aims to keep enough electric capacity available
+      for reliable grid operation. The page says it covers load-serving entities under CPUC
+      jurisdiction, including investor-owned utilities, energy service providers, and
+      community choice aggregators.
+    explicit_limitations:
+      - California-specific; other states and regions use different approaches.
+      - The current obligations are set in CPUC decisions that were not read here.
+      - The page's historical start dates for each requirement type are not recorded as an effective date for current obligations.
+    source_reference: cpuc-ra
+    source_section: Resource Adequacy homepage
+    source_version: Page as retrieved (no date shown)
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [caiso-ra-studies]
+  - id: caiso-ra-studies
+    authority_id: caiso
+    organization_type: system-operator
+    activity: procurement
+    status: official-guidance
+    jurisdiction_scope: California (CAISO's role as described by the CPUC)
+    supported_responsibility: >-
+      The CPUC's page says CAISO runs annual studies that inform its local and flexible
+      resource adequacy requirements.
+    explicit_limitations:
+      - Described by the CPUC, not taken from CAISO's own documents.
+      - Informing a requirement is not the same as setting it.
+    source_reference: cpuc-ra
+    source_section: Resource Adequacy homepage
+    source_version: Page as retrieved (no date shown)
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [cpuc-resource-adequacy]
+
+  # --- financial derivatives --------------------------------------------------------------
+  - id: cftc-swaps-futures
+    authority_id: cftc
+    organization_type: federal-derivatives-regulator
+    activity: financial-derivatives
+    status: binding-requirement
+    jurisdiction_scope: United States; federal law (Commodity Exchange Act)
+    supported_responsibility: >-
+      The Commodity Exchange Act gives the CFTC exclusive jurisdiction over swaps and over
+      contracts for sale of a commodity for future delivery, with exceptions stated in the
+      Act.
+    explicit_limitations:
+      - Whether a particular electricity contract is a swap or a futures contract was not analyzed.
+      - cftc.gov showed a human-verification page and was not used.
+    source_reference: cea-2
+    source_section: 7 U.S.C. 2(a)(1)(A)
+    source_version: United States Code, 2023 edition
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [cea-ferc-state-savings]
+  - id: cea-ferc-state-savings
+    authority_id: ferc
+    organization_type: federal-regulator
+    activity: financial-derivatives
+    status: binding-requirement
+    jurisdiction_scope: United States; federal law (Commodity Exchange Act)
+    supported_responsibility: >-
+      The same section keeps the authority of FERC and of state regulatory authorities over
+      certain agreements entered into under a tariff or rate schedule they approved,
+      including some traded on facilities run by an RTO or ISO. A companion clause keeps
+      the CFTC's own authority as well. Conditions in the text apply.
+    explicit_limitations:
+      - The conditions are detailed; this summary does not say which agreements qualify.
+      - Where FERC and CFTC roles meet for a specific product is unresolved here.
+    source_reference: cea-2
+    source_section: 7 U.S.C. 2(a)(1)(I)(i) and (ii)
+    source_version: United States Code, 2023 edition
+    published_date: null
+    effective_date: null
+    retrieved_at: 2026-10-11
+    human_review_status: unreviewed
+    related: [cftc-swaps-futures]
+
+# Unresolved conflicts and version uncertainty. Shown in the explorer; never resolved by code.
+open_questions:
+  - id: ercot-federal-roles
+    activities: [wholesale-transactions, reliability]
+    text: >-
+      ERCOT's page names the Public Utility Commission of Texas and the Texas Legislature as
+      its overseers and does not mention FERC or NERC. FPA section 215 excludes only Alaska
+      and Hawaii. How federal wholesale and reliability provisions apply in ERCOT was not
+      established from the sources retrieved here.
+  - id: cip-003-11-dates
+    activities: [reliability]
+    text: >-
+      Order No. 918 took effect on 2026-05-26, but the standard's own enforceable date
+      follows an implementation plan that was not read. The two dates may differ.
+  - id: doe-417-version
+    activities: [emergency-reporting]
+    text: >-
+      The 2023 notice proposed changes to Form DOE-417. The current form version, who must
+      file, and whether filing is mandatory were not verified.
+  - id: cftc-ferc-boundary
+    activities: [financial-derivatives, wholesale-transactions]
+    text: >-
+      Both the CFTC's swap and futures jurisdiction and the FERC/state savings clause can
+      bear on electricity-linked contracts. Which governs a specific product depends on its
+      terms and the venue, and is not decided here.
+
+# Official sources that could not be read on 2026-10-11. Content was narrowed instead.
+source_gaps:
+  - source: ferc.gov
+    outcome: Access error (HTTP 403); statutes and Federal Register documents were used instead.
+  - source: nerc.com
+    outcome: No readable content; the ERO is described only from the statute and Federal Register.
+  - source: texasre.org (Texas Reliability Entity)
+    outcome: Missing pages or no readable content; no regional entity is described individually.
+  - source: cftc.gov
+    outcome: Human-verification page; not bypassed. The statute was used instead.
+  - source: DOE Form OE-417 pages (energy.gov, oe.netl.doe.gov)
+    outcome: Missing page and DNS failure; only the 2023 Federal Register notice was used.
+  - source: puc.texas.gov (Public Utility Commission of Texas)
+    outcome: HTTP 402 error; the PUCT appears only through ERCOT's own description.
+  - source: federalregister.gov document pages
+    outcome: Redirected to a human-verification page; not followed. GovInfo copies and the Federal Register API were used.

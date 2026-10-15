@@ -1,7 +1,7 @@
-# Human-review checklist: lessons 1–10 and the glossary
+# Human-review checklist: lessons 1–12, the glossary, and the responsibility records
 
-**Status: not reviewed by a person.** All ten lessons, the glossary, and the exercise
-wording were drafted by an AI agent (Claude). This checklist was also prepared by the
+**Status: not reviewed by a person.** All twelve lessons, the glossary, the exercise
+wording, and the regulatory responsibility records were drafted by an AI agent (Claude). This checklist was also prepared by the
 agent; it lists what a reviewer should check and the potential issues the agent noticed.
 It is **not** a review. BL-3 stays open until a named person completes it.
 
@@ -73,6 +73,10 @@ Copy this block for each item you review. Leave fields blank until they are true
 - [ ] **Exercise correctness:** the correct option is right for the current data or runs;
       every decoy is wrong for a reason a beginner can learn from; explanations show the
       arithmetic.
+- [ ] **Compliance wording** (lessons 11–12 and the Compliance page): every entry reads as a
+      source to investigate, never as "this applies to you"; no applicability is concluded
+      from a title, label, or location; proposals are never shown as effective; synthetic
+      requirements are never attributed to a real authority.
 - [ ] **Accessibility observations:** readable at phone width; tables have headers; nothing
       relies on color alone; keyboard-only answering works (see `docs/accessibility.md`).
 
@@ -227,11 +231,66 @@ Copy this block for each item you review. Leave fields blank until they are true
   3. The FERC glossary (used in lesson 9) showed a human-verification page on 2026-10-11 and
      was not re-checked for this lesson.
 
+## Lesson 11 — Who sets the rules? · `who-sets-the-rules` · v1.0.0
+
+- Claims (record ids in `content/responsibilities.yaml`): ferc-wholesale-sales,
+  ferc-not-other-sales, cpuc-utility-service, ercot-wholesale-settlement,
+  iso-ne-market-rule-1, ferc-reliability-oversight, standards-name-their-subset,
+  ero-develops-standards, regional-entity-enforcement, cftc-swaps-futures,
+  cea-ferc-state-savings.
+- Sources: `fpa-201`, `fpa-215`, `cfr-18-40-1`, `ercot-about`, `iso-ne-tariff`,
+  `cpuc-about`, `fr-2025-18396`, `cea-2` (all agent-checked 2026-10-11).
+- Exercises: `wholesale-definition`, `operator-vs-overseer`, `who-complies-reliability`,
+  `layers-new-england` (overlap: the answer names more than one source), `roles-differ`
+  (compliance; static answers keyed on the record-set fingerprint).
+- Agent-noticed items:
+  1. ferc.gov, nerc.com, texasre.org, cftc.gov, and puc.texas.gov could not be read. NERC
+     is described only from the statute and one Federal Register abstract. Decide whether
+     the lesson should wait for those sources.
+  2. The lesson deliberately leaves ERCOT's relationship to federal wholesale and
+     reliability provisions unresolved. `operator-vs-overseer` avoids FERC as a decoy for
+     that reason. Confirm this framing.
+  3. Confirm the paraphrases of FPA §201(b)(1) ("does not apply to any other sale … except
+     as specifically provided") and CEA §2(a)(1)(I) (savings clause plus CFTC's retained
+     authority). Both are detailed provisions summarized for beginners.
+  4. `roles-differ` decoys are "not supported by the cited sources", not claimed false.
+     Check that a beginner reads them that way.
+
+## Lesson 12 — From a requirement to evidence · `requirement-to-evidence` · v1.0.0
+
+- Claims: doe-417-collection, cip-003-11-proposal, cip-003-11-final,
+  standards-name-their-subset.
+- Sources: `fr-2023-18729`, `fr-2025-18396`, `fr-2026-05711`, `cfr-18-40-1`.
+- Exercises: `chain-order`, `label-not-applicability` (unresolved: never "yes"),
+  `evidence-period`, `proposal-not-effective`, `test-not-approval`, `after-review`.
+- Agent-noticed items:
+  1. The chain (source → applicability questions → requirement → control → evidence →
+     review → remediation) is the app's teaching framework, not taken from an authority.
+     Its exercises say so.
+  2. Riverside Example Power and policy SYN-1 are synthetic. Confirm that nothing reads as
+     a DOE, FERC, or NERC requirement.
+  3. The DOE-417 notice (2023) is a proposal to extend and change the form. The lesson
+     says who must file and whether filing is mandatory were not determined. Confirm.
+  4. Order No. 918's effective date (2026-05-26) is the final rule's. The standard's own
+     enforceable date follows its implementation plan, which was not read.
+
+## Regulatory responsibility records (`content/responsibilities.yaml`, set v1.0.0)
+
+- 17 records, 11 sources, 4 open questions, 7 source gaps. Each record: claim paraphrase,
+  section, version, dates (null when unknown), limitations, `human_review_status:
+  unreviewed`.
+- [ ] Each `supported_responsibility` matches its cited section.
+- [ ] Each status label (binding requirement, approved tariff or rule, official guidance,
+      proposed change) is right for its source.
+- [ ] Jurisdiction scopes are not overstated (California and New England records are
+      regional; ERCOT records reflect only ERCOT's own page).
+- [ ] The open questions are still open, or are resolved by a newly readable source.
+
 ---
 
 ## Glossary (`src/mambo_explorer/content/glossary.yaml`)
 
-48 terms. Check each definition for accuracy, beginner readability, and consistency with
+68 terms. Check each definition for accuracy, beginner readability, and consistency with
 the lessons that use it.
 
 - [ ] Observation terms: Absent row, BA, Day-ahead demand forecast, Demand, EIA, EIA-930,
@@ -242,6 +301,10 @@ the lessons that use it.
 - [ ] Basis terms (lesson 9): Basis, Fixed-for-floating hedge, Quantity mismatch,
       Reference location.
 - [ ] Shape terms (lesson 10): Flat-block hedge, Load shape, Time-shape component.
+- [ ] Compliance terms (lessons 11–12): Applicability, Bulk-power system, Compliance review,
+      Control, Effective date, Electric reliability organization, Evidence, FERC, Proposed
+      rule, Regional entity, Regulator, Reliability standard, Remediation, Requirement,
+      Retail sale, Retrieval date, Rule layers, System operator, Tariff, Wholesale sale.
 - [ ] Model terms: Average change rate, Binding constraint, Breakpoint, Congestion, Cost rate,
       Dispatch, Line rating, Line-limit sensitivity, Marginal cost, Modeled, Modeled nodal
       price, Offer, Optimal power flow, Power flow, Reference bus, Synthetic.

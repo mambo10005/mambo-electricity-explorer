@@ -26,6 +26,7 @@ reaching the app.
 | `exercises` | `exercise_id`, `kind` (`data`, `concept`, or `model`), `generator` (from `exercises.GENERATORS`, or `model_exercises.GENERATORS` for `model`), and `calculation_id` (one the lesson declares). Data exercises require a dataset binding. A model exercise's required runs (`model_exercises.REQUIRES`) must all be in `model_bindings`. |
 | `model_bindings` | *optional* (default `[]`): keys of `modeling/cases.LESSON_RUNS`. A power-flow run that takes G2 from another run needs that run bound too. |
 | `model_panels` | *optional* (default `[]`): from `pf_vs_opf`, `location_prices`, `unverified_marginal`; requires `model_bindings` |
+| `claims` | *optional* (default `[]`): record ids from `content/responsibilities.yaml` (ADR 0012). Each claim's source URL must be in `sources`. Exercises of kind `compliance` (generators in `compliance_exercises`, calculation id `responsibility_records`) may cite only records listed here. Claims are shown as a claim-to-source table. |
 | `calculators` | *optional* (default `[]`): `energy_settlement`, `basis_exposure`, `time_shape`. Exercises of kind `settlement`, `basis`, or `shape` (generators in `settlement_exercises`, `basis_exercises`, `shape_exercises`) require the matching calculator; their answers come from its current inputs. |
 | `glossary_terms` | terms defined in `content/glossary.yaml` |
 | `limitations` | non-empty list, shown at the end of the lesson |

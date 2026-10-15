@@ -121,6 +121,10 @@ src/mambo_explorer/
                     predefined synthetic scenarios (ADR 0011)
   shape_ui.py, shape_exercises.py  accessible interval editor/viewer and exercises
   finance.py        Finance page (FIN-03, FIN-04, FIN-05 only)
+  responsibilities.py  Stage 14: loads and validates content/responsibilities.yaml
+                    (versioned, source-backed records; ADR 0012)
+  compliance.py     Compliance page: responsibility explorer (COMP-02); no fetching
+  compliance_exercises.py  lesson 11-12 exercises keyed on the record-set fingerprint
   model_exercises.py  Stage 8: exercise answers from verified model records; snapshot
                     = inputs, pin, check versions, statuses; result refs = run ids
   model_lessons.py  Stage 8: lesson model section (explicit run button, panels,

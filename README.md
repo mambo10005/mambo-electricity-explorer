@@ -170,6 +170,14 @@ split the total into a fixed hedge part, an aggregate energy mismatch, and a tim
 part (ADR 0011). Forwards, full swaps, futures, block products, options, PPAs, credit,
 and collateral are not implemented.
 
+The **Compliance** page is an educational **regulatory responsibility explorer**. It lists,
+by activity, official sources that describe who is responsible for what (FERC, the ERO,
+regional entities, DOE, the CPUC as a California example, CAISO, ERCOT, ISO-NE, and the
+CFTC). Each entry is a *relevant source to investigate*, with its section, version, dates,
+limitations, and review status (ADR 0012). Lessons 11, *Who sets the rules?*, and 12, *From
+a requirement to evidence*, build on it. Nothing in the app decides whether a rule
+applies, files anything, certifies, tracks deadlines, or stores evidence.
+
 ## 5. Launch
 
 ```powershell

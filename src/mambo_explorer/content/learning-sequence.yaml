@@ -2,7 +2,8 @@
 # (content/lessons/): fundamentals has an observation track (2-4) and a market-mechanics
 # track on a synthetic model (5-7), both after lesson 1; settlement has one introductory
 # lesson (8, after lesson 1); financial contracts and risk has two (9 after 6 and 8; 10
-# after 1 and 9). The other stages have no lessons yet.
+# after 1 and 9); compliance has two (11 after 1; 12 after 11). The other stages have no
+# lessons yet.
 stages:
   - key: fundamentals
     title: Fundamentals
