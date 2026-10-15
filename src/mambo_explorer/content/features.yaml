@@ -17,7 +17,7 @@ features:
   - id: QA-01
     name: "Local quality workflow"
     section: platform
-    status: planned
+    status: done
   - id: LEARN-01
     name: "Lesson content following the learning sequence"
     section: learn

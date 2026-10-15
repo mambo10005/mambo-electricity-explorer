@@ -86,6 +86,7 @@ analyzing on their own machine. Explanations assume no prior industry knowledge.
 | R-26 | Regional operator and regulatory sources follow EIA. |
 | R-27 | Each source needs its own access and redistribution review before ingestion. The review is recorded in [source-register.md](source-register.md). |
 | R-28 | Credentials come from local environment variables, never from the repository. |
+| R-29 | ERCOT is the first regional operator connector after EIA. |
 
 ## 7. Non-goals (current)
 
@@ -114,10 +115,10 @@ analyzing on their own machine. Explanations assume no prior industry knowledge.
 |----|----------|--------|
 | U-1 | Application license (see [ADR 0001](decisions/0001-license.md)). | Any change in visibility or distribution |
 | U-2 | mambo-power adapter interface, where the adapter lives, and its validation acceptance criteria. | MODEL-01 |
-| U-3 | Which regional operator connector follows EIA, and in what order. | DATA-02 |
+| U-3 | Order of regional operators after ERCOT (ERCOT itself is settled as R-29). | DATA-02 |
 | U-4 | Redistribution terms for each source. | PUB-01, SRC-01 |
 | U-5 | How far back history goes and the local storage budget. | STORE-01 |
 | U-6 | How "continuously updated" collection is scheduled locally (manual, OS scheduler, or in-app). | HEALTH-01, DATA-* |
 | U-7 | Which balancing authorities and utilities count as "non-ISO markets" for R-7. | EXPLORE-01, LEARN-01 |
 | U-8 | Who authors and reviews lessons and rules for accuracy, and the citation standard. | LEARN-01, COMP-01 |
-| U-9 | Supported Python versions. Floor declared at 3.11; so far verified only on 3.14. | QA-01 |
+| U-9 | Whether to test Python 3.12/3.13 and non-Windows platforms. Declared floor 3.11; tested on 3.11.16 and 3.14.2 on Windows only (ADR 0003). | — |

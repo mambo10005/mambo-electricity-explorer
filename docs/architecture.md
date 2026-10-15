@@ -36,6 +36,18 @@ which shows the summary, a "Not implemented" warning, planned scope, and the
 tracked features from `features.yaml`. The home page reads all three YAML
 files. No page reads data or environment variables.
 
+## Local quality workflow (Stage 2)
+
+```
+uv.lock                      Universal lock: runtime + dev group (ADR 0003)
+scripts/setup-env.ps1        uv sync --locked into .venvs/pyXY (network, one time)
+scripts/check.ps1            Runs scripts/quality.py with .venvs/pyXY's interpreter
+scripts/quality.py           Offline gate: config, lock check, ruff, pytest, smoke,
+                             tracked/staged paths, secret scan; nonzero on failure
+scripts/license_inventory.py Regenerates docs/dependency-licenses.md from the lock
+tests/guards.py              Fake-result guards, keyed to features.yaml status
+```
+
 ## Planned components (not implemented)
 
 | Component | Responsibility | Feature | Notes |
