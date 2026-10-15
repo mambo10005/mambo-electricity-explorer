@@ -41,13 +41,14 @@ from mambo_explorer.eia import dataset as ds
 from mambo_explorer.eia.client import EIAClient, EIAError
 from mambo_explorer.ercot import collect as ercot
 from mambo_explorer.ercot import dataset as ercot_ds
+from mambo_explorer.ercot import prices as ercot_prices
 from mambo_explorer.ercot.client import ErcotClient, ErcotError
 from mambo_explorer.refresh import RefreshLockError
 from mambo_explorer.refresh_config import RefreshConfigError
 from mambo_explorer.safe_zip import ArchiveError
 from mambo_explorer.storage import Store, WriterLockError
 
-SOURCES = ("eia", "ercot", "eia-generation")
+SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp")
 
 
 def _print(obj: object) -> None:
@@ -59,6 +60,8 @@ def _store(args, settings) -> Store:
         return ercot.store(settings.data_dir)
     if args.source == "eia-generation":
         return generation.store(settings.data_dir)
+    if args.source == "ercot-dam-spp":
+        return ercot_prices.store(settings.data_dir)
     return Store(settings.data_dir)
 
 
@@ -89,6 +92,22 @@ def cmd_sources(args, settings) -> int:
             }
         )
         return 0
+    if args.source == "ercot-dam-spp":
+        _print(
+            {
+                "source": f"ERCOT {ercot_prices.DATASET} — {ercot_prices.REPORT_NAME}",
+                "report_type_id": ercot_prices.REPORT_TYPE_ID,
+                "product_page": ercot_prices.PRODUCT_PAGE,
+                "market_stage": ercot_prices.MARKET_STAGE,
+                "location": f"{ercot_prices.LOCATION} — {ercot_prices.LOCATION_NAME}",
+                "columns": list(ercot_prices.HEADER),
+                "units": ercot_prices.UNIT_TEXT,
+                "time_labels": ercot_prices.TIME_TEXT,
+                "finality": ercot_prices.FINALITY_TEXT,
+                "review": "docs/source-register.md — ERCOT NP4-190-CD review",
+            }
+        )
+        return 0
     if args.source == "eia-generation":
         _print(ds.generation_review_summary())
         if not args.remote:
@@ -107,6 +126,22 @@ def cmd_sources(args, settings) -> int:
 
 
 def cmd_collect(args, settings) -> int:
+    if args.source == "ercot-dam-spp":
+        selection = ercot_prices.Selection(
+            latest=None if args.publish_date else (args.latest or ercot_prices.DEFAULT_LATEST),
+            publish_dates=tuple(args.publish_date or ()),
+        )
+        print("Collection plan:")
+        _print(selection.describe())
+        if args.dry_run:
+            print("\nDry run: no requests sent, nothing written.")
+            return 0
+        summary = ercot_prices.collect(
+            selection, ErcotClient(), ercot_prices.store(settings.data_dir)
+        )
+        print("\nCollection committed:")
+        _print(summary)
+        return 0
     if args.source == "ercot":
         selection = ercot.Selection(
             latest=None if args.publish_date else (args.latest or ercot.DEFAULT_LATEST),
@@ -194,6 +229,7 @@ def _refresh_parts(settings, config_path):
         "eia": Store(settings.data_dir),
         "ercot": ercot.store(settings.data_dir),
         "eia-generation": generation.store(settings.data_dir),
+        "ercot-dam-spp": ercot_prices.store(settings.data_dir),
     }
     return config, stores
 
@@ -209,6 +245,7 @@ def cmd_refresh(args, settings) -> int:
         "eia": lambda budget: EIAClient(settings.api_key, max_requests=budget),
         "eia-generation": lambda budget: EIAClient(settings.api_key, max_requests=budget),
         "ercot": lambda budget: ErcotClient(max_requests=budget),
+        "ercot-dam-spp": lambda budget: ErcotClient(max_requests=budget),
     }
     record = refresh.refresh(
         config,
@@ -257,7 +294,8 @@ def build_parser() -> argparse.ArgumentParser:
             choices=SOURCES,
             default="eia",
             help="eia (EIA-930 demand/forecast), ercot (ERCOT NP6-345-CD direct), or "
-            "eia-generation (EIA-930 net generation by energy source)",
+            "eia-generation (EIA-930 net generation by energy source), or ercot-dam-spp "
+            "(ERCOT NP4-190-CD DAM settlement point price, HB_NORTH)",
         )
         p.set_defaults(func=func)
         return p

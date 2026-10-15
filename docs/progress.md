@@ -2,6 +2,35 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-12 — Stage 19: ERCOT day-ahead price at HB_NORTH and lesson 14 (#37)
+
+Stacked on Stage 18 (PR #36) ← … ← #2. None merged. mambo-power unchanged. Real `data/` and
+progress unchanged (gate check).
+
+- **Source review** (ADR 0016; `docs/datasets/ercot-np4-190-cd.md`).
+  - Report: NP4-190-CD "DAM Settlement Point Prices" (report type 12331) from ERCOT's
+    product pages and live listing.
+  - Schema from a live file: `DeliveryDate, HourEnding, SettlementPoint,
+    SettlementPointPrice, DSTFlag`; 1,130 points × 24 h.
+  - Location: `HB_NORTH` tied to Protocols §3.5.2.1 North 345 kV Hub by 75/75 hub buses
+    from NP4-160-SG.
+  - Unit $/MWh from Protocols §4.5.3(5). Finality rule from §4.5.3(6), not computed.
+    Corrections report NP4-196-M not collected.
+- **Connector:** the ERCOT client takes a `Report` with its own archive limits; store
+  `ercot-np4-190-cd`; identity includes market stage, location, DeliveryDate, HourEnding,
+  and DSTFlag. Downloaded scope is recorded apart from the stored hub rows. Signed and
+  missing prices are kept; reposts become revisions.
+- **Refresh:** `ercot-dam-spp`, opt-in, plans from DeliveryDates (newest expected:
+  tomorrow). A new `hosts` cap (ercot.com 18) is shared by ERCOT datasets.
+- **Explore and lesson 14 (EXPLORE-05):** source-label chart with a zero rule, matching
+  tooltip and table, coverage, publication and retrieval times, revision provenance, and
+  definitions vs LMP / modeled / retail / forward / real-time prices. Five snapshot-bound
+  exercises; 5 glossary terms.
+- **Finance boundary:** no automatic import; the future import design is in
+  `docs/calculations.md`.
+- **Live (scratch, no credential):** 3 requests, 54,240 rows downloaded, 48 HB_NORTH rows
+  stored, 48/48 matching the archive; repeat: 48 unchanged.
+
 ## 2026-10-12 — Stage 18: timestamp position audit (#35)
 
 Stacked on Stage 17 (PR #34) ← … ← #2. None merged. Real `data/` and progress unchanged.

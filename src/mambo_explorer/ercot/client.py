@@ -68,6 +68,20 @@ def urllib_transport(url: str, timeout: float) -> tuple[int, str, bytes]:
 
 
 @dataclass(frozen=True)
+class Report:
+    """One ERCOT public report this client may list and download (reviewed in the register)."""
+
+    report_type_id: str
+    csv_friendly_name: str
+    label: str
+    limits: Limits
+
+
+LOAD_REPORT = Report(ds.REPORT_TYPE_ID, ds.CSV_FRIENDLY_NAME, ds.DATASET, ZIP_LIMITS)
+LIST_URL_TEMPLATE = "https://www.ercot.com/misapp/servlets/IceDocListJsonWS?reportTypeId={id}"
+
+
+@dataclass(frozen=True)
 class Document:
     doc_id: str
     name: str
@@ -134,9 +148,10 @@ class ErcotClient:
             self._sleep(self.backoff_seconds * 2**attempt)
         raise AssertionError("unreachable")
 
-    def list_documents(self) -> list[Document]:
-        """Public CSV documents for NP6-345-CD, oldest first (validated)."""
-        content_type, body = self._get(ds.LIST_URL, "the NP6-345-CD document list")
+    def list_documents(self, report: Report = LOAD_REPORT) -> list[Document]:
+        """Public CSV documents for `report`, oldest first (validated)."""
+        url = LIST_URL_TEMPLATE.format(id=report.report_type_id)
+        content_type, body = self._get(url, f"the {report.label} document list")
         if len(body) > MAX_LIST_BYTES:
             raise ResponseError("document list exceeds size limit")
         if "html" in content_type.lower():
@@ -153,9 +168,9 @@ class ErcotClient:
             doc = entry.get("Document") if isinstance(entry, dict) else None
             if not isinstance(doc, dict):
                 raise ResponseError("DocumentList entry without a Document object")
-            if doc.get("FriendlyName") != ds.CSV_FRIENDLY_NAME:
-                continue  # XML twin of each day; only CSV is used
-            if doc.get("ReportTypeID") != ds.REPORT_TYPE_ID or doc.get("SecurityStatus") != "P":
+            if doc.get("FriendlyName") != report.csv_friendly_name:
+                continue  # XML twin of each document; only CSV is used
+            if doc.get("ReportTypeID") != report.report_type_id or doc.get("SecurityStatus") != "P":
                 raise ResponseError(f"unexpected document metadata for {doc.get('DocID')!r}")
             doc_id = str(doc.get("DocID", ""))
             if not doc_id.isdigit():
@@ -172,9 +187,11 @@ class ErcotClient:
             documents, key=lambda d: (ds.parse_publish_time(d.publish_time_raw), d.doc_id)
         )
 
-    def download_csv(self, document: Document) -> tuple[bytes, bytes, str]:
+    def download_csv(
+        self, document: Document, report: Report = LOAD_REPORT
+    ) -> tuple[bytes, bytes, str]:
         """(zip bytes as received, CSV member bytes, member name). Nothing touches disk."""
-        if document.content_size > ZIP_LIMITS.max_archive_bytes:
+        if document.content_size > report.limits.max_archive_bytes:
             raise ResponseError(
                 f"document {document.doc_id} declares {document.content_size} bytes"
             )
@@ -184,7 +201,7 @@ class ErcotClient:
         if "html" in content_type.lower() or not body.startswith(b"PK\x03\x04"):
             raise ResponseError(f"document {document.doc_id} is not a ZIP ({content_type!r})")
         try:
-            members = read_members(body, ZIP_LIMITS)
+            members = read_members(body, report.limits)
         except ArchiveError as exc:
             raise ResponseError(f"document {document.doc_id}: {exc}") from None
         ((name, data),) = members.items()

@@ -43,6 +43,19 @@ The packaged plan is `src/mambo_explorer/content/refresh.yaml`. To change it, co
 
 Keys that look like credentials (`api_key`, `token`, `password`, …) are rejected.
 
+**ERCOT day-ahead price dataset (`ercot-dam-spp`, Stage 19).** ERCOT settings shape
+(window 2, lookback 1, catch-up cap 3 documents, budget 6), **disabled by default** and
+optional in plan files. Each document is about 190 KB and holds every settlement point;
+only HB_NORTH is stored. Planning counts DeliveryDates; the newest expected is tomorrow
+(the DAM posts the day before). A successful refresh never makes a price final (Protocols:
+final at 1000 on the second Business Day; not computed).
+
+**Shared host limits (`hosts`).** `hosts: {ercot.com: {max_requests_per_refresh: 18}}`
+caps requests to one host across all its datasets in one refresh (load 12 + prices 6 by
+default). A later dataset that would exceed the cap is skipped with a `host-budget`
+finding, and a dataset budget larger than its host cap is rejected. Dry runs show
+`host_requests_budgeted`.
+
 **Generation dataset (`eia-generation`, Stage 16).** A third section with the same
 settings as `eia` (window, lookback, catch-up cap, budget, threshold), **disabled by
 default**. A plan file without the section is valid and treats it as disabled. Enable it

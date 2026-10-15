@@ -16,6 +16,7 @@ Review columns:
 |--------|------|---------------|--------|-------|----------------|-----------|---------------|-----------|
 | EIA (U.S. Energy Information Administration) Open Data API v2 | Federal statistics | 1 | API key (`EIA_API_KEY`), sent as a URL query parameter | Reviewed 2026-10-11, see below | Generally permitted, with exceptions for third-party material (see below) | EIA-930: revised without per-value flags (see below) | General terms reviewed; EIA-930 `region-data` cleared for local collection/use; other routes' source notes pending; publication review pending | Yes, locally: EIA-930 ERCO D/DF (live-verified 2026-10-11) |
 | ERCOT — NP6-345-CD Actual System Load by Weather Zone | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + download, no login (ERCOT Public API needs registration; not used) | Reviewed 2026-10-11, see below | Terms permit raw-data reuse in compilations, charts, and analyses; **project publication review pending** | No correction policy found; reposts handled as revisions | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-11) |
+| ERCOT — NP4-190-CD DAM Settlement Point Prices (HB_NORTH) | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + download, no login | Reviewed 2026-10-12, see below | Same ERCOT terms; **project publication review pending** | Corrections via NP4-196-M (not collected); reposts handled as revisions; finality rule recorded, not computed | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-12) |
 | CAISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | PJM | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | MISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
@@ -312,6 +313,43 @@ assumption: the route's own metadata and description were read.
 **Public redistribution: NOT REVIEWED** (PUB-01), as for every EIA route.
 
 **Live verification (2026-10-12, scratch storage, 1 + 1 + 3 requests):** 232 rows (8 categories × 29 hours), all matching the archived response; repeat idempotent; `validate` ok. Details in `docs/datasets/eia930-fuel-type-data.md`.
+
+### ERCOT — NP4-190-CD DAM Settlement Point Prices (HB_NORTH) — 2026-10-12
+
+Scope reviewed: one report, one market stage (day-ahead), one location (`HB_NORTH`).
+Contract: `docs/datasets/ercot-np4-190-cd.md`. Decision: ADR 0016.
+
+**Pages and files read (2026-10-12):**
+- ERCOT market prices page (`/mktinfo/prices`) and Day-Ahead Market page (`/mktinfo/dam`).
+- Product pages NP4-190-CD (report type 12331), NP4-196-M (DAM Price Corrections, report
+  type 13044), and NP4-160-SG (Settlement Points List and Electrical Buses Mapping, report
+  type 10008).
+- Nodal Protocols, Aug 1, 2026: Section 2 (definitions: Hub, Hub Bus, Operating Day,
+  Settlement Point, Settlement Point Price, CPT), Section 3.5.2 (Hub definitions), and
+  Section 4.5.3 / 4.6.1 (DAM results, price correction, finality, DASPP). Downloaded as
+  .docx into scratch and read locally; not committed.
+- Live listing and two documents (schema), and one NP4-160-SG document (hub mapping), all
+  in scratch.
+
+| Item | Finding | Status |
+|---|---|---|
+| Report | NP4-190-CD, type 12331, "Event - Per DAM Run", public, display 31 | Product page; listing |
+| Schema | `DeliveryDate, HourEnding, SettlementPoint, SettlementPointPrice, DSTFlag`; 1,130 points × 24 h per document | Live file |
+| Location | `HB_NORTH`; 75/75 NP4-160-SG hub buses are in the Protocols §3.5.2.1 North 345 kV Hub table | Live mapping + Protocols |
+| Unit | not in the file; $/MWh per Protocols §4.5.3(5) | Protocols |
+| Time | no zone in the file; Operating Day = hours ending 0100–2400; DST representation not observed | kept raw, no UTC |
+| Finality | final at 1000 on the 2nd Business Day after the Operating Day (§4.5.3(6)) | not determined by the app |
+| Corrections | §4.5.3(3)–(5); report NP4-196-M | not collected; reposts become revisions |
+
+**Local collection and use: CLEARED** on the same basis as NP6-345-CD: the ERCOT Terms of
+Use permit raw-data reuse in compilations, charts, and analyses; the public download needs
+no account; requests are paced. **Public redistribution: NOT REVIEWED** (PUB-01). No ERCOT
+file is committed; test fixtures are synthetic.
+
+**Live verification (2026-10-12, scratch storage):**
+- Collection: 3 requests (1 list + 2 downloads); downloaded 54,240 rows; stored 48
+  HB_NORTH rows, all matching the archived ZIPs.
+- Repeat: 3 requests, 48 unchanged. `validate` ok.
 
 ### EIA vs. ERCOT: unresolved differences (no join, no reconciliation yet)
 

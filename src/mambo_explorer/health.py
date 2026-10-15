@@ -306,6 +306,8 @@ def source_health(
     out = [eia_health(stores["eia"], config, now), ercot_health(stores["ercot"], config, now)]
     if "eia-generation" in stores:
         out.append(eia_health(stores["eia-generation"], config, now, "eia-generation"))
+    if "ercot-dam-spp" in stores:
+        out.append(price_health(stores["ercot-dam-spp"], config, now))
     for h in out:
         h.last_refresh = last_refresh(logs or [], h.source)
         if h.last_refresh and h.last_refresh["status"] == "failed":
@@ -344,3 +346,78 @@ def content_health() -> dict:
         "Automatic change monitoring": "none",
     }
     return {"lessons": lessons, "records": records}
+
+
+def price_health(store: Store, config: RefreshConfig, now: datetime) -> SourceHealth:
+    """ERCOT NP4-190-CD DAM price at HB_NORTH: labels as published; finality not determined."""
+    from mambo_explorer.ercot import prices as px
+
+    s = config.prices
+    history = refresh.run_history(store)
+    problems, storage = _problems(store, history)
+    base = dict(
+        source="ercot-dam-spp",
+        title=s.title,
+        last_attempt=_attempt(history["last_attempt"]),
+        last_success=_attempt(history["last_success"]),
+        threshold_hours=s.freshness_threshold_hours,
+        problems=problems,
+        storage=storage,
+    )
+    if not store.committed_files("observations"):
+        return SourceHealth(
+            collected=False,
+            latest_label=None,
+            publication_time="nothing collected",
+            retrieval_time=None,
+            freshness=NO_DATA,
+            freshness_basis="nothing has been collected",
+            **base,
+        )
+    try:
+        with store.query() as con:
+            day, hour, published_raw, published, retrieved = con.execute(
+                "SELECT delivery_date_raw, hour_ending, publish_time_raw, "
+                "epoch_us(publication_time_utc), epoch_us(retrieved_at_utc) FROM latest "
+                "ORDER BY delivery_date DESC, row_order DESC LIMIT 1"
+            ).fetchone()
+            first, last, days, rows, nulls, negatives, revised = con.execute(
+                "SELECT min(delivery_date), max(delivery_date), count(DISTINCT delivery_date), "
+                "count(*), count(*) FILTER (WHERE value IS NULL), "
+                "count(*) FILTER (WHERE value < 0), count(*) FILTER (WHERE revision > 1) "
+                "FROM latest"
+            ).fetchone()
+    except (duckdb.Error, OSError) as exc:
+        return _unreadable({**base, "publication_time": "unknown"}, exc)
+    published = _from_us(published)
+    span = (last - first).days + 1 if isinstance(first, date) else 0
+    age = now - published if isinstance(published, datetime) else None
+    return SourceHealth(
+        collected=True,
+        latest_label=f"DeliveryDate {day}, HourEnding {hour} (ERCOT labels; not converted)",
+        publication_time=f"{published_raw} (ERCOT listing PublishDate)",
+        retrieval_time=_iso(retrieved),
+        freshness=_freshness(age, s.freshness_threshold_hours),
+        freshness_basis="age of the latest document's publication time, as ERCOT states it",
+        coverage={
+            px.LOCATION: {
+                "first_delivery_date": str(first),
+                "last_delivery_date": str(last),
+                "delivery_dates_in_span": span,
+                "delivery_dates_present": days,
+                "delivery_dates_absent": span - days,
+                "hour_rows_present": rows,
+                "null_values": nulls,
+                "negative_prices": negatives,
+                "revised_hours": revised,
+            }
+        },
+        notes=_unchanged_note(history)
+        + [
+            "Finality: " + px.FINALITY_TEXT,
+            "Only HB_NORTH is stored; each downloaded document holds every settlement point.",
+            f"ERCOT's public list keeps about {px.PUBLIC_RETENTION_DAYS} days; older "
+            "DeliveryDates are not available through the access method this app implements.",
+        ],
+        **base,
+    )

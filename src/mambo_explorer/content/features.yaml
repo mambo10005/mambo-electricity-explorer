@@ -78,6 +78,10 @@ features:
     name: "EIA connector: EIA-930 hourly net generation by energy source (ERCO), own store namespace"
     section: sources
     status: done
+  - id: DATA-06
+    name: "ERCOT direct connector: NP4-190-CD DAM settlement point price at HB_NORTH (one hub, own store namespace)"
+    section: sources
+    status: done
   - id: DATA-03
     name: "Regulatory source connectors"
     section: sources
@@ -105,6 +109,11 @@ features:
     status: done
   - id: EXPLORE-04
     name: "Net generation by energy source: signed chart, category coverage, totals with completeness rules, and lesson 13"
+    section: explore
+    status: done
+    ui: true
+  - id: EXPLORE-05
+    name: "Day-ahead price view at HB_NORTH: source-label chart, table, coverage, publication and revision provenance, and lesson 14"
     section: explore
     status: done
     ui: true

@@ -337,3 +337,29 @@ terms:
     definition: >-
       The sum of the energy-source categories reported for an hour. It is not the
       source's total net generation (not collected here) and is not demand.
+  # Day-ahead price lesson (Stage 19). Same status: agent-drafted, not human-reviewed.
+  - term: Day-Ahead Market
+    expansion: DAM
+    definition: >-
+      ERCOT's market, run the day before the Operating Day, that matches buyers and
+      sellers for each hour of the next day. ERCOT calls it voluntary and
+      financially binding.
+  - term: Settlement Point Price
+    definition: >-
+      The price ERCOT publishes for a settlement point (a resource node, load zone,
+      or hub) for each interval, in $/MWh. The day-ahead and real-time markets each
+      have their own.
+  - term: Trading hub
+    definition: >-
+      In ERCOT, a settlement point defined in the Protocols as a fixed group of
+      high-voltage hub buses with its own price method, such as HB_NORTH, the North
+      345 kV Hub.
+  - term: Delivery date
+    definition: >-
+      In ERCOT's day-ahead price report, the date (DeliveryDate) of the Operating Day
+      the prices apply to, as written in the file.
+  - term: Price finality
+    definition: >-
+      When a published price can no longer be corrected. ERCOT's Protocols set this for
+      day-ahead prices at 1000 on the second Business Day after the Operating Day; this
+      app does not decide it.
