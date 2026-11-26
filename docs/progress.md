@@ -2,6 +2,14 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-11-26 — BL-8 (day-ahead half): NP4-190-CD fall-back observation
+
+Owner-authorized `mambo collect --source ercot-dam-spp --publish-date 2026-10-31` (2 requests,
+no retries; run 20261126T165029Z-efadc3cc). DeliveryDate 11/01/2026 at `HB_NORTH` has 25 rows:
+HourEnding `02:00` appears twice, `DSTFlag` `N` and `Y`. `mambo validate --source ercot-dam-spp`
+is ok. NP6-905-CD (real-time) was not collected: its list keeps about 7 days, so 2026-11-01 is
+no longer listed. Spring-forward (2027-03-14) remains open.
+
 ## 2026-11-26 — BL-1: ERCOT fall-back DST observation
 
 Owner-authorized `mambo collect --source ercot --publish-date 2026-11-02` (2 requests, no

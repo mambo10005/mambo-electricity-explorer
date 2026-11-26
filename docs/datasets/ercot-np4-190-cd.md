@@ -52,7 +52,7 @@ accepted automatically. Requests are paced at 1 s and bounded by the client budg
 |---|---|---|
 | Unit | Not in the file. Protocols §4.5.3(5) states DAM Settlement Point Price changes in $/MWh. | stored `"$/MWh"` with that basis in `UNIT_TEXT` |
 | Time labels | DeliveryDate `MM/DD/YYYY`, HourEnding `01:00` .. `24:00`, DSTFlag `N`/`Y`. No time zone in the file. Protocols: Operating Day = hours ending 0100 to 2400; CPT is defined but not stated for this report. | kept raw; no UTC; ordinal display in file order; DSTFlag is part of the identity |
-| DST days | not observed (live data: all `N`) | 23 or 25 rows are accepted (at most 25 per day); nothing merged or invented |
+| DST days | fall-back observed once: DeliveryDate 11/01/2026 has 25 rows at `HB_NORTH`; HourEnding `02:00` appears twice (`DSTFlag` `N` and `Y`), all other hours `N` (collected 2026-11-26). Spring-forward not observed. | 23 or 25 rows are accepted (at most 25 per day); nothing merged or invented; which `02:00` is first is not inferred |
 | Publication time | listing `PublishDate` with offset (e.g. `2026-10-12T12:46:27-05:00`) | stored raw and as UTC |
 | Retrieval time | when this computer downloaded it | stored separately; never used as publication time |
 | Finality | Protocols §4.5.3(6): "final at 1000 of the second Business Day after the Operating Day" | **not determined** by the app (no Business-Day calendar) |
