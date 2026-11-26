@@ -5,7 +5,7 @@ prerequisites for other milestones unless stated.
 
 | ID | Task | Why | Earliest | Blocks |
 |---|---|---|---|---|
-| BL-1 | Live DST validation for ERCOT NP6-345-CD: collect OperDay 2026-11-01 (posted about 2026-11-02, public until about 2026-12-02) and record how the repeated fall-back hour and its DSTFlag values appear. Then spring-forward (OperDay 2027-03-14). | The repeated and missing hour representation is unverified (dataset contract). The store keeps DSTFlag as published and never interprets it. | 2026-11-02 | Nothing; reconciliation research later |
+| BL-1 | Live DST validation for ERCOT NP6-345-CD: ~~collect OperDay 2026-11-01~~ **Fall-back done 2026-11-26:** 25 rows, HourEnding `02:00` twice with `DSTFlag` `N` and `Y` (`docs/datasets/ercot-np6-345-cd.md`). **Still open:** spring-forward (OperDay 2027-03-14). | The repeated and missing hour representation is unverified (dataset contract). The store keeps DSTFlag as published and never interprets it. | 2026-11-02 | Nothing; reconciliation research later |
 | BL-2 | ~~Independently verify DC OPF objective units and dual sign/scaling~~ **Done 2026-10-11 for linear costs, single period (ADR 0007).** Quadratic, piecewise-linear, and elastic-demand forms remain unverified. | — | — | — |
 | BL-3 | Human review of the seven beginner lessons (checklist: `docs/review/human-review-checklist.md`) (4 observation lessons, 3 market-mechanics lessons), the glossary, and the model-backed exercise wording | All are agent-drafted (`review_status: unreviewed`) | — | Lesson publication |
 | BL-4 | Owner decisions: application license (ADR 0001), publication review per source | Pending | — | PUB-01 |

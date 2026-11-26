@@ -2,6 +2,13 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-11-26 — BL-1: ERCOT fall-back DST observation
+
+Owner-authorized `mambo collect --source ercot --publish-date 2026-11-02` (2 requests, no
+retries; run 20261126T162157Z-37fbea14). OperDay 11/01/2026 has 25 rows: HourEnding `02:00`
+appears twice, `DSTFlag` `N` and `Y`. `mambo validate --source ercot` is ok. Spring-forward
+(2027-03-14) remains open. BL-8 (NP4-190-CD / NP6-905-CD) not collected.
+
 ## 2026-10-14 — Stage 26: approval operations and governance validation
 
 Branched from `main` at 8a8fa9a (every earlier stage was merged on 2026-10-14). Committed and

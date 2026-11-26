@@ -79,17 +79,19 @@ ERCOT load reports are commonly read as MW, but that is not assumed.
 | `publish_time_raw` / `publication_time_utc` | listing `PublishDate`, e.g. `2026-10-11T05:50:00-05:00` | has an explicit offset, so UTC conversion is unambiguous |
 | `retrieved_at_utc` | when this computer downloaded the document | not publication time |
 
-**DST: unverified.** How this report represents the fall-back repeated hour and the
-spring-forward missing hour has not been observed. All live rows so far have
-`DSTFlag = N`. The design keeps every row:
+**DST: fall-back observed once; spring-forward unverified.** OperDay 11/01/2026 (document
+1293787482, published 2026-11-02 05:50 -06:00, collected 2026-11-26) has 25 hourly rows. HourEnding
+`02:00` appears twice: once with `DSTFlag = N` and once with `Y`; every other hour is `N`.
+The report's own semantics are still undefined, so which occurrence is first is not
+inferred. Spring-forward (OperDay 2027-03-14) has not been observed. The design keeps
+every row:
 - `DSTFlag` is in the identity, so two `02:00` rows with different flags are distinct
   observations.
 - Rows are never merged.
 - An absent hour is never invented.
 - Days with ≠ 24 rows are flagged in the UI.
 
-Next verification point: OperDay 2026-11-01 (posted about 2026-11-02, inside the public
-window until about 2026-12-02).
+Next verification point: spring-forward, OperDay 2027-03-14.
 
 ## Identity, revisions, idempotence
 
