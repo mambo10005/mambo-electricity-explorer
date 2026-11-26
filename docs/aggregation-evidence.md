@@ -175,7 +175,7 @@ same hour, record, and policy. Snapshots are never deleted or overwritten.
 
 | Prerequisite | Status |
 |---|---|
-| Active M1 1.0.0 approval (attributable, local) | **missing** (BL-11) |
+| Active M1 1.0.0 approval (attributable, local) | present locally (BL-11, `APR-M1-27db3fbd`); the app's own state is the source of truth |
 | Active approval of one aggregation record | **missing** (BL-13) |
 | Complete M1 alignment for each hour used | per hour; available |
 | Complete aggregation inputs and a current alignment snapshot | per hour; available |

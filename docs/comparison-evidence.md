@@ -134,7 +134,7 @@ deleted.
 
 | Prerequisite | Status |
 |---|---|
-| Active M1 1.0.0 approval | **missing** (BL-11) |
+| Active M1 1.0.0 approval | present locally (BL-11, `APR-M1-27db3fbd`) |
 | Active AGG-A or AGG-B approval | **missing** (BL-13) |
 | Active CMP-A or CMP-B approval | **missing** (BL-15) |
 | Complete aligned input hours, with current alignment and aggregation snapshots | per hour; available |
