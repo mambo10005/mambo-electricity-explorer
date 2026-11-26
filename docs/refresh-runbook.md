@@ -175,6 +175,19 @@ output shows the combined figure as `eia_api_requests_budgeted` so you can see i
 a run. Its collection success, coverage, and health come from its own store: a successful
 demand refresh never implies generation was refreshed.
 
+## Governance workspace (Stage 26)
+
+```powershell
+.venvs/py314/Scripts/mambo governance status           # states, activation, settings, stale snapshots
+.venvs/py314/Scripts/mambo governance review M1        # review package + the exact approve command
+.venvs/py314/Scripts/mambo governance audit            # executed governance actions (no names)
+```
+
+Every mutating action (`approve`, `reject`, `request-revision`, `revoke`, `supersede`,
+`no-decision`, `set-aggregation`, `set-convention`, `set-revision-policy`) previews unless
+`--execute` is given. Records stay in `<MAMBO_DATA_DIR>/assumptions/` (gitignored). A refresh
+never approves, sets, or compares anything. See `docs/governance.md`.
+
 ## Assumption and aggregation approvals (Stages 23–24)
 
 These commands never collect, and approvals never come from a refresh.

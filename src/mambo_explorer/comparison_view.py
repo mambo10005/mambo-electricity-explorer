@@ -16,6 +16,7 @@ from mambo_explorer.ercot import approvals as ap
 from mambo_explorer.ercot import assumed_alignment as aa
 from mambo_explorer.ercot import comparison as cmp
 from mambo_explorer.ercot import comparison_policy as cmpp
+from mambo_explorer.ercot import governance as gv
 from mambo_explorer.ercot.aggregation_policy import record as agg_record
 from mambo_explorer.opf_lab import md_dollars
 
@@ -83,7 +84,7 @@ def render_comparison(
 
 
 def _aggregation_snapshot(data_dir, aggregation: ag.AggregationResult, alignment_state):
-    ctx = ag.context(aggregation, alignment_state)
+    ctx = ag.context(aggregation, alignment_state, governance=gv.current_settings(data_dir))
     key = ag.snapshot_key(ctx)
     snaps = [s for s in ag.snapshots(data_dir) if ag.snapshot_key(s["context"]) == key]
     if not snaps:
@@ -101,12 +102,22 @@ def render_governed(data_dir, alignment, aggregation, alignment_state, m1_approv
         format_func=MODES.get,
         key="cmp_mode",  # session only: every session starts with comparison off
     )
+    governed = gv.current_settings(data_dir)
+    ids = [r.id for r in cmpp.RECORDS]
+    active = governed["active_comparison_convention"]
     method_id = st.radio(
         "Comparison record (sign convention)",
-        [r.id for r in cmpp.RECORDS],
+        ids,
         format_func=lambda i: f"{i}: {cmpp.record(i).sign_convention}",
-        index=None,  # never chosen silently
+        # never chosen silently: only the governed active convention is preselected
+        index=ids.index(active) if active in ids else None,
         key="cmp_method",
+    )
+    st.caption(
+        "Governed active comparison convention: "
+        f"{active or 'none set (the comparison is withheld)'}; "
+        f"active aggregation method: {governed['active_aggregation_method'] or 'none set'}; "
+        f"governed revision policy: {governed['revision_policy'] or 'none set'}."
     )
     approvals = [
         {"Decision": "M1 1.0.0 (alignment)", "Approval": m1_approval.status},
@@ -147,6 +158,7 @@ def render_governed(data_dir, alignment, aggregation, alignment_state, m1_approv
         if aggregation.method_id
         else None,
         comparison_approval=ap.status(data_dir, record),
+        governance=governed,
     )
     if result.status == cmp.APPROVED_COMPLETE:
         st.success(
@@ -236,7 +248,7 @@ def _limits(result: cmp.ComparisonResult | None = None) -> None:
 
 
 def _snapshots(data_dir, result: cmp.ComparisonResult, agg_state) -> None:
-    ctx = cmp.context(result, agg_state)
+    ctx = cmp.context(result, agg_state, governance=gv.current_settings(data_dir))
     if st.button("Record a comparison snapshot", key="cmp_snapshot"):
         cmp.record_snapshot(data_dir, cmp.snapshot(result, ctx, ap.recorded_now()))
     snaps = [

@@ -38,7 +38,7 @@ from mambo_explorer.ercot.comparison_policy import (
 )
 from mambo_explorer.ercot.m1_policy import M1
 
-VALIDATION_VERSION = "25.1"
+VALIDATION_VERSION = "26.1"  # 26: governed settings join the gate
 GOVERNED = "governed-comparison"
 
 CANDIDATE_ONLY = "candidate_only"
@@ -278,8 +278,14 @@ def compare(
     m1_approval: ap.Approval | None,
     aggregation_approval: ap.Approval | None,
     comparison_approval: ap.Approval | None,
+    governance: dict | None = None,
 ) -> ComparisonResult:
-    """Production comparison of one governed hour (or a withheld result with every blocker)."""
+    """Production comparison of one governed hour (or a withheld result with every blocker).
+
+    `governance` is `governance.current_settings(data_dir)`: the record must be the active
+    comparison convention, the aggregation the active method, and the policy the governed one
+    (ADR 0023). Signs are never reversed to match a different active convention."""
+    gov = governance or {}
     record = _record(method_id)
     checks: list[tuple[str, bool, str]] = []
     blockers: list[tuple[str, str]] = []
@@ -370,6 +376,26 @@ def compare(
             "revision policy",
             aggregation.revision_policy in record.revision_policies,
             aggregation.revision_policy,
+            REVISION_UNAVAILABLE,
+        )
+        active = gov.get("active_comparison_convention")
+        check(
+            "active convention",
+            active == record.id,
+            f"governed setting is {active}" if active else "no active comparison convention is set",
+            COMPARISON_APPROVAL_MISSING,
+        )
+        active_agg = gov.get("active_aggregation_method")
+        check(
+            "active aggregation method",
+            active_agg is not None and active_agg == aggregation.method_id,
+            f"governed {active_agg}; used {aggregation.method_id}",
+            AGGREGATION_APPROVAL_MISSING,
+        )
+        check(
+            "governed revision policy",
+            gov.get("revision_policy") == aggregation.revision_policy,
+            f"governed {gov.get('revision_policy')}; used {aggregation.revision_policy}",
             REVISION_UNAVAILABLE,
         )
 
@@ -575,7 +601,11 @@ def _sha(payload) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
-def context(result: ComparisonResult, aggregation_snapshot_state: str | None) -> dict:
+def context(
+    result: ComparisonResult,
+    aggregation_snapshot_state: str | None,
+    governance: dict | None = None,
+) -> dict:
     record = _record(result.method_id or "")
     agg = None
     if result.aggregation:
@@ -601,6 +631,18 @@ def context(result: ComparisonResult, aggregation_snapshot_state: str | None) ->
         "revision_policy": result.revision_policy,
         "formula_version": result.formula_version,
         "validation_version": VALIDATION_VERSION,
+        "governance": (
+            {
+                k: governance.get(k)
+                for k in (
+                    "active_comparison_convention",
+                    "active_aggregation_method",
+                    "revision_policy",
+                )
+            }
+            if governance is not None
+            else None
+        ),
     }
 
 

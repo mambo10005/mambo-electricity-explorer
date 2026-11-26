@@ -424,10 +424,21 @@ def test_guard_approvals_module_converts_no_labels():
 
 def test_cli_approve_is_dry_run_unless_execute(store_dir, monkeypatch, capsys):
     monkeypatch.setenv("MAMBO_DATA_DIR", str(store_dir))
-    args = ["--no-dotenv", "assumption", "approve", "--reviewer", "Synthetic Reviewer", "--role",
-            "synthetic", "--evidence", "SYN-cli", "--approved-on", "2026-10-01"]  # fmt: skip
+    legacy = ["--no-dotenv", "assumption", "approve", "--reviewer", "Synthetic Reviewer", "--role",
+              "synthetic", "--evidence", "SYN-cli", "--approved-on", "2026-10-01"]  # fmt: skip
+    assert cli.main(legacy) == 1  # Stage 26: approvals go through `mambo governance`
+    assert "mambo governance approve M1" in capsys.readouterr().err
+    from mambo_explorer.ercot import governance as gv
+
+    args = [
+        "--no-dotenv", "governance", "approve", "M1", "--version", "1.0.0", "--scope",
+        M1.scope_fingerprint(), "--accept-limitations", gv.limitations_version("M1"),
+        "--acknowledge", ",".join(gv.limitation_ids("M1")), "--approved-scope", "HB_NORTH",
+        "--triggers", "record", "--reviewer", "Synthetic Reviewer", "--role", "synthetic",
+        "--evidence", "SYN-cli", "--date", "2026-10-01", "--rationale", "synthetic test",
+    ]  # fmt: skip
     assert cli.main(args) == 0
-    assert "Dry run" in capsys.readouterr().out and not ap.path(store_dir).exists()
+    assert "Preview" in capsys.readouterr().out and not ap.path(store_dir).exists()
     assert cli.main(args + ["--execute"]) == 0
     assert ap.status(store_dir, M1).status == ap.APPROVED
     rid = ap.status(store_dir, M1).reference

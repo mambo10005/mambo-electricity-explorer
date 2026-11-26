@@ -169,6 +169,12 @@ Stage 25 adds a **comparison investigation** for one hour at a time.
   current snapshots. None is recorded, so it is withheld.
 - **What it is not:** a settlement, profit or loss, backtest, or forecast evaluation (ADR 0022).
 
+Stage 26 adds the **governance workspace**: `mambo governance review|approve|reject|revoke|…`
+records attributed decisions locally with itemized limitation acknowledgments, and
+`set-aggregation|set-convention|set-revision-policy` choose what production may use (at most
+one comparison convention). System Health shows the records' states, dependencies, settings,
+and stale downstream snapshots, read-only (ADR 0023, `docs/governance.md`).
+
 ### Refresh both sources and check health
 
 ```powershell

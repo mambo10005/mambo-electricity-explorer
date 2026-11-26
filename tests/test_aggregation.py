@@ -27,6 +27,7 @@ from mambo_explorer.ercot import aggregation_policy as agp
 from mambo_explorer.ercot import alignment as al
 from mambo_explorer.ercot import approvals as ap
 from mambo_explorer.ercot import assumed_alignment as aa
+from mambo_explorer.ercot import governance as gv
 from mambo_explorer.ercot import prices as px
 from mambo_explorer.ercot import rt_prices as rt
 from mambo_explorer.ercot.client import ErcotClient
@@ -236,7 +237,34 @@ def run(data_dir, method="AGG-A", case=fx.ORDINARY, policy=al.LATEST_RETRIEVED, 
         alignment_snapshot=s if snap else None,
         alignment_snapshot_state=state if snap else None,
         price_lookup=price_lookup,
+        governance=governance_for(method, policy),
     )
+
+
+def governance_for(method, policy=al.LATEST_RETRIEVED) -> dict:
+    """Stage 26: the governed settings the gate requires (the method under test is active)."""
+    return {"active_aggregation_method": method, "revision_policy": policy}
+
+
+def govern(data_dir, *, agg="AGG-A", cmp="CMP-A", policy=al.LATEST_RETRIEVED):
+    """Record synthetic governed settings in a synthetic data directory."""
+    for kind, value in (
+        (gv.SET_AGGREGATION, agg),
+        (gv.SET_CONVENTION, cmp),
+        (gv.SET_REVISION_POLICY, policy),
+    ):
+        gv.append_setting(
+            data_dir,
+            gv.new_setting(
+                kind,
+                value,
+                operator="Synthetic Operator",
+                role="synthetic",
+                decided_on="2026-10-01",
+                rationale="synthetic test settings",
+                now=NOW,
+            ),
+        )
 
 
 @pytest.fixture
@@ -299,6 +327,7 @@ def test_mismatched_approvals(both):
         alignment_snapshot=s,
         alignment_snapshot_state="current",
         price_lookup=lookup,
+        governance=governance_for("AGG-A"),
     )
     assert out.status == ag.ALIGNMENT_APPROVAL_MISSING
     out = ag.aggregate(
@@ -309,6 +338,7 @@ def test_mismatched_approvals(both):
         alignment_snapshot=s,
         alignment_snapshot_state="current",
         price_lookup=lookup,
+        governance=governance_for("AGG-B"),
     )
     assert out.status == ag.APPROVAL_MISSING  # AGG-A's approval never authorizes AGG-B
 
@@ -335,6 +365,7 @@ def test_stale_or_missing_alignment_snapshot(both):
         alignment_snapshot=s,
         alignment_snapshot_state="current",
         price_lookup=lookup,
+        governance=governance_for("AGG-A"),
     )
     assert out.status == ag.STALE_SNAPSHOT and "differ" in " ".join(out.blockers)
 
@@ -345,6 +376,22 @@ def test_duration_unsupported_for_flag_y_without_fallback(both):
     assert not res_b.input_prices or res_b.output is None  # no 0.25 substituted, no mean shown
     res_a = run(both, "AGG-A", case=fx.FALL_REPEATED_Y)  # A needs no duration evidence
     assert res_a.status == ag.APPROVED_COMPLETE and res_a.output == "50"
+
+
+def test_governed_settings_gate_the_method_and_policy(both):
+    res, s, m1a = aligned(both)
+    common = dict(
+        m1_approval=m1a, aggregation_approval=ap.status(both, A), alignment_snapshot=s,
+        alignment_snapshot_state="current", price_lookup=lookup,
+    )  # fmt: skip
+    assert ag.aggregate("AGG-A", res, **common).status == ag.APPROVAL_MISSING  # no settings
+    other = ag.aggregate("AGG-A", res, **common, governance=governance_for("AGG-B"))
+    assert other.status == ag.APPROVAL_MISSING and other.output is None  # no silent fallback
+    policy = ag.aggregate(
+        "AGG-A", res, **common, governance={"active_aggregation_method": "AGG-A",
+                                            "revision_policy": al.FIRST_RETRIEVED}
+    )  # fmt: skip
+    assert policy.status == ag.REVISION_UNAVAILABLE
 
 
 def test_unsupported_methods(both):
@@ -436,7 +483,8 @@ def test_guard_no_implicit_aggregation_or_finance_import():
     # Stage 25 (ADR 0022): the governed comparison consumes approved aggregation results
     allowed = {
         "aggregation_view.py", "alignment_view.py", "cli.py", "comparison.py",
-        "comparison_policy.py", "comparison_view.py",
+        "comparison_policy.py", "comparison_view.py", "governance.py", "governance_view.py",
+        "governance_cli.py",
     }  # fmt: skip
     for path in SRC.rglob("*.py"):
         rel = path.relative_to(SRC).as_posix()
@@ -500,14 +548,24 @@ def test_cli_aggregation_workflow(syn_dir, monkeypatch, capsys):
     base = ["--no-dotenv", "aggregation"]
     assert cli.main(base + ["list"]) == 0
     assert "approvable" in capsys.readouterr().out
-    approve_args = base + [
+    legacy = base + [
         "approve", "AGG-A", "--version", "1.0.0", "--scope", A.scope_fingerprint(),
         "--accept-limitations", A.limitations_fingerprint(), "--reviewer", "Synthetic Reviewer",
         "--role", "synthetic", "--evidence", "SYN-cli", "--approved-on", "2026-10-01",
     ]  # fmt: skip
+    assert cli.main(legacy) == 1  # Stage 26: one approval path
+    assert "mambo governance approve AGG-A" in capsys.readouterr().err
+    assert not ap.path(syn_dir).exists()
+    approve_args = [
+        "--no-dotenv", "governance", "approve", "AGG-A", "--version", "1.0.0", "--scope",
+        A.scope_fingerprint(), "--accept-limitations", gv.limitations_version("AGG-A"),
+        "--acknowledge", ",".join(gv.limitation_ids("AGG-A")), "--approved-scope", "HB_NORTH",
+        "--triggers", "record", "--reviewer", "Synthetic Reviewer", "--role", "synthetic",
+        "--evidence", "SYN-cli", "--date", "2026-10-01", "--rationale", "synthetic test",
+    ]  # fmt: skip
     assert cli.main(approve_args) == 0
     out = capsys.readouterr().out
-    assert "Dry run" in out and "Synthetic Reviewer" not in out and not ap.path(syn_dir).exists()
+    assert "Preview" in out and "Synthetic Reviewer" not in out and not ap.path(syn_dir).exists()
     assert cli.main(approve_args + ["--execute"]) == 0
     assert ap.status(syn_dir, A).status == ap.APPROVED
     assert cli.main(base + ["status", "AGG-A"]) == 0
@@ -575,6 +633,7 @@ def test_page_complete_under_synthetic_approvals(page_dir):
     (page_dir / ap.SYNTHETIC_MARKER).write_text("synthetic\n", "utf-8")
     approve(page_dir, M1)
     approve(page_dir, A)
+    govern(page_dir)
     at = _page(page_dir, align_basis=aa.ASSUMPTION)
     assert "stale_snapshot" in _texts(at)  # no alignment snapshot yet
     at.button(key="align_snapshot").click().run(timeout=40)

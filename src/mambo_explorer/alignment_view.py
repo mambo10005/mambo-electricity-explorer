@@ -13,6 +13,7 @@ import streamlit as st
 from mambo_explorer.ercot import alignment as al
 from mambo_explorer.ercot import approvals as ap
 from mambo_explorer.ercot import assumed_alignment as aa
+from mambo_explorer.ercot import governance as gv
 from mambo_explorer.ercot import prices as px
 from mambo_explorer.ercot import rt_prices as rt
 from mambo_explorer.ercot.m1_policy import current
@@ -135,12 +136,21 @@ def render_alignment(settings) -> None:
     else:
         st.warning(f"No day-ahead hour is stored for DeliveryDate {day}.")
         hour = None
+    governed = gv.current_settings(settings.data_dir)
+    policies = list(al.REVISION_POLICIES)
     policy = st.radio(
         "Revision policy",
-        list(al.REVISION_POLICIES),
+        policies,
+        index=policies.index(governed["revision_policy"]) if governed["revision_policy"] else 0,
         key="align_policy",
-        help="Unavailable policies are listed so their limits stay visible.",
+        help="Unavailable policies are listed so their limits stay visible. The governed choice "
+        "(mambo governance set-revision-policy) is preselected when one is set.",
     )
+    if governed["revision_policy"] and policy != governed["revision_policy"]:
+        st.warning(
+            f"The governed revision policy is {governed['revision_policy']}; production "
+            "aggregation and comparison are withheld under any other policy."
+        )
     st.caption(al.REVISION_POLICIES[policy])
     if hour is not None:
         default = [o for o in rtl if o.interval.delivery_hour == str(int(hour.hour_ending[:2]))]
@@ -221,7 +231,13 @@ def _aggregation(data_dir, res, dam, rtl, hour, approval) -> None:
 
     stored_dam, stored_rt = aa.hour_inputs(dam, rtl, hour)
     ctx = aa.context(
-        res.alignment_basis, res.dam_identity, res.revision_policy, stored_dam, stored_rt, approval
+        res.alignment_basis,
+        res.dam_identity,
+        res.revision_policy,
+        stored_dam,
+        stored_rt,
+        approval,
+        governance=gv.current_settings(data_dir),
     )
     agv.render_investigation(data_dir, approval)
     agg_result, align_state = agv.render_actual(data_dir, res, ctx, approval)
@@ -407,7 +423,13 @@ def render_snapshots(data_dir, res, dam, rtl, hour, approval) -> None:
     st.header("Diagnostic snapshots")
     stored_dam, stored_rt = aa.hour_inputs(dam, rtl, hour)
     ctx = aa.context(
-        res.alignment_basis, res.dam_identity, res.revision_policy, stored_dam, stored_rt, approval
+        res.alignment_basis,
+        res.dam_identity,
+        res.revision_policy,
+        stored_dam,
+        stored_rt,
+        approval,
+        governance=gv.current_settings(data_dir),
     )
     if st.button("Record a snapshot of this result", key="align_snapshot"):
         aa.record_snapshot(data_dir, aa.snapshot(res, ctx, ap.recorded_now()))

@@ -176,6 +176,10 @@ def render_system_health() -> None:
             hide_index=True,
         )
 
+    from mambo_explorer.governance_view import render_governance
+
+    render_governance(settings.data_dir)
+
     st.header("Content status")
     st.warning(SNAPSHOT_NOTE)
     content = health.content_health()

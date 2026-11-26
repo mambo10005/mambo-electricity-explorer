@@ -126,6 +126,10 @@ src/mambo_explorer/
   ercot/comparison.py  candidate formulas, governed compare() with blockers, DAM lookup of
                        the selected revision, comparison snapshots; no quantities
   comparison_view.py   "Comparison investigation" section (one hour; mode off by default)
+  ercot/governance.py  Stage 26: record registry, itemized limitations, dependency graph and
+                       activation states, governed settings, review packages, audit log
+  governance_cli.py    `mambo governance …`: previews, --execute writes, one approval path
+  governance_view.py   read-only Governance section of System Health (ADR 0023)
   ercot/assumed_alignment.py  opt-in alignment by basis (authoritative-only | review-approved
                        assumption), outcomes, snapshots with staleness (ADR 0020)
   ercot_explore.py     Explore view for ERCOT (source selector in explore.py)

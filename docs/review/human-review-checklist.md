@@ -396,3 +396,6 @@ with the CLI; ticking a box here records no approval.
       profit-and-loss result, trading backtest, or forecast evaluation."
 - [ ] The comparison-evidence classification (`docs/comparison-evidence.md`), especially that
       DART is not ERCOT-defined in the reviewed sources.
+- [ ] Governance workspace (Stage 26): the itemized limitation texts (`ercot/governance.py`
+      LIMITATIONS), the record facts shown in review packages, and the state definitions in
+      `docs/governance.md`.

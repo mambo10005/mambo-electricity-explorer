@@ -2,6 +2,30 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-10-14 — Stage 26: approval operations and governance validation
+
+Branched from `main` at 8a8fa9a (every earlier stage was merged on 2026-10-14). Committed and
+pushed to `feat/stage-26-approval-operations`; no pull request (single-developer workflow).
+Real `data/` approvals, observations, and progress preserved; no approval created.
+
+- **Review packages** (`governance.review_package`): rule, scope, dependencies, record facts
+  (M1: HB_NORTH only, same date/hour/flag, intervals 1–4, hour 24, repeated hour, labels and HU
+  unresolved; AGG-A: equal weights, HRSAP is credit not settlement; AGG-B: equals AGG-A at 15
+  minutes, needs duration evidence; CMP-A/B: signs, not DART, CMP-B not active with CMP-A),
+  evidence, assumptions, unresolved semantics, allowed/prohibited uses, itemized limitations
+  with a version, validation evidence, failure modes, triggers, state.
+- **Decisions:** approve (itemized acknowledgment, rationale, scope, triggers, evidence
+  metadata), reject, request-revision, revoke (effective date), supersede (replacement and
+  migration), no-decision. One path: `mambo governance …`; family `approve` actions redirect.
+- **Dependency graph and activation:** approved_but_inactive_due_to_dependencies; activation
+  only after compatibility checks; at most one active convention and exactly one active
+  aggregation method; governed revision policy. Nothing is a default.
+- **Gates:** `aggregate()` and `compare()` require the governed settings; snapshot contexts
+  carry them, so changes mark downstream snapshots stale (kept).
+- **Audit log** and atomic appends; evidence metadata (path/reference, checksum, availability,
+  reviewer-stated verification); names withheld from `status`, `audit`, and pages.
+- **UI:** read-only Governance section on System Health (OPS-03).
+
 ## 2026-10-13 — Stage 25: governed day-ahead vs RT-summary comparison (#49)
 
 Branched from `feat/stage-20-ercot-real-time-prices` at 3a0c61f: the owner merged Stage 24 (PR

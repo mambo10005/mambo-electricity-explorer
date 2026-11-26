@@ -29,6 +29,7 @@ from mambo_explorer.ercot import approvals as ap
 from mambo_explorer.ercot import assumed_alignment as aa
 from mambo_explorer.ercot import comparison as cmp
 from mambo_explorer.ercot import comparison_policy as cmpp
+from mambo_explorer.ercot import governance as gv
 from mambo_explorer.ercot import prices as px
 from mambo_explorer.ercot import rt_prices as rt
 from mambo_explorer.ercot.client import ErcotClient
@@ -177,8 +178,16 @@ def build(
     agg_snap=True,
     align_state="current",
     mode=cmp.GOVERNED,
+    governance=None,
 ):
     dam_obs, rts = case
+    # Stage 26: governed settings select the record under test unless a test overrides them
+    if governance is None:
+        governance = {
+            "active_comparison_convention": method if method in ("CMP-A", "CMP-B") else None,
+            "active_aggregation_method": agg,
+            "revision_policy": policy,
+        }
     m1a = ap.status(data_dir, M1)
     alignment = aa.align_with_basis(basis, dam_obs, rts, revision_policy=policy, approval=m1a)
     actx = aa.context(
@@ -194,6 +203,7 @@ def build(
         alignment_snapshot=asnap,
         alignment_snapshot_state=align_state,
         price_lookup=lambda i: prices.get(i["DeliveryInterval"]),
+        governance=governance,
     )
     gctx = ag.context(aggregation, align_state)
     gsnap = ag.snapshot(aggregation, gctx, "2026-10-13T18:05:00+00:00") if agg_snap else None
@@ -222,6 +232,7 @@ def build(
         m1_approval=m1a,
         aggregation_approval=ap.status(data_dir, rec),
         comparison_approval=ap.status(data_dir, crec) if crec else None,
+        governance=governance,
     )
 
 
@@ -324,6 +335,26 @@ def test_approval_states(syn_dir):
     ap.append(syn_dir, ap.new_revocation(A, e.record_id, "synthetic", now=NOW))
     res = build(syn_dir)
     assert res.status == cmp.COMPARISON_APPROVAL_MISSING and "revoked" in " ".join(res.blockers)
+
+
+def test_governed_settings_gate_convention_method_and_policy(full):
+    other = build(full, governance={"active_comparison_convention": "CMP-B",
+                                    "active_aggregation_method": "AGG-A",
+                                    "revision_policy": al.LATEST_RETRIEVED})  # fmt: skip
+    assert other.status == cmp.COMPARISON_APPROVAL_MISSING and other.output is None
+    assert any("active convention: governed setting is CMP-B" in b for b in other.blockers)
+    none = build(full, governance={})
+    # the aggregation is withheld first (no active method), and that outranks the convention
+    assert none.status == cmp.AGGREGATION_APPROVAL_MISSING and none.output is None
+    assert any("no active comparison convention is set" in b for b in none.blockers)
+    agg = build(full, governance={"active_comparison_convention": "CMP-A",
+                                  "active_aggregation_method": "AGG-B",
+                                  "revision_policy": al.LATEST_RETRIEVED})  # fmt: skip
+    assert agg.status == cmp.AGGREGATION_APPROVAL_MISSING  # AGG-A used while AGG-B is active
+    pol = build(full, governance={"active_comparison_convention": "CMP-A",
+                                  "active_aggregation_method": "AGG-A",
+                                  "revision_policy": al.FIRST_RETRIEVED})  # fmt: skip
+    assert pol.status == cmp.REVISION_UNAVAILABLE
 
 
 def test_unsupported_aggregation_and_inconsistent_sign(full, monkeypatch):
@@ -475,7 +506,10 @@ def test_guard_multiplication_only_in_the_percentage_candidate():
 
 
 def test_guard_no_import_outside_the_diagnostic_and_cli():
-    allowed = {"alignment_view.py", "comparison_view.py", "cli.py"}
+    allowed = {
+        "alignment_view.py", "comparison_view.py", "cli.py", "governance.py",
+        "governance_view.py", "governance_cli.py",
+    }  # fmt: skip
     for path in SRC.rglob("*.py"):
         rel = path.relative_to(SRC).as_posix()
         if rel in CMP_MODULES:
@@ -507,17 +541,25 @@ def test_cli_comparison_workflow(syn_dir, monkeypatch, capsys):
     assert cli.main(base + ["list"]) == 0
     out = capsys.readouterr().out
     assert "CMP-A" in out and "percentage-difference" in out
-    args = base + [
+    legacy = base + [
         "approve", "CMP-A", "--version", "1.0.0", "--scope", A.scope_fingerprint(),
         "--accept-limitations", A.limitations_fingerprint(), "--m1-version", "1.0.0",
         "--aggregations", "AGG-A@1.0.0,AGG-B@1.0.0", "--location", "HB_NORTH",
         "--reviewer", "Synthetic Reviewer", "--role", "synthetic", "--evidence", "SYN-cli",
         "--approved-on", "2026-10-01",
     ]  # fmt: skip
+    assert cli.main(legacy) == 1 and "mambo governance approve CMP-A" in capsys.readouterr().err
+    args = [
+        "--no-dotenv", "governance", "approve", "CMP-A", "--version", "1.0.0", "--scope",
+        A.scope_fingerprint(), "--accept-limitations", gv.limitations_version("CMP-A"),
+        "--acknowledge", ",".join(gv.limitation_ids("CMP-A")), "--approved-scope", "HB_NORTH",
+        "--triggers", "record", "--reviewer", "Synthetic Reviewer", "--role", "synthetic",
+        "--evidence", "SYN-cli", "--date", "2026-10-01", "--rationale", "synthetic test",
+    ]  # fmt: skip
     assert cli.main(args) == 0
     out = capsys.readouterr().out
-    assert "Dry run" in out and "Synthetic Reviewer" not in out and not ap.path(syn_dir).exists()
-    wrong = [("--aggregations", "AGG-A@1.0.0"), ("--location", "HB_SOUTH"), ("--m1-version", "0.9")]
+    assert "Preview" in out and "Synthetic Reviewer" not in out and not ap.path(syn_dir).exists()
+    wrong = [("--approved-scope", "HB_SOUTH"), ("--acknowledge", "CMP-A-L1"), ("--version", "0.9")]
     for flag, value in wrong:
         bad = list(args)
         bad[bad.index(flag) + 1] = value
@@ -583,6 +625,15 @@ def test_page_governed_complete_with_synthetic_approvals(page_dir):
     (page_dir / ap.SYNTHETIC_MARKER).write_text("synthetic\n", "utf-8")
     for r in (M1, agp.AGG_A, A):
         approve(page_dir, r)
+    for kind, value in (
+        (gv.SET_AGGREGATION, "AGG-A"),
+        (gv.SET_CONVENTION, "CMP-A"),
+        (gv.SET_REVISION_POLICY, al.LATEST_RETRIEVED),
+    ):
+        gv.append_setting(page_dir, gv.new_setting(
+            kind, value, operator="Synthetic Operator", role="synthetic",
+            decided_on="2026-10-01", rationale="synthetic", now=NOW,
+        ))  # fmt: skip
     state = {"align_basis": aa.ASSUMPTION, "cmp_mode": cmp.GOVERNED, "cmp_method": "CMP-A"}
     at = _page(page_dir, **state)
     assert "stale_alignment_snapshot" in _texts(at)

@@ -204,3 +204,20 @@ acceptance: none; recorded approval: none; official definition: none exists.
 ```
 
 A comparison needs **three** active approvals: M1, the AGG record used, and the chosen CMP record.
+
+## Governance operations (Stage 26, ADR 0023)
+
+Since Stage 26 every approval is recorded with `mambo governance approve <id>` (the family
+commands' `approve` actions point there). It requires itemized acknowledgment of the record's
+limitations (ids such as `M1-L1`; `mambo governance review <id>` lists them), a rationale, the
+approved scope (HB_NORTH), re-review triggers, and an evidence reference. Decisions other than
+approval (reject, request-revision, revoke with an effective date, supersede, no-decision) are
+recorded in the same append-only file. Operational use additionally needs the governed settings
+(active aggregation method, active comparison convention, revision policy), each set
+explicitly with an operator's name, role, date, and rationale. Full description:
+`docs/governance.md`.
+
+**Status of the records on this machine is local.** The repository never holds approvals; the
+register above describes what each record is. Approvals recorded before itemized
+acknowledgment existed (Stage 23–25 approvals) remain valid because they accepted the same
+limitation text by fingerprint; the Governance page labels them "fingerprint-only".

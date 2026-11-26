@@ -115,6 +115,11 @@ features:
     name: "Coverage-aware real-time price collection: document inventory, snapshot and coverage modes, bounded backfill, revision recheck, freshness vs completeness"
     section: system-health
     status: done
+  - id: OPS-03
+    name: "Governance workspace: review packages, attributed decisions with itemized limitation acknowledgments, dependency-aware activation, governed settings (one active convention), audit log, read-only System Health section"
+    section: system-health
+    status: done
+    ui: true
   - id: EXPLORE-04
     name: "Net generation by energy source: signed chart, category coverage, totals with completeness rules, and lesson 13"
     section: explore

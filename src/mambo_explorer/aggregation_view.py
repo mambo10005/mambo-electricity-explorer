@@ -14,6 +14,7 @@ from mambo_explorer.ercot import aggregation as ag
 from mambo_explorer.ercot import aggregation_policy as agp
 from mambo_explorer.ercot import approvals as ap
 from mambo_explorer.ercot import assumed_alignment as aa
+from mambo_explorer.ercot import governance as gv
 from mambo_explorer.opf_lab import md_dollars
 
 # Hand-worked SYNTHETIC examples (docs/aggregation-evidence.md §6); not ERCOT data.
@@ -139,12 +140,20 @@ def render_actual(
 ) -> tuple[ag.AggregationResult, str | None]:
     st.subheader("Stored observations: hourly analytical summary")
     st.info(f"**{agp.LIMITATION_BANNER}**")
+    governed = gv.current_settings(data_dir)
+    ids = [r.id for r in agp.RECORDS]
+    active = governed["active_aggregation_method"]
     method_id = st.radio(
         "Aggregation record",
-        [r.id for r in agp.RECORDS],
+        ids,
+        index=ids.index(active) if active in ids else 0,
         format_func=lambda i: f"{i}: {agp.record(i).output_name}",
         key="agg_method",
-        help="Only the record chosen here is used; there is no fallback to another method.",
+        help="Only the record chosen here is used; there is no fallback to another method. The "
+        "governed active method is preselected when one is set.",
+    )
+    st.caption(
+        f"Governed active aggregation method: {active or 'none set (the summary is withheld)'}."
     )
     record = agp.record(method_id)
     snap, state = _alignment_snapshot(data_dir, res, ctx)
@@ -156,6 +165,7 @@ def render_actual(
         alignment_snapshot=snap,
         alignment_snapshot_state=state,
         price_lookup=ag.store_price_lookup(data_dir),
+        governance=governed,
     )
     if result.status == ag.APPROVED_COMPLETE:
         st.success(
@@ -231,7 +241,7 @@ def render_actual(
 
 
 def render_snapshots(data_dir, result: ag.AggregationResult, alignment_state: str | None) -> None:
-    ctx = ag.context(result, alignment_state)
+    ctx = ag.context(result, alignment_state, governance=gv.current_settings(data_dir))
     if st.button("Record an aggregation snapshot", key="agg_snapshot"):
         ag.record_snapshot(data_dir, ag.snapshot(result, ctx, ap.recorded_now()))
     snaps = [

@@ -37,7 +37,7 @@ from mambo_explorer.ercot.aggregation_policy import (
 )
 from mambo_explorer.ercot.m1_policy import M1
 
-VALIDATION_VERSION = "24.1"
+VALIDATION_VERSION = "26.1"  # 26: governed settings join the gate
 
 CANDIDATE_ONLY = "candidate_only"
 APPROVAL_MISSING = "approval_missing"
@@ -249,9 +249,15 @@ def aggregate(
     alignment_snapshot: dict | None,
     alignment_snapshot_state: str | None,
     price_lookup: Callable[[dict], str | None],
+    governance: dict | None = None,
 ) -> AggregationResult:
-    """Production aggregation of one hour under an approved record (or a withheld result)."""
+    """Production aggregation of one hour under an approved record (or a withheld result).
+
+    `governance` is `governance.current_settings(data_dir)`: the method must be the active
+    aggregation method and the policy the governed revision policy (ADR 0023). Without
+    settings the summary is withheld; nothing is chosen by default."""
     record = _record(method_id)
+    gov = governance or {}
     checks: list[tuple[str, bool, str]] = []
     blockers: list[tuple[str, str]] = []
 
@@ -308,6 +314,20 @@ def aggregate(
         )
         policy_ok = alignment.revision_policy in record.revision_policies
         check("revision policy", policy_ok, alignment.revision_policy, REVISION_UNAVAILABLE)
+        active = gov.get("active_aggregation_method")
+        check(
+            "active aggregation method",
+            active == record.id,
+            f"governed setting is {active}" if active else "no active aggregation method is set",
+            APPROVAL_MISSING,
+        )
+        governed_policy = gov.get("revision_policy")
+        check(
+            "governed revision policy",
+            governed_policy == alignment.revision_policy,
+            f"governed {governed_policy}; used {alignment.revision_policy}",
+            REVISION_UNAVAILABLE,
+        )
 
     conflict = alignment.alignment_status == aa.CONFLICTING_REVISIONS or bool(
         alignment.duplicate_intervals
@@ -515,6 +535,7 @@ def context(
     result: AggregationResult,
     alignment_snapshot_state: str | None,
     record: AggregationRecord | None = None,
+    governance: dict | None = None,
 ) -> dict:
     """Everything an aggregation snapshot depends on (recomputed to detect staleness)."""
     record = record or _record(result.method_id or "")
@@ -533,7 +554,16 @@ def context(
         "duration_evidence": _sha(result.duration_evidence),
         "formula_version": result.formula_version,
         "validation_version": VALIDATION_VERSION,
+        "governance": _governance_keys(
+            governance, ("active_aggregation_method", "revision_policy")
+        ),
     }
+
+
+def _governance_keys(governance: dict | None, keys: tuple) -> dict | None:
+    if governance is None:
+        return None
+    return {k: governance.get(k) for k in keys}
 
 
 def snapshot(result: AggregationResult, ctx: dict, recorded_at_utc: str) -> dict:

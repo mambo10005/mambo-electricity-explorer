@@ -146,6 +146,16 @@ non-trivial work.
     - Never label the result DART, settlement, P&L, savings, exposure, or forecast error.
     - Never multiply it by a quantity, never compute a percentage in production, and never
       run it from refresh, collection, or Finance.
+  - Governance (ADR 0023): approvals and decisions only through `mambo governance … --execute`
+    (`governance_cli.py`); production also needs the governed settings
+    (`governance.current_settings`): active aggregation method, active comparison convention
+    (at most one), revision policy.
+    - Never set a default convention, method, or policy; unset withholds.
+    - Never infer the reviewer or operator from the account; never print reviewer names in
+      `status`, `audit`, or pages.
+    - Never accept a generic acknowledgment; every limitation id must be named.
+    - Never delete or rewrite an event; appends are atomic (`approvals.append_line`).
+    - Never let the Governance page write anything.
 - Time display (ADR 0015): every time-axis chart of UTC labels goes through
   `timeview.utc_label_chart` (utc scale, verbatim-label tooltip); never give
   `st.line_chart`/`st.bar_chart` datetimes, never strip time zones to fix an axis,

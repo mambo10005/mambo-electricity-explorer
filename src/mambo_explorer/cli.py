@@ -18,6 +18,10 @@ Commands:
     comparison list|show|status|approve|revoke|restore  versioned day-ahead/real-time
                comparison records (approve also needs --m1-version, --aggregations,
                --location HB_NORTH)
+    governance list|show|review|status|audit|approve|reject|request-revision|revoke|
+               supersede|no-decision|set-convention|set-aggregation|set-revision-policy
+               the review workspace for M1, AGG-*, and CMP-* (Stage 26; every mutation is a
+               preview without --execute; approvals need itemized acknowledgments)
     aggregation list|show|status|approve|revoke|restore  versioned hourly real-time
                aggregation records and their local approvals (same rules; approve also needs
                --version, --scope, and --accept-limitations from `show`)
@@ -438,39 +442,44 @@ def _governed_records(args, settings, module, label, describe, extra=None) -> in
             )
             return 0
         if args.action in ("approve", "restore"):
-            if args.version != record.version or args.scope != record.scope_fingerprint():
-                raise ap.ApprovalError(
-                    f"--version and --scope must match {record.id} {record.version} "
-                    f"({record.scope_fingerprint()}); read them with `show`"
-                )
-            if args.action == "restore" and not args.record:
-                raise ap.ApprovalError("restore needs --record (the revoked approval)")
-            if extra:
-                extra(record)
-            event = ap.new_approval(
-                record,
-                reviewer=args.reviewer,
-                role=args.role,
-                evidence=args.evidence,
-                approved_on=args.approved_on,
-                accepted_limitations=args.accept_limitations,
-                restores=args.record if args.action == "restore" else None,
+            # Stage 26: one approval path, with itemized limitation acknowledgment,
+            # rationale, and re-review triggers (ADR 0023).
+            raise ap.ApprovalError(
+                f"approvals are recorded with `mambo governance approve {record.id} ...` "
+                f"(a restore adds --restores <revoked approval id>; see `mambo governance "
+                f"review {record.id}`)"
             )
-        else:
-            if not args.record or not args.reason:
-                raise ap.ApprovalError("revoke needs --record and --reason")
-            event = ap.new_revocation(record, args.record, args.reason)
+        if not args.record or not args.reason:
+            raise ap.ApprovalError("revoke needs --record and --reason")
+        event = ap.new_revocation(record, args.record, args.reason)
         print(
             f"{event.kind} {event.record_id} for {record.id} {record.version} (contents not shown)"
         )
         if not args.execute:
             print("Dry run: nothing was recorded. Re-run with --execute to append this record.")
             return 0
+        from mambo_explorer.ercot import governance as gv
+
         print(f"Appended to {ap.append(settings.data_dir, event)}")
+        gv.audit(
+            settings.data_dir,
+            "revoke",
+            record.id,
+            actor_role=None,
+            event_id=event.record_id,
+            outcome="recorded",
+            detail=event.reason or "",
+        )
         return 0
     except ap.ApprovalError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
+
+
+def cmd_governance(args, settings) -> int:
+    from mambo_explorer import governance_cli
+
+    return governance_cli.run(args, settings)
 
 
 def cmd_assumption(args, settings) -> int:
@@ -505,17 +514,13 @@ def cmd_assumption(args, settings) -> int:
             )
             return 0
         if args.action == "approve":
-            event = ap.new_approval(
-                record,
-                reviewer=args.reviewer,
-                role=args.role,
-                evidence=args.evidence,
-                approved_on=args.approved_on,
+            raise ap.ApprovalError(
+                "approvals are recorded with `mambo governance approve M1 ...` (see `mambo "
+                "governance review M1`)"
             )
-        else:
-            if not args.record or not args.reason:
-                raise ap.ApprovalError("revoke needs --record and --reason")
-            event = ap.new_revocation(record, args.record, args.reason)
+        if not args.record or not args.reason:
+            raise ap.ApprovalError("revoke needs --record and --reason")
+        event = ap.new_revocation(record, args.record, args.reason)
         _print(asdict(event))
         if not args.execute:
             print("Dry run: nothing was recorded. Re-run with --execute to append this record.")
@@ -701,6 +706,43 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--reason", help="revoke: why")
     p.add_argument("--execute", action="store_true", help="append the record (default: dry run)")
     p.set_defaults(func=cmd_comparison)
+
+    p = sub.add_parser(
+        "governance",
+        help="review packages, decisions, governed settings, and the audit log for M1, AGG-*, "
+        "and CMP-* (every mutation is a dry run without --execute)",
+    )
+    p.add_argument(
+        "action",
+        choices=(
+            "list", "show", "review", "status", "audit", "approve", "reject",
+            "request-revision", "revoke", "supersede", "no-decision", "set-convention",
+            "set-aggregation", "set-revision-policy",
+        ),
+    )  # fmt: skip
+    p.add_argument("record_id", nargs="?", help="M1, AGG-A, AGG-B, CMP-A, or CMP-B")
+    p.add_argument("--reviewer", help="the reviewer's (or operator's) name, as supplied")
+    p.add_argument("--role", help="the reviewer's (or operator's) role")
+    p.add_argument("--date", help="the actual decision date (YYYY-MM-DD)")
+    p.add_argument("--evidence", help="approve: evidence reference (path, identifier, or text)")
+    p.add_argument("--evidence-verified-note", help="approve: how the reviewer verified it")
+    p.add_argument("--rationale", help="why (required for every decision and setting)")
+    p.add_argument("--version", help="approve: the record version, as shown")
+    p.add_argument("--scope", help="approve: the scope fingerprint, as shown")
+    p.add_argument("--approved-scope", help="approve: the approved scope label (HB_NORTH)")
+    p.add_argument("--accept-limitations", help="approve: the limitations fingerprint, as shown")
+    p.add_argument("--acknowledge", help="approve: every limitation id, comma-separated")
+    p.add_argument("--triggers", help="approve: 'record' or ';'-separated re-review triggers")
+    p.add_argument("--issue", help="reject / request-revision: the identified issue")
+    p.add_argument("--record", help="revoke: the approval to revoke")
+    p.add_argument("--effective-on", help="revoke: effective date (YYYY-MM-DD)")
+    p.add_argument("--replacement-id", help="supersede: the replacement record id")
+    p.add_argument("--replacement-version", help="supersede: the replacement version")
+    p.add_argument("--migration", help="supersede: migration implications")
+    p.add_argument("--value", help="set-*: the value (CMP-A|CMP-B, AGG-A|AGG-B, policy)")
+    p.add_argument("--restores", help="approve: a revoked approval this one reinstates")
+    p.add_argument("--execute", action="store_true", help="write (default: preview only)")
+    p.set_defaults(func=cmd_governance)
     return parser
 
 

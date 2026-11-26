@@ -238,6 +238,7 @@ def context(
     stored_rt: Sequence[al.RtObservation],
     approval: ap.Approval | None,
     assumption: AssumptionRecord | None = None,
+    governance: dict | None = None,
 ) -> dict:
     """Everything a snapshot depends on. `stored_*` are all stored revisions of the hour
     (`hour_inputs`), so a snapshot goes stale when any of them changes."""
@@ -255,6 +256,11 @@ def context(
         ),
         "approval": (f"{approval.reference}:{approval.status}" if governed and approval else None),
         "validation_version": VALIDATION_VERSION,
+        "governance": (
+            {"revision_policy": governance.get("revision_policy")}
+            if governance is not None
+            else None
+        ),
     }
 
 
