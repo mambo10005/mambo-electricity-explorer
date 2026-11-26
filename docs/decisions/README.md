@@ -28,3 +28,4 @@ One file per decision: `NNNN-short-title.md`, numbered sequentially. Copy
 | [0021](0021-governed-hourly-rt-aggregation.md) | Governed hourly real-time price aggregation (investigation; no method active) | Accepted |
 | [0022](0022-governed-price-comparison.md) | Governed comparison of a day-ahead SPP with an approved RT analytical summary (no comparison active) | Accepted |
 | [0023](0023-governance-operations.md) | Local governance operations: review packages, decisions, itemized acknowledgments, governed settings, audit log | Accepted |
+| [0024](0024-ercot-price-corrections.md) | ERCOT SPP price corrections at HB_NORTH (NP4-196-M, NP4-197-M): opt-in, own stores, never applied | Accepted |

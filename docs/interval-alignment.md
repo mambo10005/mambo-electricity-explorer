@@ -216,7 +216,7 @@ None is calculated or displayed. A numerically equal mean is not a settlement pr
 | 5 | Revision selection | **partially verified**: two retrieval policies; known-before-cutoff and final unavailable |
 | 6 | Complete subinterval coverage | **unresolved**: expected count not verified at the label level; coverage collection exists (ADR 0018) |
 | 7 | A defined aggregation | **unresolved**: research only (section 8) |
-| 8 | Finality and corrections | **unresolved**: no Business-Day calendar; NP4-196-M/NP4-197-M not collected |
+| 8 | Finality and corrections | **unresolved**: no Business-Day calendar; NP4-196-M/NP4-197-M collected on request only (ADR 0024), unused by any policy |
 | 9 | Publication, license, human review | **unresolved** (PUB-01, BL-3, BL-4) |
 
 Ways to unblock prerequisite 2 (owner's choice; none attempted):

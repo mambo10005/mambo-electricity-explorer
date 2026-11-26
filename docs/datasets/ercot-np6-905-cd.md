@@ -62,7 +62,7 @@ The day-ahead report's conventions (hour-only labels) are **not** borrowed.
   Operating Day". After that, ERCOT may still notify within 30 days and seek Board review.
   The app does not compute Business Days, so finality is **not determined**.
 - **Corrections:** §6.3(4)–(6); report **NP4-197-M** (RTM Price Corrections, type 13045,
-  display 180) is **not collected**.
+  display 180) is collected on request only and never applied (ADR 0024).
 - **Reposts:** a re-posted interval document with a changed value becomes revision n + 1.
 
 ## Selection and scope

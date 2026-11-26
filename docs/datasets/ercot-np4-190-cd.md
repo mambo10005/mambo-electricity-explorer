@@ -56,7 +56,7 @@ accepted automatically. Requests are paced at 1 s and bounded by the client budg
 | Publication time | listing `PublishDate` with offset (e.g. `2026-10-12T12:46:27-05:00`) | stored raw and as UTC |
 | Retrieval time | when this computer downloaded it | stored separately; never used as publication time |
 | Finality | Protocols §4.5.3(6): "final at 1000 of the second Business Day after the Operating Day" | **not determined** by the app (no Business-Day calendar) |
-| Corrections | §4.5.3(3)–(5): ERCOT corrects invalid prices (thresholds include $0.02/MWh at a Load Zone or Hub before finality); DAM Price Corrections report NP4-196-M (report type 13044, display 180) | NP4-196-M **not collected**; a re-posted NP4-190-CD document with a changed value becomes revision n + 1 |
+| Corrections | §4.5.3(3)–(5): ERCOT corrects invalid prices (thresholds include $0.02/MWh at a Load Zone or Hub before finality); DAM Price Corrections report NP4-196-M (report type 13044, display 180) | NP4-196-M collected on request only, never applied (ADR 0024); a re-posted NP4-190-CD document with a changed value becomes revision n + 1 |
 | Missing | blank price | stored missing (`quality_flags = missing`), never zero |
 | Negative | allowed | stored signed (`negative` flag) |
 

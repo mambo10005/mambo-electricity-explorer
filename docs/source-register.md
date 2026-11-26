@@ -18,6 +18,7 @@ Review columns:
 | ERCOT — NP6-345-CD Actual System Load by Weather Zone | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + download, no login (ERCOT Public API needs registration; not used) | Reviewed 2026-10-11, see below | Terms permit raw-data reuse in compilations, charts, and analyses; **project publication review pending** | No correction policy found; reposts handled as revisions | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-11) |
 | ERCOT — NP4-190-CD DAM Settlement Point Prices (HB_NORTH) | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + download, no login | Reviewed 2026-10-12, see below | Same ERCOT terms; **project publication review pending** | Corrections via NP4-196-M (not collected); reposts handled as revisions; finality rule recorded, not computed | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-12) |
 | ERCOT — NP6-905-CD real-time Settlement Point Prices (HB_NORTH) | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + per-interval download, no login | Reviewed 2026-10-12, see below | Same ERCOT terms; **project publication review pending** | Corrections via NP4-197-M (not collected); reposts become revisions; finality rule recorded, not computed | Cleared for local collection/use; publication review pending | Yes, locally (live-verified 2026-10-12) |
+| ERCOT — NP4-196-M / NP4-197-M SPP price corrections (HB_NORTH) | ISO/RTO | 2 (PRD R-29) | ercot.com public listing + download, no login | Reviewed 2026-11-26, same ERCOT terms | Same ERCOT terms; **project publication review pending** | They are the correction reports; only corrected rows are listed; never applied to stored prices | Cleared for local collection/use; publication review pending | Yes, locally, on request only (live-verified 2026-11-26) |
 | CAISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | PJM | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
 | MISO | ISO/RTO | After ERCOT (U-3) | Review pending | Review pending | Review pending | Review pending | Pending | No |
@@ -385,6 +386,33 @@ Contract: `docs/datasets/ercot-np6-905-cd.md`. Decision: ADR 0017.
 - Collection: 5 requests, 4 intervals stored from 4,568 downloaded rows, 4/4 matching the
   archives.
 - Repeat with `--include-stored`: 4 unchanged.
+
+### ERCOT — NP4-196-M / NP4-197-M SPP price corrections (HB_NORTH) — 2026-11-26
+
+Scope reviewed: two correction reports, only the Settlement Point Price document kinds
+(`DAM_SPP`, `RTM_SPP`), one location (`HB_NORTH`). Contracts: `docs/datasets/ercot-np4-196-m.md`
+and `ercot-np4-197-m.md`. Decision: ADR 0024. Authorized by the owner (BL-10).
+
+**Pages and files read:** product pages and Protocol sections already reviewed for NP4-190-CD
+and NP6-905-CD (§4.5.3, §6.3); both live listings; one document of each SPP kind, in scratch
+(not committed).
+
+| Item | Finding | Status |
+|---|---|---|
+| Reports | NP4-196-M type 13044 (14 listed documents, one day); NP4-197-M type 13045 (488 listed back to 2026-07-10); display 180 | Listing |
+| Document kinds | DAM: `DAM_SPP`, `DAM_EBLMP`, `DAM_MCPC`; RTM: `RTM_SPP`, `RTM_EBLMP`, `SPLMP`, `SOGLMP`, `SOGPRICE`, `MCPC_SPP`, `MCPC_SCED`, `ShadowPrice`; each with an `_xml` twin | Listing |
+| Schema | DAM `DeliveryDate, DeliveryHour, SettlementPoint, SPPOriginal, SPPCorrected, PriceCorrectionTime, DSTFlag`; RTM adds `DeliveryInterval` and `SettlementPointType` | Live files |
+| Content | only corrected rows; `HB_NORTH` present (11 DAM hours; 2 RTM intervals in the samples) | Live files |
+| Unit / time | no unit, no time zone in the files; DST not observed | kept raw, no UTC |
+
+**Local collection and use: CLEARED** on the same basis as the other ERCOT public reports.
+**Public redistribution: NOT REVIEWED** (PUB-01). No ERCOT file is committed.
+
+**Live verification (2026-11-26):** probe 6 requests (2 listings, 2 listings again, 2
+downloads, scratch). Connector: DAM 2 requests, 11 rows stored from 13,344 downloaded; RTM 2
+requests, 2 rows stored from 2,424 downloaded; both `validate` ok. A first attempt listed no
+documents (the live file names end `NP4196`, not `NP4196M`); fixed, and an empty listing now
+fails the run.
 
 ### EIA vs. ERCOT: unresolved differences (no join, no reconciliation yet)
 

@@ -53,6 +53,7 @@ from mambo_explorer.config import ConfigError, find_repo_root, load_dotenv, load
 from mambo_explorer.eia import dataset as ds
 from mambo_explorer.eia.client import EIAClient, EIAError
 from mambo_explorer.ercot import collect as ercot
+from mambo_explorer.ercot import corrections as ercot_corr
 from mambo_explorer.ercot import dataset as ercot_ds
 from mambo_explorer.ercot import prices as ercot_prices
 from mambo_explorer.ercot import rt_prices as ercot_rt
@@ -62,7 +63,9 @@ from mambo_explorer.refresh_config import RefreshConfigError
 from mambo_explorer.safe_zip import ArchiveError
 from mambo_explorer.storage import Store, WriterLockError
 
-SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp", "ercot-rt-spp")
+REFRESH_SOURCES = ("eia", "ercot", "eia-generation", "ercot-dam-spp", "ercot-rt-spp")
+# Price-correction reports are collected only by an explicit `mambo collect` (ADR 0024).
+SOURCES = (*REFRESH_SOURCES, *ercot_corr.KINDS)
 
 
 def _print(obj: object) -> None:
@@ -70,6 +73,8 @@ def _print(obj: object) -> None:
 
 
 def _store(args, settings) -> Store:
+    if args.source in ercot_corr.KINDS:
+        return ercot_corr.store(settings.data_dir, ercot_corr.KINDS[args.source])
     if args.source == "ercot":
         return ercot.store(settings.data_dir)
     if args.source == "eia-generation":
@@ -82,6 +87,26 @@ def _store(args, settings) -> Store:
 
 
 def cmd_sources(args, settings) -> int:
+    if args.source in ercot_corr.KINDS:
+        kind = ercot_corr.KINDS[args.source]
+        _print(
+            {
+                "source": f"ERCOT {kind.dataset} — {kind.report_name} "
+                f"(document kind {kind.document_kind})",
+                "report_type_id": kind.report_type_id,
+                "product_page": kind.product_page,
+                "market_stage": kind.market_stage,
+                "location": ercot_corr.LOCATION,
+                "columns": list(kind.header),
+                "corrections": ercot_corr.CORRECTION_TEXT,
+                "units": ercot_corr.UNIT_TEXT,
+                "time_labels": ercot_corr.TIME_TEXT,
+                "finality": ercot_corr.FINALITY_TEXT,
+                "public_retention_days": ercot_corr.PUBLIC_RETENTION_DAYS,
+                "review": f"docs/datasets/{kind.dataset.lower()}.md",
+            }
+        )
+        return 0
     if args.source == "ercot":
         _print(
             {
@@ -207,6 +232,23 @@ def _collect_rt(args, settings) -> int:
 
 
 def cmd_collect(args, settings) -> int:
+    if args.source in ercot_corr.KINDS:
+        kind = ercot_corr.KINDS[args.source]
+        selection = ercot_corr.Selection(
+            latest=None if args.publish_date else (args.latest or ercot_corr.DEFAULT_LATEST),
+            publish_dates=tuple(args.publish_date or ()),
+        )
+        print("Collection plan:")
+        _print(selection.describe(kind))
+        if args.dry_run:
+            print("\nDry run: no requests sent, nothing written.")
+            return 0
+        summary = ercot_corr.collect(
+            kind, selection, ErcotClient(), ercot_corr.store(settings.data_dir, kind)
+        )
+        print("\nCollection committed:")
+        _print(summary)
+        return 0
     if args.source == "ercot-rt-spp":
         return _collect_rt(args, settings)
     if args.source == "ercot-dam-spp":
@@ -550,7 +592,9 @@ def build_parser() -> argparse.ArgumentParser:
             help="eia (EIA-930 demand/forecast), ercot (ERCOT NP6-345-CD direct), or "
             "eia-generation (EIA-930 net generation by energy source), or ercot-dam-spp "
             "(ERCOT NP4-190-CD DAM settlement point price, HB_NORTH), or ercot-rt-spp "
-            "(ERCOT NP6-905-CD real-time settlement point price, HB_NORTH)",
+            "(ERCOT NP6-905-CD real-time settlement point price, HB_NORTH), or "
+            "ercot-dam-corrections / ercot-rt-corrections (ERCOT NP4-196-M / NP4-197-M SPP "
+            "price corrections, HB_NORTH; never part of refresh)",
         )
         p.set_defaults(func=func)
         return p
@@ -627,7 +671,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--source",
         action="append",
-        choices=SOURCES,
+        choices=REFRESH_SOURCES,
         help="source to refresh; repeatable (default: the sources enabled in the plan)",
     )
     p.add_argument("--config", help="refresh plan YAML (default: the packaged plan)")
@@ -768,6 +812,8 @@ def main(argv: list[str] | None = None) -> int:
         RefreshLockError,
         ercot_prices.PriceFormatError,
         ercot_prices.SelectionError,
+        ercot_corr.CorrectionFormatError,
+        ercot_corr.SelectionError,
         ercot_rt.RtFormatError,
         ercot_rt.SelectionError,
     ) as exc:

@@ -2,6 +2,21 @@
 
 Newest first. One entry per meaningful step.
 
+## 2026-11-26 — BL-10: ERCOT price-correction collectors (ADR 0024)
+
+Owner-authorized full scope. New `ercot/corrections.py`, CLI sources `ercot-dam-corrections`
+(NP4-196-M) and `ercot-rt-corrections` (NP4-197-M), own stores, HB_NORTH SPP corrections only,
+tests in `tests/test_ercot_corrections.py`, contracts under `docs/datasets/`, source-register
+review.
+- Bounded live probe and collection (listings, one document per report): DAM 11 hub rows, RTM 2
+  hub rows stored; `validate` ok for both.
+- Found live: each listing mixes many document kinds; a document lists only corrected rows;
+  files state no unit and no time zone. A first run matched no documents (file names end
+  `NP4196`); fixed, and an empty listing now fails the run. The two empty runs and their stores
+  were removed (new, empty, created by that attempt) and recollected.
+- Not done: refresh/health integration, any use of corrections (revision policy, finality), a
+  Business-Day calendar, DST observation for these reports.
+
 ## 2026-11-26 — BL-8 (day-ahead half): NP4-190-CD fall-back observation
 
 Owner-authorized `mambo collect --source ercot-dam-spp --publish-date 2026-10-31` (2 requests,
