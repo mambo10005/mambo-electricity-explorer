@@ -86,6 +86,15 @@ Findings:
     trailing zeros, e.g. `29.9` vs `29.90`.
   - This links the reports' DSTFlag column to the compilations' Repeated Hour Flag **for N
     labels only**. No DST day is inside either report's public list.
+- **ACT-4 (NP4-190-CD long day, 2026-11-26):**
+  - **Document:** 1293143342, published 2026-10-31 14:22 -06:00, `HB_NORTH` only stored.
+  - **DeliveryDate 11/01/2026:** 25 rows; `02:00` appears as `N` and as `Y`; every other hour
+    is `N`.
+  - **Meaning:** the day-ahead report itself, not only the compilations, repeats label 2 with
+    the flag. This supports M1 assumption 4 for day-ahead only.
+  - **Not established:** the order of the two `02:00` rows, and any official meaning of `N`/`Y`.
+  - **Real-time:** the NP6-905-CD list no longer reaches 2026-11-01, so no real-time DST-day
+    document was observed (BL-8).
 - **ACT-3:** NP6-905-CD document `SPPHLZNP6905_20261013_0000` holds 10/12/2026 H24 I4. Hour
   24 stays under the earlier DeliveryDate.
 
@@ -137,8 +146,8 @@ extrema were **not** used for any candidate.
   - **Spring:** both products omit label 3 (`03:00` / DeliveryHour 3) and keep 1, 2, 4…24.
   - **Fall:** both repeat label 2 as N then Y.
   - **Day lengths:** 23/25 hours and 92/100 intervals.
-  - **Not observed:** any NP4-190-CD/NP6-905-CD document of a DST day (neither public list
-    reaches one).
+  - **Not observed:** any NP6-905-CD document of a DST day (its list no longer reaches
+    2026-11-01). NP4-190-CD fall-back was observed on 2026-11-26 (ACT-4).
 - **Synthetic:** fixtures exercise a missing spring hour, both fall occurrences, mismatched
   flags, and unknown flags. They show the service's behavior, not ERCOT's.
 - **Never assumed:**
@@ -202,7 +211,7 @@ None is calculated or displayed. A numerically equal mean is not a settlement pr
 |---|---|---|
 | 1 | Same verified location (`HB_NORTH` hub ↔ `HB_NORTH`/HU) | **partially verified**: NP4-160-SG mapping and the RT file; HU not officially defined |
 | 2 | Compatible operating intervals (label mapping) | **blocked by unavailable evidence**: no official label definition (OFF-5, OFF-9 "User Guide N/A"; GAP-1 inaccessible) |
-| 3 | Explicit DST handling | **partially verified**: compilations observed; NP4-190-CD/NP6-905-CD DST days not observed; DSTFlag undefined |
+| 3 | Explicit DST handling | **partially verified**: compilations observed; NP4-190-CD fall-back observed (ACT-4); NP6-905-CD DST days not observed; DSTFlag undefined |
 | 4 | Verified price definitions | **verified** (OFF-4; ADRs 0016–0017) |
 | 5 | Revision selection | **partially verified**: two retrieval policies; known-before-cutoff and final unavailable |
 | 6 | Complete subinterval coverage | **unresolved**: expected count not verified at the label level; coverage collection exists (ADR 0018) |
@@ -214,7 +223,7 @@ Ways to unblock prerequisite 2 (owner's choice; none attempted):
 1. Ask ERCOT (Market Information/Client Services) for the field definitions.
 2. Have a named person review this record and accept M1 explicitly.
 3. Observe NP4-190-CD and NP6-905-CD documents of the 2026-11-01 long day while they are
-   listed (backlog BL-8), as supporting evidence.
+   listed (backlog BL-8), as supporting evidence. Day-ahead done (ACT-4); real-time missed.
 
 ## 10. Stage 23: M1 as a review-approved operational assumption (ADR 0020)
 
