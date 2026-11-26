@@ -128,11 +128,11 @@ Other useful commands:
 
 ## Workflow
 
-- Branch from `main` (or stack on an unmerged stage branch); open a **draft
-  PR** using `.github/pull_request_template.md` (What & why / How verified
-  with actual commands+output / checklist). See `docs/github-workflow.md`.
+- The owner is the sole developer: commit and push directly to `main`; do not
+  open PRs or feature branches unless asked. Run `scripts/check.ps1` before
+  every commit.
 - Record significant decisions as ADRs in `docs/decisions/` (copy
   `0000-template.md`); update `docs/progress.md` and `docs/feature-matrix.md`
   when work lands.
-- Never force-push, change repo visibility, merge PRs, or deploy without
-  explicit owner approval.
+- Never force-push, change repo visibility, or deploy without explicit owner
+  approval.
